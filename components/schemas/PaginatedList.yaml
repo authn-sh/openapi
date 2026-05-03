@@ -1,0 +1,14 @@
+type: object
+required: [data, total_count]
+properties:
+  data:
+    type: array
+    items: {}
+  total_count:
+    type: integer
+    format: int64
+    minimum: 0
+    description: Total number of rows matching the filter, ignoring `limit`/`offset`.
+description: |
+  Wrapper for paginated list endpoints. Concrete responses use `allOf` to
+  narrow `data[]` to the specific resource schema.

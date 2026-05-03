@@ -1,0 +1,22 @@
+type: object
+required: [code, message, long_message]
+additionalProperties: false
+properties:
+  code:
+    type: string
+    description: |
+      Stable machine-readable code. SDKs match on this string; never
+      parse `message` or `long_message`.
+    examples: [form_password_incorrect, verification_expired, rate_limit_exceeded]
+  message:
+    type: string
+    description: Short, human-readable summary.
+  long_message:
+    type: string
+    description: |
+      Long-form, end-user-friendly message including next-step guidance.
+      Safe to render in the UI.
+  meta:
+    type: object
+    additionalProperties: true
+    description: Per-code structured context (param name, attempt count, retry-after, …).

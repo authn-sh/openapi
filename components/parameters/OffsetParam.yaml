@@ -1,0 +1,8 @@
+name: offset
+in: query
+description: Rows to skip before returning results.
+required: false
+schema:
+  type: integer
+  minimum: 0
+  default: 0

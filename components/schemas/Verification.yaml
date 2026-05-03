@@ -1,0 +1,71 @@
+type: object
+description: |
+  The state of a verification challenge attached to an identifier
+  (`EmailAddress`, eventually `PhoneNumber`, …) or an in-progress
+  `SignInAttempt` / `SignUpAttempt` factor.
+
+  `status` is the consumer-visible lifecycle. `strategy` records
+  *how* the challenge is being completed; the set of allowed strategies
+  grows with each milestone.
+required: [status, strategy, attempts]
+additionalProperties: false
+properties:
+  status:
+    type: string
+    enum:
+      - unverified
+      - verified
+      - transferable
+      - failed
+      - expired
+    description: |
+      - `unverified` — challenge created, no successful attempt yet.
+      - `verified` — challenge succeeded; the parent identifier is now trusted.
+      - `transferable` — succeeded against an OAuth provider but the local
+        account doesn't exist yet (used during sign-up).
+      - `failed` — too many wrong attempts; the challenge can no longer be retried.
+      - `expired` — `expire_at` is in the past; the challenge must be re-issued.
+  strategy:
+    type: string
+    description: |
+      How this verification is being completed. v0.1 issues `email_code`,
+      `reset_password_email_code`, `ticket`, `password`, and `transfer`;
+      OAuth, phone, passkeys, and TOTP land in later milestones.
+    examples:
+      - email_code
+      - reset_password_email_code
+      - password
+      - ticket
+      - transfer
+      - oauth_google
+      - phone_code
+      - passkey
+      - totp
+      - backup_code
+  attempts:
+    type: integer
+    minimum: 0
+    description: Number of confirm attempts made against this challenge.
+  expire_at:
+    type: [integer, "null"]
+    format: int64
+    minimum: 0
+    description: |
+      Unix ms after which the challenge can no longer be confirmed. `null`
+      for strategies that don't expire (e.g. a `password` factor).
+  external_verification_redirect_url:
+    type: [string, "null"]
+    format: uri
+    description: |
+      For redirect-based strategies (OAuth, magic-link), the URL the
+      browser should hand off to. `null` otherwise.
+  nonce:
+    type: [string, "null"]
+    description: |
+      Strategy-specific opaque blob. For OAuth this is the state nonce;
+      for passkey it's the authenticator challenge.
+  error:
+    description: Last error returned by the strategy, if any.
+    oneOf:
+      - $ref: "./Error.yaml"
+      - type: "null"

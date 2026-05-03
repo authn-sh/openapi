@@ -1,0 +1,82 @@
+type: object
+description: |
+  Body for `POST /v1/users`. All fields are optional, but the resulting
+  user must be addressable: at least one of `email_address`,
+  `phone_number`, `username`, or `external_id` is required by the
+  server.
+additionalProperties: false
+properties:
+  external_id:
+    type: string
+    maxLength: 255
+    description: Caller-supplied stable identifier. Must be unique in the environment.
+  username:
+    type: string
+    minLength: 4
+    maxLength: 64
+  first_name:
+    type: string
+    maxLength: 256
+  last_name:
+    type: string
+    maxLength: 256
+  email_address:
+    type: array
+    description: |
+      Initial email addresses for the user. Each is created with
+      `verification.status = "verified"` (BAPI is privileged).
+    items:
+      type: string
+      format: email
+      maxLength: 254
+    minItems: 1
+  phone_number:
+    type: array
+    description: Reserved for v0.4. Rejected with HTTP 422 in v0.1.
+    items:
+      type: string
+  password:
+    type: string
+    minLength: 8
+    description: |
+      Plaintext password. Server hashes with the configured `password_hasher`
+      before storing. Mutually exclusive with `password_digest`.
+  password_digest:
+    type: string
+    description: |
+      Pre-hashed password (for migrations). Format determined by
+      `password_hasher`. Mutually exclusive with `password`.
+  password_hasher:
+    type: string
+    enum: [bcrypt, scrypt, argon2id, pbkdf2_sha256, md5, sha256]
+    description: |
+      Identifies the algorithm that produced `password_digest`. Required
+      whenever `password_digest` is set.
+  skip_password_checks:
+    type: boolean
+    default: false
+    description: |
+      When `true`, accept a password that doesn't satisfy the environment's
+      strength policy. Useful for migrations.
+  skip_password_requirement:
+    type: boolean
+    default: false
+    description: |
+      When `true`, allow the user to be created with no password even if
+      the environment requires one.
+  public_metadata:
+    $ref: "./Metadata.yaml"
+  private_metadata:
+    $ref: "./Metadata.yaml"
+  unsafe_metadata:
+    $ref: "./Metadata.yaml"
+  locale:
+    type: string
+    description: BCP-47 tag.
+  created_at:
+    type: integer
+    format: int64
+    minimum: 0
+    description: |
+      Override the user's creation timestamp. Only honored when the
+      caller is migrating users from another system.

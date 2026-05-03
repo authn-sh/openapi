@@ -1,0 +1,5 @@
+description: State conflict — e.g. an `Idempotency-Key` reuse with a different request body.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/ErrorResponse.yaml

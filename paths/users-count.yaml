@@ -1,0 +1,88 @@
+get:
+  operationId: countUsers
+  summary: Count users
+  description: |
+    Return the total number of users matching the same filter set as
+    `listUsers`. Useful for pagination headers and dashboards.
+  tags: [Users]
+  parameters:
+    - name: email_address
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string, format: email }
+    - name: phone_number
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+    - name: username
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+    - name: user_id
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+    - name: external_id
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+    - name: query
+      in: query
+      required: false
+      schema: { type: string }
+    - name: last_active_at_since
+      in: query
+      required: false
+      schema: { type: integer, format: int64, minimum: 0 }
+    - name: created_at_after
+      in: query
+      required: false
+      schema: { type: integer, format: int64, minimum: 0 }
+    - name: created_at_before
+      in: query
+      required: false
+      schema: { type: integer, format: int64, minimum: 0 }
+  responses:
+    "200":
+      description: Total count.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [object, total_count]
+            additionalProperties: false
+            properties:
+              object:
+                type: string
+                const: total_count
+              total_count:
+                type: integer
+                format: int64
+                minimum: 0
+          examples:
+            count:
+              value:
+                object: total_count
+                total_count: 12_345
+    "401": { $ref: "../components/responses/Unauthorized.yaml" }
+    "422": { $ref: "../components/responses/UnprocessableEntity.yaml" }

@@ -1,0 +1,24 @@
+type: object
+description: Body for `POST /v1/email_addresses`.
+required: [user_id, email_address]
+additionalProperties: false
+properties:
+  user_id:
+    type: string
+    description: ID of the `User` that will own this address.
+  email_address:
+    type: string
+    format: email
+    maxLength: 254
+  verified:
+    type: boolean
+    default: false
+    description: |
+      When `true`, the address is created with
+      `verification.status = "verified"` and no challenge is issued.
+  primary:
+    type: boolean
+    default: false
+    description: |
+      When `true` (and the address is verified), make it the user's
+      primary email address.

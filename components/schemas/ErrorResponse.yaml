@@ -1,0 +1,16 @@
+type: object
+required: [errors]
+additionalProperties: false
+properties:
+  errors:
+    type: array
+    minItems: 1
+    items:
+      $ref: ./Error.yaml
+  trace_id:
+    type: [string, "null"]
+    description: |
+      Server-generated request id. Same value goes into the audit log and
+      into the `X-Authn-Request-Id` response header, so customers can
+      paste it back to support.
+    examples: [req_01HKX9SY9V7H7TF8C8K7J9X4ZD]

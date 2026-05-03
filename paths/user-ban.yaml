@@ -1,0 +1,21 @@
+parameters:
+  - name: user_id
+    in: path
+    required: true
+    schema: { $ref: "../components/schemas/Id.yaml" }
+
+post:
+  operationId: banUser
+  summary: Ban a user
+  description: |
+    Permanently block a user from authenticating. Existing sessions are
+    revoked. Idempotent: banning an already-banned user is a no-op.
+  tags: [Users]
+  responses:
+    "200":
+      description: The banned user.
+      content:
+        application/json:
+          schema: { $ref: "../components/schemas/User.yaml" }
+    "401": { $ref: "../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../components/responses/NotFound.yaml" }

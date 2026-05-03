@@ -1,0 +1,178 @@
+type: object
+description: |
+  An end-user identity within an `Environment`. Carries the canonical
+  identifier set (email addresses, phone numbers, external accounts,
+  passkeys), the auth-state flags (password, MFA), the moderation state
+  (banned, locked), the lifecycle timestamps, and the three flavours of
+  metadata.
+
+  Phone numbers, external accounts, enterprise accounts, and passkeys
+  are present in the shape today (as empty arrays in v0.1) so SDKs can
+  generate stable types up front; the corresponding endpoints land in
+  later milestones (v0.4 / v0.5 / v0.6).
+required:
+  - id
+  - object
+  - email_addresses
+  - phone_numbers
+  - external_accounts
+  - enterprise_accounts
+  - passkeys
+  - has_image
+  - password_enabled
+  - two_factor_enabled
+  - totp_enabled
+  - backup_code_enabled
+  - banned
+  - locked
+  - delete_self_enabled
+  - public_metadata
+  - private_metadata
+  - unsafe_metadata
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: "./Id.yaml"
+  object:
+    type: string
+    const: user
+  external_id:
+    type: [string, "null"]
+    maxLength: 255
+    description: |
+      Caller-supplied stable identifier. Indexed and unique within the
+      environment. Useful for migrating users from another system.
+  username:
+    type: [string, "null"]
+    minLength: 4
+    maxLength: 64
+  first_name:
+    type: [string, "null"]
+    maxLength: 256
+  last_name:
+    type: [string, "null"]
+    maxLength: 256
+  image_url:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Cached CDN URL for the user's profile image. `null` when
+      `has_image` is `false`.
+  has_image:
+    type: boolean
+    description: |
+      Convenience flag derived from `image_url`. SDKs hide UI affordances
+      that depend on a real avatar based on this field.
+  primary_email_address_id:
+    type: [string, "null"]
+    description: |
+      Pointer into `email_addresses[]`. `null` for users created with no
+      verified email (e.g. username-only).
+  primary_phone_number_id:
+    type: [string, "null"]
+    description: |
+      Pointer into `phone_numbers[]`. v0.1 always returns `null` (phone
+      identifiers ship in v0.4).
+  email_addresses:
+    type: array
+    items:
+      $ref: "./EmailAddress.yaml"
+  phone_numbers:
+    type: array
+    description: |
+      Reserved for v0.4. Always returned as `[]` in v0.1.
+    items:
+      type: object
+      additionalProperties: true
+  external_accounts:
+    type: array
+    description: |
+      Reserved for v0.4 (OAuth connections). Always `[]` in v0.1.
+    items:
+      type: object
+      additionalProperties: true
+  enterprise_accounts:
+    type: array
+    description: |
+      Reserved for v0.6 (enterprise SSO). Always `[]` in v0.1.
+    items:
+      type: object
+      additionalProperties: true
+  passkeys:
+    type: array
+    description: |
+      Reserved for v0.5 (WebAuthn). Always `[]` in v0.1.
+    items:
+      type: object
+      additionalProperties: true
+  password_enabled:
+    type: boolean
+    description: |
+      `true` when the user has a stored password digest. Resetting via
+      "forgot password" flips this to `true` after the new password is set.
+  two_factor_enabled:
+    type: boolean
+    description: |
+      `true` when at least one second factor is active. Always `false` in
+      v0.1 (MFA ships in v0.3).
+  totp_enabled:
+    type: boolean
+    description: Always `false` in v0.1 (TOTP ships in v0.3).
+  backup_code_enabled:
+    type: boolean
+    description: Always `false` in v0.1 (backup codes ship in v0.3).
+  mfa_enabled_at:
+    type: [integer, "null"]
+    format: int64
+    minimum: 0
+    description: When MFA was first enabled. `null` until v0.3.
+  mfa_disabled_at:
+    type: [integer, "null"]
+    format: int64
+    minimum: 0
+    description: When MFA was last disabled. `null` until v0.3.
+  banned:
+    type: boolean
+    description: |
+      `true` when the user is permanently blocked from authenticating.
+      Toggle via `POST /v1/users/{id}/ban` and `/unban`.
+  locked:
+    type: boolean
+    description: |
+      `true` when the user is temporarily locked out (e.g. brute-force
+      protection). Toggle via `POST /v1/users/{id}/lock` and `/unlock`.
+  lockout_expires_at:
+    type: [integer, "null"]
+    format: int64
+    minimum: 0
+    description: |
+      Unix ms after which a `locked` user is automatically unlocked.
+      `null` when not locked or the lock is indefinite.
+  last_sign_in_at:
+    type: [integer, "null"]
+    format: int64
+    minimum: 0
+  last_active_at:
+    type: [integer, "null"]
+    format: int64
+    minimum: 0
+  delete_self_enabled:
+    type: boolean
+    description: |
+      Mirrors the environment-level setting at the time of read; tells
+      the FAPI whether the user can call `DELETE /v1/me`.
+  locale:
+    type: [string, "null"]
+    description: BCP-47 tag (e.g. `en-US`). Used to localize emails sent to the user.
+  public_metadata:
+    $ref: "./Metadata.yaml"
+  private_metadata:
+    $ref: "./Metadata.yaml"
+  unsafe_metadata:
+    $ref: "./Metadata.yaml"
+  created_at:
+    $ref: "./Timestamp.yaml"
+  updated_at:
+    $ref: "./Timestamp.yaml"
