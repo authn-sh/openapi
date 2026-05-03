@@ -1,0 +1,22 @@
+patch:
+  operationId: updateOrganizationSettings
+  summary: Patch organization settings (v0.2 placeholder)
+  description: |
+    v0.1 only accepts `enabled: false`. The full schema lands in v0.2
+    along with the organization API surface.
+  tags: [Instance]
+  parameters:
+    - $ref: ../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/OrganizationSettingsUpdateRequest.yaml }
+  responses:
+    "200":
+      description: The updated instance settings.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/InstanceSettings.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }

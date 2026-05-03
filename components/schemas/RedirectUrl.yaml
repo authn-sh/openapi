@@ -1,0 +1,30 @@
+type: object
+description: |
+  An HTTPS URL allowed as a post-flow redirect target. The Account
+  Portal and FAPI `redirect_url` parameters are validated against this
+  list to prevent open-redirect abuse.
+required:
+  - id
+  - object
+  - url
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: redirect_url
+  url:
+    type: string
+    format: uri
+    description: |
+      Origin-and-path URL. Trailing slashes are normalized away. Match
+      semantics: exact origin + path-prefix; query and fragment are
+      ignored.
+    examples: ["https://app.acme.com/welcome", "http://localhost:3000/sign-in"]
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml

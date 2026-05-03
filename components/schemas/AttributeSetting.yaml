@@ -1,0 +1,34 @@
+type: object
+description: |
+  Per-attribute policy embedded in `InstanceSettings.attribute_settings`.
+  `verifications[]` lists the strategies the environment will accept
+  for this attribute (e.g. `["email_code"]`).
+additionalProperties: false
+properties:
+  enabled:
+    type: boolean
+    default: true
+    description: When `false`, the attribute is ignored at sign-up entirely.
+  required:
+    type: boolean
+    default: false
+    description: Sign-up cannot complete without this attribute.
+  used_for_first_factor:
+    type: boolean
+    default: false
+  used_for_second_factor:
+    type: boolean
+    default: false
+  verifications:
+    type: array
+    items:
+      type: string
+    description: Strategies accepted for verifying this attribute.
+    examples: [["email_code"], []]
+  verify_at_sign_up:
+    type: boolean
+    default: false
+    description: |
+      When `true`, sign-up cannot complete until this attribute is
+      verified. When `false`, the attribute can be added unverified
+      and verified later via `/v1/me/email_addresses/{id}`.

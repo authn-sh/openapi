@@ -1,0 +1,224 @@
+type: object
+description: |
+  Composite read shape returned by `GET /v1/instance`. Covers every
+  per-environment knob exposed via BAPI today.
+
+  Read-only: `private_metadata` and any secret credential field
+  (notably `captcha.secret_key`, `attack_protection.brute_force.secret`)
+  are write-only — they're accepted on `PATCH` but **never** returned
+  in `GET` responses, so they never reach the dashboard or any audit
+  log unless the caller already supplied them.
+required:
+  - object
+  - sign_up_modes
+  - attribute_settings
+  - restrictions
+  - attack_protection
+  - sessions
+  - paths
+  - test_mode
+  - signing_keys
+  - organizations
+  - audit_log_retention_days
+additionalProperties: false
+properties:
+  object:
+    type: string
+    const: instance_settings
+  support_email:
+    type: [string, "null"]
+    format: email
+  enhanced_email_deliverability:
+    type: boolean
+    default: false
+    description: |
+      When `true`, the instance uses dedicated IPs / DKIM signing for
+      outbound mail. v0.1 surfaces the flag but always returns `false`.
+  sign_up_modes:
+    type: array
+    items:
+      type: string
+      enum: [public, restricted, waitlist]
+    description: |
+      Allowed sign-up modes. `public` is no-allowlist; `restricted`
+      requires an `AllowlistIdentifier` match; `waitlist` defers
+      account creation until the operator approves (post-v0.1).
+  attribute_settings:
+    type: object
+    description: Per-attribute write/verify policy for sign-ups.
+    additionalProperties: false
+    properties:
+      email_address:    { $ref: ./AttributeSetting.yaml }
+      phone_number:     { $ref: ./AttributeSetting.yaml }
+      username:         { $ref: ./AttributeSetting.yaml }
+      first_name:       { $ref: ./AttributeSetting.yaml }
+      last_name:        { $ref: ./AttributeSetting.yaml }
+      password:         { $ref: ./AttributeSetting.yaml }
+  restrictions:
+    type: object
+    additionalProperties: false
+    properties:
+      allowlist_enabled:
+        type: boolean
+        default: false
+      blocklist_enabled:
+        type: boolean
+        default: false
+      block_email_subaddresses:
+        type: boolean
+        default: false
+        description: |
+          When `true`, refuse `local+tag@domain` style addresses to
+          stop a single inbox from creating many accounts.
+      block_disposable_email_domains:
+        type: boolean
+        default: false
+        description: |
+          When `true`, refuse addresses on the maintained
+          disposable-domain list (mailinator, tempmail, etc.).
+      ignore_dots_for_gmail_addresses:
+        type: boolean
+        default: true
+        description: |
+          When `true`, `j.doe@gmail.com` and `jdoe@gmail.com` are
+          treated as the same address for uniqueness.
+  attack_protection:
+    type: object
+    description: Throttles + WAF-ish toggles. Secret credentials are write-only.
+    additionalProperties: false
+    properties:
+      captcha:
+        type: object
+        additionalProperties: false
+        properties:
+          provider:
+            type: string
+            enum: [none, hcaptcha, turnstile]
+            default: none
+          widget_type:
+            type: string
+            enum: [smart, invisible, managed]
+            default: smart
+          public_key:
+            type: [string, "null"]
+            description: Surfaced to the SDK; safe to read.
+      brute_force:
+        type: object
+        additionalProperties: false
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          max_attempts:
+            type: integer
+            minimum: 1
+            default: 100
+          lockout_duration_seconds:
+            type: integer
+            minimum: 0
+            default: 3600
+      device_tracking:
+        type: object
+        additionalProperties: false
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          require_device_trust:
+            type: boolean
+            default: false
+            description: |
+              When `true`, sign-in pauses for an out-of-band device
+              trust check before the session activates.
+  sessions:
+    type: object
+    additionalProperties: false
+    properties:
+      lifetime_seconds:
+        type: integer
+        minimum: 60
+        default: 604800
+        description: Hard ceiling on a session's age.
+      inactivity_timeout_seconds:
+        type: [integer, "null"]
+        minimum: 60
+        description: Sliding-window expiry. `null` to disable.
+      multi_session:
+        type: boolean
+        default: true
+        description: When `false`, signing in on a new device ends every other session for the user.
+      max_concurrent_sessions_per_client:
+        type: integer
+        minimum: 1
+        default: 10
+      url_based_session_syncing:
+        type: boolean
+        default: false
+        description: |
+          When `true`, the SDK wires up cross-tab sync via the URL bar
+          (used for environments that can't share cookies between
+          subdomains).
+      session_token_template:
+        type: [string, "null"]
+        description: |
+          Default JWT template used by `getSessionToken`. v0.1 ignores
+          this and always issues the built-in template.
+  paths:
+    type: object
+    additionalProperties: false
+    properties:
+      sign_in_url:                     { type: string, format: uri }
+      sign_up_url:                     { type: string, format: uri }
+      after_sign_in_url:               { type: string, format: uri }
+      after_sign_up_url:               { type: string, format: uri }
+      unauthorized_sign_in_url:        { type: string, format: uri }
+      user_profile_url:                { type: string, format: uri }
+      create_organization_url:         { type: [string, "null"], format: uri }
+      organization_profile_url:        { type: [string, "null"], format: uri }
+      after_leave_organization_url:    { type: [string, "null"], format: uri }
+      after_create_organization_url:   { type: [string, "null"], format: uri }
+      home_url:                        { type: [string, "null"], format: uri }
+  test_mode:
+    type: string
+    enum: [enabled, disabled, rejected]
+    description: |
+      `enabled` — `*_test_*` identifiers + the magic `424242` code work
+      end-to-end without sending real emails. `disabled` — test
+      affordances are off. `rejected` — sign-ins/sign-ups using the
+      magic identifiers are refused (production hardening).
+  signing_keys:
+    type: object
+    additionalProperties: false
+    properties:
+      rotation_cadence_days:
+        type: integer
+        minimum: 1
+        default: 90
+      pre_publish_window_seconds:
+        type: integer
+        minimum: 0
+        default: 86400
+        description: |
+          How long a new key sits in JWKS before becoming the active
+          signing key. Lets caches warm up.
+      retire_window_seconds:
+        type: integer
+        minimum: 0
+        default: 604800
+        description: |
+          How long a retired key stays in JWKS before being deleted.
+  organizations:
+    type: object
+    description: |
+      Placeholder for organization-level settings. Always
+      `enabled: false` in v0.1 — full schema lands in v0.2.
+    additionalProperties: true
+    properties:
+      enabled:
+        type: boolean
+        default: false
+  audit_log_retention_days:
+    type: integer
+    minimum: 1
+    maximum: 3650
+    default: 90

@@ -1,0 +1,43 @@
+post:
+  operationId: bulkCreateInvitations
+  summary: Bulk-create invitations
+  description: |
+    Atomic batch create. If any invitation fails validation the entire
+    request is rejected; the response describes the offending row(s).
+  tags: [Invitations]
+  parameters:
+    - $ref: ../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/InvitationBulkCreateRequest.yaml }
+        examples:
+          batch:
+            summary: Two invitations in one call
+            value:
+              invitations:
+                - email_address: jane@acme.com
+                  redirect_url: https://app.acme.com/welcome
+                - email_address: john@acme.com
+                  notify: false
+                  expires_in_days: 30
+  responses:
+    "201":
+      description: Created invitations.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data, total_count]
+            additionalProperties: false
+            properties:
+              data:
+                type: array
+                items: { $ref: ../components/schemas/Invitation.yaml }
+              total_count:
+                type: integer
+                minimum: 0
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../components/responses/Conflict.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }

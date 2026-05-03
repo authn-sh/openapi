@@ -1,0 +1,60 @@
+get:
+  operationId: listAllowlistIdentifiers
+  summary: List allowlist identifiers
+  description: Paginated list. The allowlist gates sign-ups while the environment is in `restricted` mode.
+  tags: [Allowlist Identifiers]
+  parameters:
+    - $ref: ../components/parameters/LimitParam.yaml
+    - $ref: ../components/parameters/OffsetParam.yaml
+  responses:
+    "200":
+      description: A page of allowlist identifiers.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../components/schemas/AllowlistIdentifier.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+
+post:
+  operationId: createAllowlistIdentifier
+  summary: Create an allowlist identifier
+  description: Add a literal identifier or a wildcard pattern (`*@example.com`).
+  tags: [Allowlist Identifiers]
+  parameters:
+    - $ref: ../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [identifier]
+          additionalProperties: false
+          properties:
+            identifier:
+              type: string
+            notify:
+              type: boolean
+              default: false
+        examples:
+          literal:
+            summary: Literal email address
+            value: { identifier: jane@acme.com, notify: true }
+          wildcard:
+            summary: Anyone at the acme.com domain
+            value: { identifier: "*@acme.com" }
+  responses:
+    "201":
+      description: The created identifier.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/AllowlistIdentifier.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../components/responses/Conflict.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }

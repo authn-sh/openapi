@@ -1,0 +1,50 @@
+type: object
+description: |
+  Body for `PATCH /v1/instance`. Top-level toggles + writable nested
+  groups. Every field is optional; unspecified groups are left
+  untouched.
+
+  Secret credentials (e.g. `attack_protection.captcha.secret_key`,
+  `attack_protection.brute_force.secret`) are accepted here but **never**
+  returned by `GET /v1/instance` (write-only).
+additionalProperties: false
+properties:
+  support_email:
+    type: [string, "null"]
+    format: email
+  enhanced_email_deliverability:
+    type: boolean
+  sign_up_modes:
+    type: array
+    items:
+      type: string
+      enum: [public, restricted, waitlist]
+  test_mode:
+    type: string
+    enum: [enabled, disabled, rejected]
+  paths:
+    type: object
+    additionalProperties: true
+  attribute_settings:
+    type: object
+    description: |
+      Same shape as `InstanceSettings.attribute_settings`; you can
+      patch any subset of attributes.
+    additionalProperties: true
+  attack_protection:
+    type: object
+    description: |
+      Patch any nested toggle. Setting `captcha.secret_key` rotates the
+      provider secret; the new value never appears in subsequent `GET`s.
+    additionalProperties: true
+  sessions:
+    type: object
+    description: Same shape as `InstanceSettings.sessions`.
+    additionalProperties: true
+  signing_keys:
+    type: object
+    additionalProperties: true
+  audit_log_retention_days:
+    type: integer
+    minimum: 1
+    maximum: 3650

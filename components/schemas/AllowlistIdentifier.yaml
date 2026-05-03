@@ -1,0 +1,41 @@
+type: object
+description: |
+  A pattern allowed to sign up while the environment is in
+  `restricted` mode. The `identifier` is either a literal email
+  address / phone number or a wildcard pattern (`*@example.com`,
+  `*@*.example.com`).
+
+  When a sign-up identifier matches a row here, the user is allowed
+  through; when `notify: true`, the row is also used as a
+  to-be-notified seed for the relevant email template.
+required:
+  - id
+  - object
+  - identifier
+  - notify
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: allowlist_identifier
+  identifier:
+    type: string
+    description: |
+      Literal email/phone or a wildcard pattern. Wildcard syntax:
+      `*@example.com` (any local part), `*@*.example.com` (any
+      subdomain). Phone numbers are E.164.
+    examples: ["jane@acme.com", "*@acme.com", "*@*.acme.com", "+15551234567"]
+  notify:
+    type: boolean
+    default: false
+    description: |
+      Send a "you've been invited" email when this row is added (only
+      meaningful for literal email addresses).
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
