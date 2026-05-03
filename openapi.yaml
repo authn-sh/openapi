@@ -110,6 +110,69 @@ paths:
   /v1/email_addresses/{email_address_id}:
     $ref: ./paths/email-address.yaml
 
+  # Frontend API (FAPI) — per-environment host. SDKs target the second
+  # `servers:` entry; `client_cookie` / `dev_browser_jwt` security applies.
+  /v1/environment:
+    $ref: ./paths/environment.yaml
+  /v1/client:
+    $ref: ./paths/client.yaml
+  /v1/client/handshake:
+    $ref: ./paths/client-handshake.yaml
+  /v1/client/sign_ins:
+    $ref: ./paths/sign-ins.yaml
+  /v1/client/sign_ins/{sign_in_id}:
+    $ref: ./paths/sign-in.yaml
+  /v1/client/sign_ins/{sign_in_id}/prepare_first_factor:
+    $ref: ./paths/sign-in-prepare-first-factor.yaml
+  /v1/client/sign_ins/{sign_in_id}/attempt_first_factor:
+    $ref: ./paths/sign-in-attempt-first-factor.yaml
+  /v1/client/sign_ins/{sign_in_id}/prepare_second_factor:
+    $ref: ./paths/sign-in-prepare-second-factor.yaml
+  /v1/client/sign_ins/{sign_in_id}/attempt_second_factor:
+    $ref: ./paths/sign-in-attempt-second-factor.yaml
+  /v1/client/sign_ins/{sign_in_id}/reset_password:
+    $ref: ./paths/sign-in-reset-password.yaml
+  /v1/client/sign_ups:
+    $ref: ./paths/sign-ups.yaml
+  /v1/client/sign_ups/{sign_up_id}:
+    $ref: ./paths/sign-up.yaml
+  /v1/client/sign_ups/{sign_up_id}/prepare_verification:
+    $ref: ./paths/sign-up-prepare-verification.yaml
+  /v1/client/sign_ups/{sign_up_id}/attempt_verification:
+    $ref: ./paths/sign-up-attempt-verification.yaml
+  /v1/client/sessions/{session_id}:
+    $ref: ./paths/client-session.yaml
+  /v1/client/sessions/{session_id}/end:
+    $ref: ./paths/client-session-end.yaml
+  /v1/client/sessions/{session_id}/remove:
+    $ref: ./paths/client-session-remove.yaml
+  /v1/client/sessions/{session_id}/touch:
+    $ref: ./paths/client-session-touch.yaml
+  /v1/client/sessions/{session_id}/tokens:
+    $ref: ./paths/client-session-tokens.yaml
+  /v1/client/sessions/{session_id}/tokens/{template_name}:
+    $ref: ./paths/client-session-tokens-template.yaml
+  /v1/me:
+    $ref: ./paths/me.yaml
+  /v1/me/profile_image:
+    $ref: ./paths/me-profile-image.yaml
+  /v1/me/email_addresses:
+    $ref: ./paths/me-email-addresses.yaml
+  /v1/me/email_addresses/{email_address_id}:
+    $ref: ./paths/me-email-address.yaml
+  /v1/me/email_addresses/{email_address_id}/prepare_verification:
+    $ref: ./paths/me-email-prepare-verification.yaml
+  /v1/me/email_addresses/{email_address_id}/attempt_verification:
+    $ref: ./paths/me-email-attempt-verification.yaml
+  /v1/me/sessions:
+    $ref: ./paths/me-sessions.yaml
+  /v1/me/change_password:
+    $ref: ./paths/me-change-password.yaml
+  /v1/me/password:
+    $ref: ./paths/me-password.yaml
+  /v1/me/delete_self:
+    $ref: ./paths/me-delete-self.yaml
+
 components:
   securitySchemes:
     bearer_secret_key:
@@ -154,6 +217,13 @@ components:
     UserUpdateRequest:         { $ref: ./components/schemas/UserUpdateRequest.yaml }
     EmailAddressCreateRequest: { $ref: ./components/schemas/EmailAddressCreateRequest.yaml }
     EmailAddressUpdateRequest: { $ref: ./components/schemas/EmailAddressUpdateRequest.yaml }
+    Client:                    { $ref: ./components/schemas/Client.yaml }
+    ClientResponseEnvelope:    { $ref: ./components/schemas/ClientResponseEnvelope.yaml }
+    Environment:               { $ref: ./components/schemas/Environment.yaml }
+    Session:                   { $ref: ./components/schemas/Session.yaml }
+    SessionActivity:           { $ref: ./components/schemas/SessionActivity.yaml }
+    SignIn:                    { $ref: ./components/schemas/SignIn.yaml }
+    SignUp:                    { $ref: ./components/schemas/SignUp.yaml }
 
   responses:
     BadRequest:           { $ref: ./components/responses/BadRequest.yaml }

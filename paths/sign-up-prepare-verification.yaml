@@ -1,0 +1,45 @@
+parameters:
+  - name: sign_up_id
+    in: path
+    required: true
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+post:
+  operationId: prepareVerification
+  summary: Prepare sign-up verification
+  description: |
+    Issue a verification challenge for one of the unverified attributes
+    on the sign-up (e.g. send the email code). v0.1 supports
+    `email_code`.
+  tags: [Sign-Ups]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [strategy]
+          additionalProperties: false
+          properties:
+            strategy:
+              type: string
+              enum: [email_code]
+            redirect_url:
+              type: string
+              format: uri
+        examples:
+          email_code:
+            value: { strategy: email_code }
+  responses:
+    "200":
+      description: Sign-up with the new verification populated, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../components/responses/TooManyRequests.yaml }

@@ -1,0 +1,46 @@
+type: object
+description: |
+  Per-device state container on the FAPI side. Identified by the
+  `__client` cookie (or `__authn_db_jwt` query param in cross-origin
+  dev). Carries the in-progress sign-in / sign-up state machines and
+  the list of authenticated sessions on this device.
+required:
+  - id
+  - object
+  - sessions
+  - sign_in
+  - sign_up
+  - last_active_session_id
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: client
+  sessions:
+    type: array
+    description: Active + recent sessions on this device.
+    items:
+      $ref: ./Session.yaml
+  sign_in:
+    description: Current in-progress sign-in attempt, if any.
+    oneOf:
+      - $ref: ./SignIn.yaml
+      - type: "null"
+  sign_up:
+    description: Current in-progress sign-up attempt, if any.
+    oneOf:
+      - $ref: ./SignUp.yaml
+      - type: "null"
+  last_active_session_id:
+    type: [string, "null"]
+    description: |
+      ID of the session the SDK should treat as "current" by default.
+      Updated on every `touch`. `null` when there are no sessions.
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml

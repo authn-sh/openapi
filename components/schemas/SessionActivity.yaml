@@ -1,0 +1,39 @@
+type: object
+description: |
+  Latest device fingerprint observed on a `Session`. Populated each time
+  the SDK calls `touch`. Coarse-grained on purpose — no PII beyond the
+  IP address, which is hashed when stored.
+required:
+  - id
+  - object
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: session_activity
+  device_type:
+    type: [string, "null"]
+    enum:
+      - desktop
+      - mobile
+      - tablet
+      - smart_tv
+      - bot
+      - null
+  is_mobile:
+    type: boolean
+    default: false
+  browser_name:
+    type: [string, "null"]
+  browser_version:
+    type: [string, "null"]
+  ip_address:
+    type: [string, "null"]
+    description: Caller IP, redacted to /24 (IPv4) or /48 (IPv6) at rest.
+  city:
+    type: [string, "null"]
+  country:
+    type: [string, "null"]
+    description: ISO 3166-1 alpha-2 country code.

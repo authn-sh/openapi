@@ -1,0 +1,105 @@
+type: object
+description: |
+  In-progress sign-in attempt. The client drives a tiny state machine:
+  identify the user → prepare a first factor → attempt that factor →
+  (optionally) prepare/attempt a second factor → `complete`.
+
+  v0.1 ships `password` + `email_code` + `reset_password_email_code`
+  + `ticket`. OAuth/SAML/passkey/TOTP land in later milestones.
+required:
+  - id
+  - object
+  - status
+  - supported_identifiers
+  - supported_first_factors
+  - supported_second_factors
+  - first_factor_verification
+  - second_factor_verification
+  - identifier
+  - user_data
+  - created_session_id
+  - abandon_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: sign_in_attempt
+  status:
+    type: string
+    enum:
+      - needs_identifier
+      - needs_first_factor
+      - needs_second_factor
+      - needs_new_password
+      - needs_client_trust
+      - complete
+      - abandoned
+    description: |
+      - `needs_identifier` — caller must supply email/phone/username.
+      - `needs_first_factor` — caller must call `prepare_first_factor` then
+        `attempt_first_factor`.
+      - `needs_second_factor` — first factor passed; second pending. v0.3+.
+      - `needs_new_password` — email-code reset succeeded; caller must
+        `POST /reset_password` with the new password.
+      - `needs_client_trust` — environment requires the device pass an
+        out-of-band trust check (geolocation/WAF/captcha).
+      - `complete` — `created_session_id` is set; SDK can stop driving.
+      - `abandoned` — `abandon_at` passed; create a new sign-in.
+  supported_identifiers:
+    type: array
+    items:
+      type: string
+      enum: [email_address, phone_number, username]
+    description: Identifier kinds the environment accepts at this step.
+  supported_first_factors:
+    type: array
+    items:
+      type: object
+      required: [strategy]
+      additionalProperties: true
+      properties:
+        strategy:
+          type: string
+        email_address_id:
+          type: string
+        phone_number_id:
+          type: string
+        safe_identifier:
+          type: string
+          description: Redacted hint shown in UI (e.g. `j***@a***`).
+    description: Concrete first factors that can be prepared.
+  supported_second_factors:
+    type: array
+    items:
+      type: object
+      additionalProperties: true
+    description: Empty in v0.1 (MFA ships in v0.3).
+  first_factor_verification:
+    description: Verification challenge for the chosen first factor, if started.
+    oneOf:
+      - $ref: ./Verification.yaml
+      - type: "null"
+  second_factor_verification:
+    description: Verification challenge for the second factor, if started.
+    oneOf:
+      - $ref: ./Verification.yaml
+      - type: "null"
+  identifier:
+    type: [string, "null"]
+    description: Identifier the caller submitted, normalized.
+  user_data:
+    type: object
+    description: |
+      Public-safe profile preview the client can render before the user
+      finishes auth. Keys mirror `User`'s `first_name`, `last_name`,
+      `image_url`, `has_image`. May be `{}` until the identifier resolves.
+    additionalProperties: true
+  created_session_id:
+    type: [string, "null"]
+    description: |
+      Set when `status` reaches `complete`. The new `Session` is also
+      visible in the enclosing `Client.sessions[]`.
+  abandon_at:
+    $ref: ./Timestamp.yaml

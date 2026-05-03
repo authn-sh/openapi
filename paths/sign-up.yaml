@@ -1,0 +1,60 @@
+parameters:
+  - name: sign_up_id
+    in: path
+    required: true
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+get:
+  operationId: getSignUp
+  summary: Get a sign-up attempt
+  description: Fetch the current state of an in-progress sign-up attempt by ID.
+  tags: [Sign-Ups]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The sign-up attempt.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/SignUp.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateSignUp
+  summary: Patch missing sign-up fields
+  description: |
+    Fill in fields that were missing in the create call. Sending the
+    same field twice transparently overwrites the previous value.
+  tags: [Sign-Ups]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          additionalProperties: false
+          properties:
+            email_address: { type: string, format: email }
+            phone_number:  { type: string }
+            username:      { type: string }
+            first_name:    { type: string }
+            last_name:     { type: string }
+            password:
+              type: string
+              minLength: 8
+            unsafe_metadata: { $ref: ../components/schemas/Metadata.yaml }
+            legal_accepted:  { type: boolean }
+  responses:
+    "200":
+      description: The transitioned sign-up, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }

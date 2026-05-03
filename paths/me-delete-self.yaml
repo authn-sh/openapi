@@ -1,0 +1,19 @@
+post:
+  operationId: deleteMyself
+  summary: Delete my account
+  description: |
+    Permanently destroy the current user (and every session, identifier,
+    and metadata). Requires the environment's `delete_self_enabled`
+    setting to be `true`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The destroyed user, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../components/responses/Forbidden.yaml }

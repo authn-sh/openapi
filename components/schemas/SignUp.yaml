@@ -1,0 +1,107 @@
+type: object
+description: |
+  In-progress sign-up attempt. Tracks which fields the environment
+  requires, which the caller has already supplied, which still need
+  verification, and the per-attribute verification challenges.
+
+  v0.1 supports email + password sign-ups; phone, OAuth, SAML, and
+  passkey sign-ups ship in later milestones.
+required:
+  - id
+  - object
+  - status
+  - required_fields
+  - optional_fields
+  - missing_fields
+  - unverified_fields
+  - verifications
+  - password_enabled
+  - unsafe_metadata
+  - public_metadata
+  - created_session_id
+  - created_user_id
+  - abandon_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: sign_up_attempt
+  status:
+    type: string
+    enum:
+      - missing_requirements
+      - complete
+      - transferable
+      - abandoned
+    description: |
+      - `missing_requirements` — `missing_fields` or `unverified_fields`
+        is non-empty; caller must `PATCH` to fill / `attempt_verification`
+        to verify.
+      - `complete` — `created_user_id` and `created_session_id` are set;
+        SDK can stop driving.
+      - `transferable` — an OAuth identity matched but no local user
+        exists; the caller can transfer to sign-up. (v0.4.)
+      - `abandoned` — `abandon_at` passed.
+  required_fields:
+    type: array
+    items: { type: string }
+    description: Fields the environment requires for sign-up to complete.
+  optional_fields:
+    type: array
+    items: { type: string }
+  missing_fields:
+    type: array
+    items: { type: string }
+    description: |
+      Subset of `required_fields` not yet supplied. When non-empty,
+      `status` stays `missing_requirements`.
+  unverified_fields:
+    type: array
+    items: { type: string }
+    description: |
+      Fields the caller supplied but that need a verification challenge
+      (`email_address`, `phone_number`).
+  verifications:
+    type: object
+    description: |
+      Map of attribute name → `Verification`. Populated by
+      `prepare_verification` and updated by `attempt_verification`.
+    additionalProperties:
+      oneOf:
+        - $ref: ./Verification.yaml
+        - type: "null"
+    examples:
+      - email_address:
+          status: unverified
+          strategy: email_code
+          attempts: 0
+          expire_at: 1714724000000
+          external_verification_redirect_url: null
+          nonce: null
+          error: null
+  username:
+    type: [string, "null"]
+  email_address:
+    type: [string, "null"]
+    format: email
+  phone_number:
+    type: [string, "null"]
+  first_name:
+    type: [string, "null"]
+  last_name:
+    type: [string, "null"]
+  password_enabled:
+    type: boolean
+    description: '`true` once the caller has set a password on this attempt.'
+  unsafe_metadata:
+    $ref: ./Metadata.yaml
+  public_metadata:
+    $ref: ./Metadata.yaml
+  created_session_id:
+    type: [string, "null"]
+  created_user_id:
+    type: [string, "null"]
+  abandon_at:
+    $ref: ./Timestamp.yaml
