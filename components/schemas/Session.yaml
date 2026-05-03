@@ -1,0 +1,72 @@
+type: object
+description: |
+  An authenticated session for one `User` on one `Client` (device).
+  Lifecycle:
+
+  - `pending` — the SignIn flow created the session but the user hasn't
+    completed all factors yet.
+  - `active` — usable.
+  - `expired` — past `expire_at`.
+  - `ended` — user signed out on this device (`POST /sessions/{id}/end`).
+  - `removed` — administratively removed.
+  - `replaced` — a new session for the same user/device superseded this one.
+  - `revoked` — admin revoked.
+  - `abandoned` — never reached `active` and `abandon_at` passed.
+required:
+  - id
+  - object
+  - client_id
+  - user_id
+  - status
+  - last_active_at
+  - expire_at
+  - abandon_at
+  - latest_activity
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: session
+  client_id:
+    $ref: ./Id.yaml
+  user_id:
+    $ref: ./Id.yaml
+  status:
+    type: string
+    enum:
+      - pending
+      - active
+      - expired
+      - ended
+      - removed
+      - replaced
+      - revoked
+      - abandoned
+  last_active_at:
+    $ref: ./Timestamp.yaml
+  last_active_organization_id:
+    type: [string, "null"]
+    description: |
+      Set by `POST /v1/client/sessions/{id}/touch`. Populated once
+      organizations land in v0.2.
+  expire_at:
+    $ref: ./Timestamp.yaml
+  abandon_at:
+    $ref: ./Timestamp.yaml
+  actor:
+    type: ["object", "null"]
+    additionalProperties: true
+    description: |
+      Impersonation chain. `null` for end-user sessions; populated when a
+      privileged actor (e.g. dashboard support seat) signs in as another
+      user. Carries `iss`, `sub`, `sid` of the actor's session.
+  latest_activity:
+    $ref: ./SessionActivity.yaml
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml

@@ -1,0 +1,20 @@
+type: object
+description: |
+  Standard envelope returned by every FAPI **write** operation. The
+  `response` field is the resource the operation logically returns
+  (e.g. a `SignIn` after `attempt_first_factor`); the `client` field
+  is the full updated `Client` so the SDK can refresh its local
+  device-state cache atomically — no follow-up `GET /v1/client` is
+  required.
+required: [response, client]
+additionalProperties: false
+properties:
+  response:
+    description: |
+      The primary resource for the operation (`SignIn`, `SignUp`,
+      `Session`, `User`, `EmailAddress`, …) — schema varies per
+      operation.
+    type: object
+    additionalProperties: true
+  client:
+    $ref: ./Client.yaml

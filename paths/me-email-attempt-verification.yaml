@@ -1,0 +1,37 @@
+parameters:
+  - name: email_address_id
+    in: path
+    required: true
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+post:
+  operationId: attemptMyEmailVerification
+  summary: Attempt email verification
+  description: Submit the code received in email; flips the address to `verified` on match.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [code]
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              minLength: 4
+              maxLength: 12
+  responses:
+    "200":
+      description: The (now-verified) address, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../components/responses/TooManyRequests.yaml }

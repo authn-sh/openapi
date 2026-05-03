@@ -1,0 +1,37 @@
+get:
+  operationId: clientHandshake
+  summary: Server-side handshake
+  description: |
+    SSR handshake endpoint. The server-side renderer calls this with the
+    incoming request's cookies; the response carries the
+    `Set-Cookie: __client=…` header so the SSR proxy can set it on the
+    outgoing HTML response.
+  tags: [Client]
+  security: []
+  parameters:
+    - name: redirect_url
+      in: query
+      description: Caller URL the SDK should bounce back to after the handshake.
+      required: false
+      schema:
+        type: string
+        format: uri
+  responses:
+    "200":
+      description: |
+        Handshake confirmation. Carries the `Set-Cookie: __client=…`
+        header.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [object, redirect_url]
+            properties:
+              object:
+                type: string
+                const: client_handshake
+              redirect_url:
+                type: [string, "null"]
+                format: uri
+    "404": { $ref: ../components/responses/NotFound.yaml }

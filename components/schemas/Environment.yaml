@@ -1,0 +1,159 @@
+type: object
+description: |
+  Public bootstrap configuration returned by `GET /v1/environment`. The
+  SDK fetches this once at boot and uses it to render the right sign-in
+  flow, branding, and locale set. No authentication required.
+required:
+  - auth_config
+  - display_config
+  - user_settings
+  - organization_settings
+  - commerce_settings
+  - captcha
+  - localization
+  - oauth_providers
+additionalProperties: false
+properties:
+  auth_config:
+    type: object
+    description: |
+      Allowed authentication strategies and identifier requirements.
+      v0.1 returns the password + email-code subset; broader provider
+      lists ship in v0.4.
+    additionalProperties: false
+    properties:
+      first_factors:
+        type: array
+        items:
+          type: string
+        examples: [["password", "email_code", "reset_password_email_code", "ticket"]]
+      second_factors:
+        type: array
+        items:
+          type: string
+        description: Empty in v0.1 (MFA ships v0.3).
+      identifier_requirements:
+        type: object
+        additionalProperties: false
+        properties:
+          email_address:
+            type: string
+            enum: [required, used_for_first_factor, off]
+          phone_number:
+            type: string
+            enum: [required, used_for_first_factor, off]
+            default: off
+          username:
+            type: string
+            enum: [required, used_for_first_factor, off]
+            default: off
+      sign_up_modes:
+        type: array
+        items:
+          type: string
+          enum: [public, restricted, waitlist]
+  display_config:
+    type: object
+    description: Branding + post-auth redirect targets shown in the Account Portal.
+    additionalProperties: false
+    properties:
+      application_name:
+        type: string
+      home_url:
+        type: [string, "null"]
+        format: uri
+      logo_url:
+        type: [string, "null"]
+        format: uri
+      favicon_url:
+        type: [string, "null"]
+        format: uri
+      support_email:
+        type: [string, "null"]
+        format: email
+      preferred_sign_in_strategy:
+        type: string
+        enum: [password, otp]
+        default: password
+      sign_in_url:
+        type: string
+        format: uri
+      sign_up_url:
+        type: string
+        format: uri
+      after_sign_in_url:
+        type: string
+        format: uri
+      after_sign_up_url:
+        type: string
+        format: uri
+      branded:
+        type: boolean
+        description: '`true` for the free tier (shows "powered by authn.sh").'
+        default: false
+      theme:
+        type: object
+        description: Hex colors / radii. Free-form in v0.1.
+        additionalProperties: true
+  user_settings:
+    type: object
+    description: |
+      Per-attribute write/verify flags mirrored from the dashboard.
+      Flat in v0.1; richer per-attribute matrix lands in v0.5.
+    additionalProperties: true
+  organization_settings:
+    type: object
+    description: |
+      Placeholder for organization-aware flows. Always `enabled: false`
+      in v0.1.
+    additionalProperties: true
+    properties:
+      enabled:
+        type: boolean
+        default: false
+  commerce_settings:
+    type: object
+    description: |
+      Placeholder for billing-aware flows. Always `enabled: false` in v0.1.
+    additionalProperties: true
+    properties:
+      enabled:
+        type: boolean
+        default: false
+  captcha:
+    type: object
+    description: |
+      Per-environment CAPTCHA. `provider: none` disables it client-side.
+      Fields are the public credentials the SDK needs to render the widget.
+    additionalProperties: false
+    properties:
+      provider:
+        type: string
+        enum: [none, hcaptcha, turnstile]
+        default: none
+      widget_type:
+        type: string
+        enum: [smart, invisible, managed]
+        default: smart
+      public_key:
+        type: [string, "null"]
+  localization:
+    type: object
+    additionalProperties: false
+    properties:
+      default_locale:
+        type: string
+        examples: ["en-US"]
+      supported_locales:
+        type: array
+        items:
+          type: string
+        examples: [["en-US", "pt-BR", "fr-FR"]]
+  oauth_providers:
+    type: array
+    description: |
+      Configured OAuth connections. Always `[]` in v0.1; populated when
+      providers ship in v0.4.
+    items:
+      type: object
+      additionalProperties: true

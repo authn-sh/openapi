@@ -1,0 +1,38 @@
+parameters:
+  - name: session_id
+    in: path
+    required: true
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+post:
+  operationId: touchSession
+  summary: Touch a session
+  description: |
+    Update `last_active_at` and (optionally) the active organization.
+    The SDK calls this on every page view so the dashboard "active
+    sessions" view is fresh.
+  tags: [Sessions]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          type: object
+          additionalProperties: false
+          properties:
+            active_organization_id:
+              type: [string, "null"]
+              description: |
+                Switch the active organization. Always `null` in v0.1
+                since organizations land in v0.2.
+  responses:
+    "200":
+      description: The touched session, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
