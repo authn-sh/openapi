@@ -1,0 +1,21 @@
+parameters:
+  - name: user_id
+    in: path
+    required: true
+    schema: { $ref: "../components/schemas/Id.yaml" }
+
+post:
+  operationId: lockUser
+  summary: Lock a user
+  description: |
+    Temporarily prevent the user from authenticating. Honors the
+    environment-level `max_lockout_duration` setting.
+  tags: [Users]
+  responses:
+    "200":
+      description: The locked user.
+      content:
+        application/json:
+          schema: { $ref: "../components/schemas/User.yaml" }
+    "401": { $ref: "../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../components/responses/NotFound.yaml" }

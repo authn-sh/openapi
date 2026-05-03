@@ -1,0 +1,9 @@
+name: limit
+in: query
+description: Maximum rows to return. Default `10`, maximum `500`.
+required: false
+schema:
+  type: integer
+  minimum: 1
+  maximum: 500
+  default: 10

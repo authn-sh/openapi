@@ -1,0 +1,5 @@
+description: Domain-level validation failure.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/ErrorResponse.yaml

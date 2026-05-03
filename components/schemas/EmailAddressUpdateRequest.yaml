@@ -1,0 +1,14 @@
+type: object
+description: Body for `PATCH /v1/email_addresses/{email_address_id}`.
+additionalProperties: false
+properties:
+  verified:
+    type: boolean
+    description: |
+      Set to `true` to mark the address verified server-side without
+      issuing a challenge. Idempotent.
+  primary:
+    type: boolean
+    description: |
+      When `true` (and the address is verified), make it the owning
+      user's primary email address.

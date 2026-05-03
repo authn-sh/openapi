@@ -1,0 +1,258 @@
+get:
+  operationId: listUsers
+  summary: List users
+  description: |
+    Return a paginated list of users in the environment, filtered by
+    identifier and lifecycle predicates.
+  tags: [Users]
+  parameters:
+    - $ref: "../components/parameters/LimitParam.yaml"
+    - $ref: "../components/parameters/OffsetParam.yaml"
+    - name: order_by
+      in: query
+      description: |
+        Sort key prefixed with `+` (ascending, default) or `-` (descending).
+        Allowed: `created_at`, `updated_at`, `last_active_at`, `last_sign_in_at`.
+      required: false
+      schema:
+        type: string
+        examples: ["+created_at", "-last_active_at"]
+    - name: email_address
+      in: query
+      description: |
+        Filter by email address. Repeat the parameter for OR semantics.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string, format: email }
+    - name: phone_number
+      in: query
+      description: |
+        Filter by phone number (E.164). v0.1 always returns an empty
+        list since phone identifiers ship in v0.4.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+    - name: username
+      in: query
+      description: Filter by username. Repeat for OR semantics.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+    - name: user_id
+      in: query
+      description: Filter by `User.id`. Repeat for OR semantics.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+    - name: external_id
+      in: query
+      description: Filter by `User.external_id`. Repeat for OR semantics.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+    - name: query
+      in: query
+      description: |
+        Free-text search across email addresses, usernames, first
+        name, last name. Case-insensitive substring match.
+      required: false
+      schema: { type: string }
+    - name: last_active_at_since
+      in: query
+      description: Unix ms; only return users active at or after this instant.
+      required: false
+      schema: { type: integer, format: int64, minimum: 0 }
+    - name: created_at_after
+      in: query
+      description: Unix ms; only return users created strictly after this instant.
+      required: false
+      schema: { type: integer, format: int64, minimum: 0 }
+    - name: created_at_before
+      in: query
+      description: Unix ms; only return users created strictly before this instant.
+      required: false
+      schema: { type: integer, format: int64, minimum: 0 }
+  responses:
+    "200":
+      description: A page of users.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/PaginatedList.yaml"
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "../components/schemas/User.yaml" }
+          examples:
+            page:
+              summary: First page, two users
+              value:
+                data:
+                  - id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                    object: user
+                    external_id: null
+                    username: jane
+                    first_name: Jane
+                    last_name: Doe
+                    image_url: null
+                    has_image: false
+                    primary_email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
+                    primary_phone_number_id: null
+                    email_addresses:
+                      - id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
+                        object: email_address
+                        email_address: jane@acme.com
+                        verification:
+                          status: verified
+                          strategy: email_code
+                          attempts: 1
+                          expire_at: null
+                          external_verification_redirect_url: null
+                          nonce: null
+                          error: null
+                        linked_to: []
+                        reserved: false
+                        created_at: 1714723200000
+                        updated_at: 1714723260000
+                    phone_numbers: []
+                    external_accounts: []
+                    enterprise_accounts: []
+                    passkeys: []
+                    password_enabled: true
+                    two_factor_enabled: false
+                    totp_enabled: false
+                    backup_code_enabled: false
+                    mfa_enabled_at: null
+                    mfa_disabled_at: null
+                    banned: false
+                    locked: false
+                    lockout_expires_at: null
+                    last_sign_in_at: 1714809600000
+                    last_active_at: 1714895999000
+                    delete_self_enabled: true
+                    locale: en-US
+                    public_metadata: { plan: pro }
+                    private_metadata: {}
+                    unsafe_metadata: {}
+                    created_at: 1714723200000
+                    updated_at: 1714895999000
+                total_count: 1
+    "401": { $ref: "../components/responses/Unauthorized.yaml" }
+    "403": { $ref: "../components/responses/Forbidden.yaml" }
+    "422": { $ref: "../components/responses/UnprocessableEntity.yaml" }
+    "429": { $ref: "../components/responses/TooManyRequests.yaml" }
+
+post:
+  operationId: createUser
+  summary: Create a user
+  description: |
+    Create a `User`. The BAPI is privileged: identifiers passed in
+    `email_address[]` are created already verified, and `password`
+    bypasses the user-flow verification step. At least one of
+    `email_address`, `phone_number`, `username`, or `external_id`
+    must be supplied.
+  tags: [Users]
+  parameters:
+    - $ref: "../components/parameters/IdempotencyKeyHeader.yaml"
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: "../components/schemas/UserCreateRequest.yaml" }
+        examples:
+          basic:
+            summary: Create with email + password
+            value:
+              email_address: ["jane@acme.com"]
+              password: "correct horse battery staple"
+              first_name: Jane
+              last_name: Doe
+              public_metadata: { plan: pro }
+          migration:
+            summary: Migrate a pre-hashed password
+            value:
+              external_id: legacy-user-42
+              email_address: ["jane@acme.com"]
+              password_digest: "$2a$10$N9qo8uLOickgx2ZMRZoMye…"
+              password_hasher: bcrypt
+              created_at: 1577836800000
+  responses:
+    "201":
+      description: User created.
+      content:
+        application/json:
+          schema: { $ref: "../components/schemas/User.yaml" }
+          examples:
+            created:
+              summary: Newly-created user
+              value:
+                id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                object: user
+                external_id: null
+                username: null
+                first_name: Jane
+                last_name: Doe
+                image_url: null
+                has_image: false
+                primary_email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
+                primary_phone_number_id: null
+                email_addresses:
+                  - id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
+                    object: email_address
+                    email_address: jane@acme.com
+                    verification:
+                      status: verified
+                      strategy: email_code
+                      attempts: 0
+                      expire_at: null
+                      external_verification_redirect_url: null
+                      nonce: null
+                      error: null
+                    linked_to: []
+                    reserved: false
+                    created_at: 1714723200000
+                    updated_at: 1714723200000
+                phone_numbers: []
+                external_accounts: []
+                enterprise_accounts: []
+                passkeys: []
+                password_enabled: true
+                two_factor_enabled: false
+                totp_enabled: false
+                backup_code_enabled: false
+                mfa_enabled_at: null
+                mfa_disabled_at: null
+                banned: false
+                locked: false
+                lockout_expires_at: null
+                last_sign_in_at: null
+                last_active_at: null
+                delete_self_enabled: true
+                locale: null
+                public_metadata: { plan: pro }
+                private_metadata: {}
+                unsafe_metadata: {}
+                created_at: 1714723200000
+                updated_at: 1714723200000
+    "401": { $ref: "../components/responses/Unauthorized.yaml" }
+    "403": { $ref: "../components/responses/Forbidden.yaml" }
+    "409": { $ref: "../components/responses/Conflict.yaml" }
+    "422": { $ref: "../components/responses/UnprocessableEntity.yaml" }
+    "429": { $ref: "../components/responses/TooManyRequests.yaml" }

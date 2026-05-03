@@ -1,0 +1,9 @@
+type: string
+pattern: "^[a-z][a-z0-9_]{0,9}_[0-9A-HJKMNP-TV-Z]{26}$"
+description: |
+  A prefixed ULID. The prefix indicates the resource type
+  (`user_`, `org_`, `sess_`, `env_`, …); the suffix is a 26-character
+  Crockford-base32 ULID.
+examples:
+  - user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+  - sess_01HKX9SY9V7H7TF8C8K7J9X4ZC

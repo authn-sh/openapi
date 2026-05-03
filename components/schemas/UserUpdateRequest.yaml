@@ -1,0 +1,55 @@
+type: object
+description: |
+  Body for `PATCH /v1/users/{user_id}`. Every field is optional;
+  unspecified fields are left untouched. Sending `null` clears a
+  nullable field.
+additionalProperties: false
+properties:
+  external_id:
+    type: [string, "null"]
+    maxLength: 255
+  username:
+    type: [string, "null"]
+    minLength: 4
+    maxLength: 64
+  first_name:
+    type: [string, "null"]
+    maxLength: 256
+  last_name:
+    type: [string, "null"]
+    maxLength: 256
+  primary_email_address_id:
+    type: [string, "null"]
+    description: |
+      Must reference an `email_address_id` already attached to this user
+      and verified.
+  primary_phone_number_id:
+    type: [string, "null"]
+    description: Reserved for v0.4. Rejected with HTTP 422 in v0.1.
+  password:
+    type: string
+    minLength: 8
+    description: |
+      Replace the user's password. Mutually exclusive with `password_digest`.
+  password_digest:
+    type: string
+  password_hasher:
+    type: string
+    enum: [bcrypt, scrypt, argon2id, pbkdf2_sha256, md5, sha256]
+  skip_password_checks:
+    type: boolean
+    default: false
+  sign_out_of_other_sessions:
+    type: boolean
+    default: false
+    description: |
+      When `true` and `password` (or `password_digest`) is also provided,
+      revoke every active session except (optionally) the caller's own.
+  public_metadata:
+    $ref: "./Metadata.yaml"
+  private_metadata:
+    $ref: "./Metadata.yaml"
+  unsafe_metadata:
+    $ref: "./Metadata.yaml"
+  locale:
+    type: [string, "null"]

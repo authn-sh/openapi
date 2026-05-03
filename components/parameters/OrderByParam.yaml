@@ -1,0 +1,9 @@
+name: order_by
+in: query
+description: |
+  Sort key prefixed with `+` (ascending) or `-` (descending). Per-resource
+  endpoints document the allowed keys.
+required: false
+schema:
+  type: string
+  examples: ["+created_at", "-last_active_at"]

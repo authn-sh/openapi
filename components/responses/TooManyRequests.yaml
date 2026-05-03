@@ -1,0 +1,10 @@
+description: Rate limit exhausted; consult `Retry-After`.
+headers:
+  Retry-After:
+    schema:
+      type: integer
+    description: Seconds until the next token in the bucket.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/ErrorResponse.yaml

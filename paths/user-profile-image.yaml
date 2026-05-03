@@ -1,0 +1,59 @@
+parameters:
+  - name: user_id
+    in: path
+    required: true
+    schema: { $ref: "../components/schemas/Id.yaml" }
+
+post:
+  operationId: uploadUserProfileImage
+  summary: Upload a profile image
+  description: |
+    Upload a new profile image for the user. Replaces the existing
+    image, if any. Maximum 10 MiB; allowed content types: `image/png`,
+    `image/jpeg`, `image/webp`, `image/gif`.
+  tags: [Users]
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [file]
+          additionalProperties: false
+          properties:
+            file:
+              type: string
+              format: binary
+              description: Raw image bytes.
+  responses:
+    "200":
+      description: The user with the new `image_url` populated.
+      content:
+        application/json:
+          schema: { $ref: "../components/schemas/User.yaml" }
+    "401": { $ref: "../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../components/responses/NotFound.yaml" }
+    "413":
+      description: Image larger than the per-environment limit.
+      content:
+        application/json:
+          schema: { $ref: "../components/schemas/ErrorResponse.yaml" }
+    "415":
+      description: Unsupported image content type.
+      content:
+        application/json:
+          schema: { $ref: "../components/schemas/ErrorResponse.yaml" }
+
+delete:
+  operationId: deleteUserProfileImage
+  summary: Delete a profile image
+  description: Remove the profile image and clear `image_url`. Idempotent.
+  tags: [Users]
+  responses:
+    "200":
+      description: The user with `image_url = null`.
+      content:
+        application/json:
+          schema: { $ref: "../components/schemas/User.yaml" }
+    "401": { $ref: "../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../components/responses/NotFound.yaml" }

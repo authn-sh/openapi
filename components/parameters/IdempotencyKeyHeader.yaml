@@ -1,0 +1,11 @@
+name: Idempotency-Key
+in: header
+description: |
+  Caller-supplied UUID for `POST` mutations. The server caches the response
+  for 24 hours; replays with the same key return the cached response without
+  re-executing. A different request body under the same key returns `409`.
+required: false
+schema:
+  type: string
+  minLength: 1
+  maxLength: 255

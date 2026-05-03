@@ -1,0 +1,13 @@
+type: object
+additionalProperties: true
+description: |
+  Free-form JSON object attached to a resource.
+
+  Three flavours exist:
+
+  - `public_metadata` — readable everywhere; writable only via BAPI.
+  - `private_metadata` — readable only via BAPI; never returned to FAPI;
+    never logged or embedded in JWT claims unless an explicit
+    `JwtTemplate` references it (post-v0.7).
+  - `unsafe_metadata` — readable everywhere; writable from FAPI by the
+    end user themselves.

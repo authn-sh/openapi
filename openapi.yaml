@@ -84,7 +84,31 @@ tags:
 security:
   - bearer_secret_key: []
 
-paths: {}
+paths:
+  /v1/users:
+    $ref: ./paths/users.yaml
+  /v1/users/count:
+    $ref: ./paths/users-count.yaml
+  /v1/users/{user_id}:
+    $ref: ./paths/user.yaml
+  /v1/users/{user_id}/ban:
+    $ref: ./paths/user-ban.yaml
+  /v1/users/{user_id}/unban:
+    $ref: ./paths/user-unban.yaml
+  /v1/users/{user_id}/lock:
+    $ref: ./paths/user-lock.yaml
+  /v1/users/{user_id}/unlock:
+    $ref: ./paths/user-unlock.yaml
+  /v1/users/{user_id}/profile_image:
+    $ref: ./paths/user-profile-image.yaml
+  /v1/users/{user_id}/metadata:
+    $ref: ./paths/user-metadata.yaml
+  /v1/users/{user_id}/verify_password:
+    $ref: ./paths/user-verify-password.yaml
+  /v1/email_addresses:
+    $ref: ./paths/email-addresses.yaml
+  /v1/email_addresses/{email_address_id}:
+    $ref: ./paths/email-address.yaml
 
 components:
   securitySchemes:
@@ -117,184 +141,31 @@ components:
         this.
 
   schemas:
-    Id:
-      type: string
-      pattern: "^[a-z][a-z0-9_]{0,9}_[0-9A-HJKMNP-TV-Z]{26}$"
-      description: |
-        A prefixed ULID. The prefix indicates the resource type
-        (`user_`, `org_`, `sess_`, `env_`, …); the suffix is a 26-character
-        Crockford-base32 ULID.
-      examples:
-        - user_01HKX9SY9V7H7TF8C8K7J9X4ZB
-        - sess_01HKX9SY9V7H7TF8C8K7J9X4ZC
-
-    Timestamp:
-      type: integer
-      format: int64
-      minimum: 0
-      description: Unix timestamp in milliseconds.
-
-    Metadata:
-      type: object
-      additionalProperties: true
-      description: |
-        Free-form JSON object attached to a resource.
-
-        Three flavours exist:
-
-        - `public_metadata` — readable everywhere; writable only via BAPI.
-        - `private_metadata` — readable only via BAPI; never returned to FAPI;
-          never logged or embedded in JWT claims unless an explicit
-          `JwtTemplate` references it (post-v0.7).
-        - `unsafe_metadata` — readable everywhere; writable from FAPI by the
-          end user themselves.
-
-    PaginatedList:
-      type: object
-      required: [data, total_count]
-      properties:
-        data:
-          type: array
-          items: {}
-        total_count:
-          type: integer
-          format: int64
-          minimum: 0
-          description: Total number of rows matching the filter, ignoring `limit`/`offset`.
-      description: |
-        Wrapper for paginated list endpoints. Concrete responses use `allOf` to
-        narrow `data[]` to the specific resource schema.
-
-    Error:
-      type: object
-      required: [code, message, long_message]
-      additionalProperties: false
-      properties:
-        code:
-          type: string
-          description: |
-            Stable machine-readable code. SDKs match on this string; never
-            parse `message` or `long_message`.
-          examples: [form_password_incorrect, verification_expired, rate_limit_exceeded]
-        message:
-          type: string
-          description: Short, human-readable summary.
-        long_message:
-          type: string
-          description: |
-            Long-form, end-user-friendly message including next-step guidance.
-            Safe to render in the UI.
-        meta:
-          type: object
-          additionalProperties: true
-          description: Per-code structured context (param name, attempt count, retry-after, …).
-
-    ErrorResponse:
-      type: object
-      required: [errors]
-      additionalProperties: false
-      properties:
-        errors:
-          type: array
-          minItems: 1
-          items:
-            $ref: "#/components/schemas/Error"
-        trace_id:
-          type: [string, "null"]
-          description: |
-            Server-generated request id. Same value goes into the audit log and
-            into the `X-Authn-Request-Id` response header, so customers can
-            paste it back to support.
-          examples: [req_01HKX9SY9V7H7TF8C8K7J9X4ZD]
+    Id:                        { $ref: ./components/schemas/Id.yaml }
+    Timestamp:                 { $ref: ./components/schemas/Timestamp.yaml }
+    Metadata:                  { $ref: ./components/schemas/Metadata.yaml }
+    PaginatedList:             { $ref: ./components/schemas/PaginatedList.yaml }
+    Error:                     { $ref: ./components/schemas/Error.yaml }
+    ErrorResponse:             { $ref: ./components/schemas/ErrorResponse.yaml }
+    Verification:              { $ref: ./components/schemas/Verification.yaml }
+    EmailAddress:              { $ref: ./components/schemas/EmailAddress.yaml }
+    User:                      { $ref: ./components/schemas/User.yaml }
+    UserCreateRequest:         { $ref: ./components/schemas/UserCreateRequest.yaml }
+    UserUpdateRequest:         { $ref: ./components/schemas/UserUpdateRequest.yaml }
+    EmailAddressCreateRequest: { $ref: ./components/schemas/EmailAddressCreateRequest.yaml }
+    EmailAddressUpdateRequest: { $ref: ./components/schemas/EmailAddressUpdateRequest.yaml }
 
   responses:
-    BadRequest:
-      description: Validation or shape error.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    Unauthorized:
-      description: Missing or invalid credential.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    Forbidden:
-      description: Authenticated but not authorized for the action.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    NotFound:
-      description: Resource does not exist (or is not visible to the caller).
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    Conflict:
-      description: State conflict — e.g. an `Idempotency-Key` reuse with a different request body.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    UnprocessableEntity:
-      description: Domain-level validation failure.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    TooManyRequests:
-      description: Rate limit exhausted; consult `Retry-After`.
-      headers:
-        Retry-After:
-          schema:
-            type: integer
-          description: Seconds until the next token in the bucket.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
+    BadRequest:           { $ref: ./components/responses/BadRequest.yaml }
+    Unauthorized:         { $ref: ./components/responses/Unauthorized.yaml }
+    Forbidden:            { $ref: ./components/responses/Forbidden.yaml }
+    NotFound:             { $ref: ./components/responses/NotFound.yaml }
+    Conflict:             { $ref: ./components/responses/Conflict.yaml }
+    UnprocessableEntity:  { $ref: ./components/responses/UnprocessableEntity.yaml }
+    TooManyRequests:      { $ref: ./components/responses/TooManyRequests.yaml }
 
   parameters:
-    LimitParam:
-      name: limit
-      in: query
-      description: Maximum rows to return. Default `10`, maximum `500`.
-      required: false
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 500
-        default: 10
-    OffsetParam:
-      name: offset
-      in: query
-      description: Rows to skip before returning results.
-      required: false
-      schema:
-        type: integer
-        minimum: 0
-        default: 0
-    OrderByParam:
-      name: order_by
-      in: query
-      description: |
-        Sort key prefixed with `+` (ascending) or `-` (descending). Per-resource
-        endpoints document the allowed keys.
-      required: false
-      schema:
-        type: string
-        examples: ["+created_at", "-last_active_at"]
-    IdempotencyKeyHeader:
-      name: Idempotency-Key
-      in: header
-      description: |
-        Caller-supplied UUID for `POST` mutations. The server caches the response
-        for 24 hours; replays with the same key return the cached response without
-        re-executing. A different request body under the same key returns `409`.
-      required: false
-      schema:
-        type: string
-        minLength: 1
-        maxLength: 255
+    LimitParam:           { $ref: ./components/parameters/LimitParam.yaml }
+    OffsetParam:          { $ref: ./components/parameters/OffsetParam.yaml }
+    OrderByParam:         { $ref: ./components/parameters/OrderByParam.yaml }
+    IdempotencyKeyHeader: { $ref: ./components/parameters/IdempotencyKeyHeader.yaml }

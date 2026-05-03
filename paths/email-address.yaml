@@ -1,0 +1,63 @@
+parameters:
+  - name: email_address_id
+    in: path
+    required: true
+    description: ID of the email address.
+    schema: { $ref: "../components/schemas/Id.yaml" }
+
+get:
+  operationId: getEmailAddress
+  summary: Get an email address
+  description: Fetch a single `EmailAddress` by ID.
+  tags: [Email Addresses]
+  responses:
+    "200":
+      description: The email address.
+      content:
+        application/json:
+          schema: { $ref: "../components/schemas/EmailAddress.yaml" }
+    "401": { $ref: "../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../components/responses/NotFound.yaml" }
+
+patch:
+  operationId: updateEmailAddress
+  summary: Update an email address
+  description: |
+    Mark the address verified server-side or promote it to the user's
+    primary address. Sending an empty body is a no-op.
+  tags: [Email Addresses]
+  parameters:
+    - $ref: "../components/parameters/IdempotencyKeyHeader.yaml"
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: "../components/schemas/EmailAddressUpdateRequest.yaml" }
+        examples:
+          promote:
+            summary: Mark verified and make primary
+            value: { verified: true, primary: true }
+  responses:
+    "200":
+      description: The updated email address.
+      content:
+        application/json:
+          schema: { $ref: "../components/schemas/EmailAddress.yaml" }
+    "401": { $ref: "../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../components/responses/NotFound.yaml" }
+    "422": { $ref: "../components/responses/UnprocessableEntity.yaml" }
+
+delete:
+  operationId: deleteEmailAddress
+  summary: Delete an email address
+  description: |
+    Permanently remove the address from the user. The owning user must
+    have at least one other identifier remaining; deleting the only
+    identifier returns `422`.
+  tags: [Email Addresses]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: "../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../components/responses/NotFound.yaml" }
+    "422": { $ref: "../components/responses/UnprocessableEntity.yaml" }

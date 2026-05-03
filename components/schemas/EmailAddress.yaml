@@ -1,0 +1,60 @@
+type: object
+description: |
+  An email identifier owned by a `User`. A user may have many email
+  addresses; exactly one is the primary (referenced by
+  `User.primary_email_address_id`). A new address starts unverified
+  and becomes a usable sign-in identifier once `verification.status`
+  reaches `verified`.
+required:
+  - id
+  - object
+  - email_address
+  - verification
+  - linked_to
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: "./Id.yaml"
+  object:
+    type: string
+    const: email_address
+  email_address:
+    type: string
+    format: email
+    maxLength: 254
+    description: The address itself, lower-cased and trimmed by the server.
+  verification:
+    description: |
+      Current verification challenge for this address, or `null` if the
+      address was created server-side already verified (e.g. via BAPI
+      with `verified: true`).
+    oneOf:
+      - $ref: "./Verification.yaml"
+      - type: "null"
+  linked_to:
+    type: array
+    description: |
+      External / enterprise account links that surfaced this address.
+      Empty in v0.1; populated as connections land.
+    items:
+      type: object
+      required: [id, type]
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "./Id.yaml"
+        type:
+          type: string
+          description: Account type (e.g. `oauth_google`, `enterprise_account`).
+  reserved:
+    type: boolean
+    default: false
+    description: |
+      `true` when the address is held by an `AllowlistIdentifier` /
+      `Invitation` and is not yet attached to a user account.
+  created_at:
+    $ref: "./Timestamp.yaml"
+  updated_at:
+    $ref: "./Timestamp.yaml"
