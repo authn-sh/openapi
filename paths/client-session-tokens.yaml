@@ -5,7 +5,7 @@ parameters:
     schema: { $ref: ../components/schemas/Id.yaml }
 
 post:
-  operationId: getSessionToken
+  operationId: getClientSessionToken
   summary: Mint a session JWT
   description: |
     Mint a short-lived RS256 JWT for the session. Use the templated

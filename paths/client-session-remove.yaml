@@ -5,7 +5,7 @@ parameters:
     schema: { $ref: ../components/schemas/Id.yaml }
 
 post:
-  operationId: removeSession
+  operationId: removeClientSession
   summary: Remove a session immediately
   description: |
     Like `end`, but drops the session from `Client.sessions[]` straight

@@ -5,7 +5,7 @@ parameters:
     schema: { $ref: ../components/schemas/Id.yaml }
 
 post:
-  operationId: endSession
+  operationId: endClientSession
   summary: End a session (sign out on this device)
   description: |
     Marks the session `ended` and invalidates its tokens. The session

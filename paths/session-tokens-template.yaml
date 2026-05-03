@@ -9,19 +9,15 @@ parameters:
     schema:
       type: string
       pattern: "^[A-Za-z0-9_-]{1,64}$"
-    description: Name of the JWT template configured on the environment.
 
 post:
-  operationId: getClientSessionTokenWithTemplate
-  summary: Mint a session JWT with a custom template (v0.7)
+  operationId: getSessionTokenWithTemplate
+  summary: Mint a session JWT with a custom template (BAPI, v0.7)
   description: |
-    Issue a JWT shaped by the named template. Always returns
+    Admin-side templated token mint. Always returns
     `404 jwt_template_not_found` in v0.1; the templating layer ships in
     v0.7 alongside the IdP role.
   tags: [Sessions]
-  security:
-    - client_cookie: []
-    - dev_browser_jwt: []
   responses:
     "200":
       description: The minted token.

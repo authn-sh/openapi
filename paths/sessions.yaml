@@ -1,0 +1,77 @@
+get:
+  operationId: listSessions
+  summary: List sessions (BAPI)
+  description: |
+    Paginated list of every session in the environment. The BAPI view
+    is privileged and unscoped to a particular `Client` — use the
+    `client_id`, `user_id`, and `status` filters to narrow.
+  tags: [Sessions]
+  parameters:
+    - $ref: ../components/parameters/LimitParam.yaml
+    - $ref: ../components/parameters/OffsetParam.yaml
+    - $ref: ../components/parameters/OrderByParam.yaml
+    - name: user_id
+      in: query
+      required: false
+      schema: { type: string }
+    - name: client_id
+      in: query
+      required: false
+      schema: { type: string }
+    - name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - pending
+          - active
+          - expired
+          - ended
+          - removed
+          - replaced
+          - revoked
+          - abandoned
+  responses:
+    "200":
+      description: A page of sessions.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../components/schemas/Session.yaml }
+          examples:
+            for_user:
+              summary: Every active session for one user
+              value:
+                data:
+                  - id: sess_01HKX9SY9V7H7TF8C8K7J9X4ZC
+                    object: session
+                    client_id: clt_01HKX9SY9V7H7TF8C8K7J9X4ZA
+                    user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                    status: active
+                    last_active_at: 1714895999000
+                    last_active_organization_id: null
+                    expire_at: 1717487999000
+                    abandon_at: 1717487999000
+                    actor: null
+                    latest_activity:
+                      id: sa_01HKX9SY9V7H7TF8C8K7J9X4ZF
+                      object: session_activity
+                      device_type: desktop
+                      is_mobile: false
+                      browser_name: Chrome
+                      browser_version: "124.0"
+                      ip_address: "203.0.113.0"
+                      city: Berlin
+                      country: DE
+                    created_at: 1714723200000
+                    updated_at: 1714895999000
+                total_count: 1
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }

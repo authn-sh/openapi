@@ -4,28 +4,27 @@ parameters:
     required: true
     schema: { $ref: ../components/schemas/Id.yaml }
 
-get:
-  operationId: getClientSession
-  summary: Get a session
-  description: Fetch a single `Session` by ID; returns the current status, expiry, and last activity.
+post:
+  operationId: revokeSession
+  summary: Revoke a session (BAPI)
+  description: |
+    Admin-side revocation. Marks the session `revoked` and immediately
+    invalidates its tokens. Idempotent.
   tags: [Sessions]
-  security:
-    - client_cookie: []
-    - dev_browser_jwt: []
   responses:
     "200":
-      description: The session.
+      description: The revoked session.
       content:
         application/json:
           schema: { $ref: ../components/schemas/Session.yaml }
           examples:
-            active:
+            revoked:
               value:
                 id: sess_01HKX9SY9V7H7TF8C8K7J9X4ZC
                 object: session
                 client_id: clt_01HKX9SY9V7H7TF8C8K7J9X4ZA
                 user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
-                status: active
+                status: revoked
                 last_active_at: 1714895999000
                 last_active_organization_id: null
                 expire_at: 1717487999000
@@ -42,6 +41,6 @@ get:
                   city: Berlin
                   country: DE
                 created_at: 1714723200000
-                updated_at: 1714895999000
+                updated_at: 1714896500000
     "401": { $ref: ../components/responses/Unauthorized.yaml }
     "404": { $ref: ../components/responses/NotFound.yaml }
