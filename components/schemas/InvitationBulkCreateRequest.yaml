@@ -1,0 +1,14 @@
+type: object
+description: |
+  Body for `POST /v1/invitations/bulk`. Atomic across the whole batch:
+  if any single invitation fails validation, the entire request is
+  rejected and no rows are inserted.
+required: [invitations]
+additionalProperties: false
+properties:
+  invitations:
+    type: array
+    minItems: 1
+    maxItems: 500
+    items:
+      $ref: ./InvitationCreateRequest.yaml

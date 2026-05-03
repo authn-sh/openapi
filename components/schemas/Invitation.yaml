@@ -1,0 +1,61 @@
+type: object
+description: |
+  Application-level (non-organization) invitation. Each invitation
+  carries a single-use ticket — the recipient clicks `url`, lands on
+  the Account Portal pre-fill page, and either signs up (transferring
+  the ticket into a new `User`) or signs in (linking the address to
+  the existing `User`).
+required:
+  - id
+  - object
+  - email_address
+  - status
+  - revoked
+  - url
+  - public_metadata
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: invitation
+  email_address:
+    type: string
+    format: email
+    maxLength: 254
+  redirect_url:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Where the Account Portal returns the user after they accept. Must
+      be on the redirect-URL allowlist.
+  public_metadata:
+    $ref: ./Metadata.yaml
+  status:
+    type: string
+    enum: [pending, accepted, revoked, expired]
+  revoked:
+    type: boolean
+    default: false
+  url:
+    type: string
+    format: uri
+    description: |
+      Click-through URL. Includes the ticket and the
+      `__authn_status=sign_up` (or `sign_in`) query so the SDK knows
+      which flow to start. The full v0.1 query convention lives in
+      PLAN §9.7.
+    examples:
+      - "https://acme.authn.sh/v1/client/handshake?__authn_ticket=tkt_01HKX9SY9V7H7TF8C8K7J9X4ZG&__authn_status=sign_up&redirect_url=https%3A%2F%2Fapp.acme.com%2Fwelcome"
+  expires_at:
+    type: [integer, "null"]
+    format: int64
+    minimum: 0
+    description: Unix ms; `null` for invitations that don't expire.
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml

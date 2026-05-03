@@ -1,0 +1,40 @@
+type: object
+description: Body for `POST /v1/invitations`.
+required: [email_address]
+additionalProperties: false
+properties:
+  email_address:
+    type: string
+    format: email
+    maxLength: 254
+  redirect_url:
+    type: string
+    format: uri
+    description: Must match the redirect-URL allowlist.
+  public_metadata:
+    $ref: ./Metadata.yaml
+  notify:
+    type: boolean
+    default: true
+    description: |
+      When `true`, send the invitation email immediately. Set to `false`
+      to mint the ticket without sending email (caller will deliver it
+      via their own channel).
+  expires_in_days:
+    type: [integer, "null"]
+    minimum: 1
+    maximum: 365
+    description: Days until `expires_at`. `null` for invitations that don't expire.
+  template_slug:
+    type: string
+    description: |
+      Reference an alternative invitation email template by slug.
+      Templates ship in v0.5; v0.1 always uses the default template
+      and ignores this field.
+  ignore_existing:
+    type: boolean
+    default: false
+    description: |
+      When `true`, allow creating an invitation for an email address
+      that's already attached to a `User`. Default `false` returns
+      `422 invitation_for_existing_user`.

@@ -1,0 +1,11 @@
+type: object
+description: |
+  Placeholder body for `PATCH /v1/instance/organization_settings`.
+  v0.1 only accepts `enabled: false`; the full schema lands in v0.2.
+additionalProperties: true
+properties:
+  enabled:
+    type: boolean
+    description: |
+      Always validated as `false` in v0.1. Setting it to `true` returns
+      `422 organizations_not_available`.

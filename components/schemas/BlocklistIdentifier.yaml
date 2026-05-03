@@ -1,0 +1,26 @@
+type: object
+description: |
+  A pattern that is refused at sign-up. Wildcard syntax matches
+  `AllowlistIdentifier`. When both lists match an identifier, the
+  blocklist wins.
+required:
+  - id
+  - object
+  - identifier
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: blocklist_identifier
+  identifier:
+    type: string
+    description: Literal email/phone or a wildcard pattern.
+    examples: ["spammer@acme.com", "*@disposable-mailbox.test"]
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml

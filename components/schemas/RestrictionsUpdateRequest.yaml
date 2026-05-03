@@ -1,0 +1,9 @@
+type: object
+description: Body for `PATCH /v1/instance/restrictions`. Same shape as `InstanceSettings.restrictions`.
+additionalProperties: false
+properties:
+  allowlist_enabled:                  { type: boolean }
+  blocklist_enabled:                  { type: boolean }
+  block_email_subaddresses:           { type: boolean }
+  block_disposable_email_domains:     { type: boolean }
+  ignore_dots_for_gmail_addresses:    { type: boolean }

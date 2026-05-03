@@ -173,6 +173,32 @@ paths:
   /v1/me/delete_self:
     $ref: ./paths/me-delete-self.yaml
 
+  # BAPI: invitations + restrictions + redirect URLs + instance settings.
+  /v1/invitations:
+    $ref: ./paths/invitations.yaml
+  /v1/invitations/bulk:
+    $ref: ./paths/invitations-bulk.yaml
+  /v1/invitations/{invitation_id}/revoke:
+    $ref: ./paths/invitation-revoke.yaml
+  /v1/allowlist_identifiers:
+    $ref: ./paths/allowlist-identifiers.yaml
+  /v1/allowlist_identifiers/{identifier_id}:
+    $ref: ./paths/allowlist-identifier.yaml
+  /v1/blocklist_identifiers:
+    $ref: ./paths/blocklist-identifiers.yaml
+  /v1/blocklist_identifiers/{identifier_id}:
+    $ref: ./paths/blocklist-identifier.yaml
+  /v1/redirect_urls:
+    $ref: ./paths/redirect-urls.yaml
+  /v1/redirect_urls/{redirect_url_id}:
+    $ref: ./paths/redirect-url.yaml
+  /v1/instance:
+    $ref: ./paths/instance.yaml
+  /v1/instance/restrictions:
+    $ref: ./paths/instance-restrictions.yaml
+  /v1/instance/organization_settings:
+    $ref: ./paths/instance-organization-settings.yaml
+
 components:
   securitySchemes:
     bearer_secret_key:
@@ -224,6 +250,17 @@ components:
     SessionActivity:           { $ref: ./components/schemas/SessionActivity.yaml }
     SignIn:                    { $ref: ./components/schemas/SignIn.yaml }
     SignUp:                    { $ref: ./components/schemas/SignUp.yaml }
+    Invitation:                       { $ref: ./components/schemas/Invitation.yaml }
+    InvitationCreateRequest:          { $ref: ./components/schemas/InvitationCreateRequest.yaml }
+    InvitationBulkCreateRequest:      { $ref: ./components/schemas/InvitationBulkCreateRequest.yaml }
+    AllowlistIdentifier:              { $ref: ./components/schemas/AllowlistIdentifier.yaml }
+    BlocklistIdentifier:              { $ref: ./components/schemas/BlocklistIdentifier.yaml }
+    RedirectUrl:                      { $ref: ./components/schemas/RedirectUrl.yaml }
+    InstanceSettings:                 { $ref: ./components/schemas/InstanceSettings.yaml }
+    AttributeSetting:                 { $ref: ./components/schemas/AttributeSetting.yaml }
+    InstanceUpdateRequest:            { $ref: ./components/schemas/InstanceUpdateRequest.yaml }
+    RestrictionsUpdateRequest:        { $ref: ./components/schemas/RestrictionsUpdateRequest.yaml }
+    OrganizationSettingsUpdateRequest: { $ref: ./components/schemas/OrganizationSettingsUpdateRequest.yaml }
 
   responses:
     BadRequest:           { $ref: ./components/responses/BadRequest.yaml }
