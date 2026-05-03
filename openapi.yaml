@@ -109,6 +109,16 @@ paths:
     $ref: ./paths/email-addresses.yaml
   /v1/email_addresses/{email_address_id}:
     $ref: ./paths/email-address.yaml
+  /v1/sessions:
+    $ref: ./paths/sessions.yaml
+  /v1/sessions/{session_id}:
+    $ref: ./paths/session.yaml
+  /v1/sessions/{session_id}/revoke:
+    $ref: ./paths/session-revoke.yaml
+  /v1/sessions/{session_id}/tokens:
+    $ref: ./paths/session-tokens.yaml
+  /v1/sessions/{session_id}/tokens/{template_name}:
+    $ref: ./paths/session-tokens-template.yaml
 
   # Frontend API (FAPI) — per-environment host. SDKs target the second
   # `servers:` entry; `client_cookie` / `dev_browser_jwt` security applies.

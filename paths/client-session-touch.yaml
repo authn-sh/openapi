@@ -5,7 +5,7 @@ parameters:
     schema: { $ref: ../components/schemas/Id.yaml }
 
 post:
-  operationId: touchSession
+  operationId: touchClientSession
   summary: Touch a session
   description: |
     Update `last_active_at` and (optionally) the active organization.
