@@ -199,6 +199,20 @@ paths:
   /v1/instance/organization_settings:
     $ref: ./paths/instance-organization-settings.yaml
 
+  # Webhooks: endpoint CRUD + secret rotation + delivery audit log + replay.
+  /v1/webhooks/endpoints:
+    $ref: ./paths/webhook-endpoints.yaml
+  /v1/webhooks/endpoints/{endpoint_id}:
+    $ref: ./paths/webhook-endpoint.yaml
+  /v1/webhooks/endpoints/{endpoint_id}/rotate_secret:
+    $ref: ./paths/webhook-endpoint-rotate.yaml
+  /v1/webhooks/deliveries:
+    $ref: ./paths/webhook-deliveries.yaml
+  /v1/webhooks/deliveries/{delivery_id}:
+    $ref: ./paths/webhook-delivery.yaml
+  /v1/webhooks/deliveries/{delivery_id}/replay:
+    $ref: ./paths/webhook-delivery-replay.yaml
+
 components:
   securitySchemes:
     bearer_secret_key:
@@ -261,6 +275,11 @@ components:
     InstanceUpdateRequest:            { $ref: ./components/schemas/InstanceUpdateRequest.yaml }
     RestrictionsUpdateRequest:        { $ref: ./components/schemas/RestrictionsUpdateRequest.yaml }
     OrganizationSettingsUpdateRequest: { $ref: ./components/schemas/OrganizationSettingsUpdateRequest.yaml }
+    WebhookEvent:                      { $ref: ./components/schemas/WebhookEvent.yaml }
+    WebhookEndpoint:                   { $ref: ./components/schemas/WebhookEndpoint.yaml }
+    WebhookEndpointCreateRequest:      { $ref: ./components/schemas/WebhookEndpointCreateRequest.yaml }
+    WebhookEndpointUpdateRequest:      { $ref: ./components/schemas/WebhookEndpointUpdateRequest.yaml }
+    WebhookDelivery:                   { $ref: ./components/schemas/WebhookDelivery.yaml }
 
   responses:
     BadRequest:           { $ref: ./components/responses/BadRequest.yaml }

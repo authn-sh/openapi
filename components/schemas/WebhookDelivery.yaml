@@ -1,0 +1,57 @@
+type: object
+description: |
+  One attempt at delivering one event to one endpoint. The dispatcher
+  retries with exponential backoff on transient failures; each retry
+  produces a new `WebhookDelivery` row sharing the `event_id` of the
+  first attempt.
+required:
+  - id
+  - object
+  - endpoint_id
+  - event_id
+  - event_type
+  - attempt
+  - succeeded
+  - created_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: webhook_delivery
+  endpoint_id:
+    type: string
+  event_id:
+    type: string
+    description: Stable across all retry attempts of the same event.
+  event_type:
+    type: string
+    description: Mirrors the `WebhookEvent.type` value being delivered.
+  attempt:
+    type: integer
+    minimum: 1
+    description: 1-based attempt counter; increments on every retry.
+  response_status:
+    type: [integer, "null"]
+    minimum: 100
+    maximum: 599
+    description: HTTP status returned by the endpoint, or `null` for connection failures.
+  response_body:
+    type: [string, "null"]
+    description: |
+      First 4 KiB of the endpoint's response body (UTF-8 best-effort).
+      Stored for debugging — never matched against in dispatcher logic.
+  next_retry_at:
+    type: [integer, "null"]
+    format: int64
+    minimum: 0
+    description: Unix ms; `null` when delivery succeeded or was given up on.
+  succeeded:
+    type: boolean
+    description: |
+      `true` once the endpoint returns 2xx. Permanent failures
+      (`succeeded: false` and `next_retry_at: null`) are kept for
+      audit but no longer retried.
+  created_at:
+    $ref: ./Timestamp.yaml

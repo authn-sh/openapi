@@ -1,0 +1,22 @@
+type: object
+description: Body for `POST /v1/webhooks/endpoints`.
+required: [url, enabled_event_types]
+additionalProperties: false
+properties:
+  url:
+    type: string
+    format: uri
+    description: |
+      HTTPS URL. The dispatcher refuses non-HTTPS targets in production
+      environments; `http://localhost:*` is allowed in test environments.
+  enabled_event_types:
+    type: array
+    minItems: 1
+    items:
+      type: string
+    description: |
+      Initial subscription set. Use `["*"]` to subscribe to every event
+      in the v0.1 catalog.
+  enabled:
+    type: boolean
+    default: true

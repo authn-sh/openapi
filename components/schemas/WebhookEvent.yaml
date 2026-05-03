@@ -1,0 +1,85 @@
+type: object
+description: |
+  Envelope wrapping every webhook delivery. Customers receive this as
+  the JSON body of a `POST` to the configured endpoint, signed via the
+  scheme below.
+
+  ## Signature contract
+
+  Each delivery carries three headers:
+
+  - `svix-id` — message ID (also the `WebhookDelivery.id`).
+  - `svix-timestamp` — unix-second epoch when the server signed the body.
+  - `svix-signature` — space-separated list of `v1,<base64>` entries.
+    Multiple entries appear during a `rotateWebhookEndpointSecret`
+    overlap window; verifiers accept any.
+
+  Verifier formula:
+
+  ```
+  signed_payload = "{svix-id}.{svix-timestamp}.{raw_request_body}"
+  candidate      = base64(HMAC-SHA256(decoded(signing_secret), signed_payload))
+  ```
+
+  Compare each `v1,<…>` entry constant-time against `candidate`; refuse
+  the request if no match is found, if `svix-timestamp` is more than
+  300 seconds away from now, or if any of the three headers are
+  missing.
+required:
+  - id
+  - object
+  - type
+  - data
+  - timestamp
+  - instance_id
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+    description: Same as `WebhookDelivery.id` and the `svix-id` header.
+  object:
+    type: string
+    const: event
+  type:
+    type: string
+    description: |
+      Stable event type identifier. v0.1 ships the events listed below.
+      Future events (organizations, OAuth, enterprise SSO) will be
+      added additively under their own milestones.
+    enum:
+      - user.created
+      - user.updated
+      - user.deleted
+      - session.created
+      - session.ended
+      - session.removed
+      - session.revoked
+      - email.created
+      - invitation.created
+      - invitation.accepted
+      - invitation.revoked
+  data:
+    description: |
+      The resource snapshot. Concrete shape depends on `type`:
+
+      - `user.*` → `User`
+      - `session.*` → `Session`
+      - `email.*` → `EmailAddress`
+      - `invitation.*` → `Invitation`
+    oneOf:
+      - $ref: ./User.yaml
+      - $ref: ./Session.yaml
+      - $ref: ./EmailAddress.yaml
+      - $ref: ./Invitation.yaml
+  timestamp:
+    $ref: ./Timestamp.yaml
+  instance_id:
+    type: string
+    description: ID of the originating `Environment` (so customers can route by tenant).
+  was_test:
+    type: boolean
+    default: false
+    description: |
+      `true` when the event originated from a test-mode user / session
+      (per `Environment.test_mode`). Customers should usually filter
+      these out in production handlers.

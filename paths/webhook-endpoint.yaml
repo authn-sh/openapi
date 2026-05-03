@@ -1,0 +1,79 @@
+parameters:
+  - name: endpoint_id
+    in: path
+    required: true
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+get:
+  operationId: getWebhookEndpoint
+  summary: Get a webhook endpoint
+  description: |
+    Fetch a single endpoint. `signing_secret` is **never** included in
+    this response — only the read-safe `signing_secret_prefix`.
+  tags: [Webhooks]
+  responses:
+    "200":
+      description: The endpoint.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/WebhookEndpoint.yaml }
+          examples:
+            endpoint:
+              summary: Note the absence of `signing_secret`.
+              value:
+                id: whe_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                object: webhook_endpoint
+                url: https://app.acme.com/webhooks/authn
+                signing_secret_prefix: "whsec_dG"
+                enabled_event_types: ["user.created", "user.updated"]
+                enabled: true
+                created_at: 1714895999000
+                updated_at: 1714895999000
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateWebhookEndpoint
+  summary: Update a webhook endpoint
+  description: |
+    Patch any of `url` / `enabled_event_types` / `enabled`. The
+    `signing_secret` cannot be set this way — use `rotate_secret`.
+  tags: [Webhooks]
+  parameters:
+    - $ref: ../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/WebhookEndpointUpdateRequest.yaml }
+        examples:
+          add_events:
+            summary: Subscribe to invitations as well
+            value:
+              enabled_event_types: ["user.created", "user.updated", "user.deleted", "invitation.created"]
+          disable:
+            summary: Pause an endpoint without deleting it
+            value: { enabled: false }
+  responses:
+    "200":
+      description: The updated endpoint (still no `signing_secret`).
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/WebhookEndpoint.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteWebhookEndpoint
+  summary: Delete a webhook endpoint
+  description: |
+    Permanently remove the endpoint. In-flight retries are abandoned;
+    the historical `WebhookDelivery` rows stay for audit but are
+    flagged with `endpoint_id` of the now-deleted endpoint.
+  tags: [Webhooks]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }

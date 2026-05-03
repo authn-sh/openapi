@@ -47,6 +47,40 @@ SDK repos pull `dist/openapi.bundled.json` from this repo's CI artifacts (or fro
 
 Pin the spec version in each SDK's `package.json` / `composer.json` / `go.mod` to the openapi tag you want to track.
 
+## Webhook signature contract
+
+Every delivery `POST`s a JSON `WebhookEvent` body and three headers:
+
+| Header           | Meaning                                                                 |
+|------------------|-------------------------------------------------------------------------|
+| `svix-id`        | Stable message ID (also `WebhookDelivery.id`).                          |
+| `svix-timestamp` | Unix-second epoch when authn.sh signed the body.                        |
+| `svix-signature` | Space-separated list of `v1,<base64>` entries (multi-value on rotation).|
+
+The signature is `HMAC-SHA256` of `"{svix-id}.{svix-timestamp}.{raw_request_body}"` keyed by the **decoded** signing secret (the `whsec_<base64>` prefix is stripped and the suffix base64-decoded into the raw key bytes). Verifiers must:
+
+1. Reject the request if any of the three headers is missing or empty.
+2. Reject the request if `|now − svix-timestamp| > 300` seconds (replay window).
+3. Iterate every `v1,<base64>` entry in `svix-signature` and constant-time compare its base64 value against the locally-computed signature; accept on first match. (Multi-value headers occur during a `rotateWebhookEndpointSecret` overlap window.)
+
+### Worked example
+
+```text
+secret             = whsec_dGVzdC1zZWNyZXQtZG8tbm90LXJldXNlLXRoaXM=
+decoded            = "test-secret-do-not-reuse-this"
+
+svix-id            = whd_01HKX9SY9V7H7TF8C8K7J9X4ZK
+svix-timestamp     = 1714896500
+raw_body           = {"id":"whd_01HKX9SY9V7H7TF8C8K7J9X4ZK","object":"event","type":"user.created","timestamp":1714896500000,"instance_id":"env_acme_test","data":{"id":"user_01HKX9SY9V7H7TF8C8K7J9X4ZB","object":"user"}}
+
+signed_payload     = "whd_01HKX9SY9V7H7TF8C8K7J9X4ZK.1714896500.{raw_body}"
+signature_bytes    = HMAC-SHA256(decoded, signed_payload)
+svix-signature     = "v1," + base64(signature_bytes)
+                   = "v1,JG2qiInfP2EnVN6nq+S6XKhSGq9D+TlMkRkn2g4tBgI="
+```
+
+Reference verifier implementations: PHP — [`Authn\Sdk\Webhooks\SignatureVerifier`](https://github.com/authn-sh/sdk-php/blob/main/src/Webhooks/SignatureVerifier.php); JavaScript — `@authn.sh/sdk-js` (post-v0.1).
+
 ## Versioning
 
 Pre-1.0 the spec changes freely. Once we tag `v0.1.0` in coordination with the rest of v0.1, breaking changes require a major bump and a migration note in this README.
