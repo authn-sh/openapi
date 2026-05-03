@@ -1,0 +1,37 @@
+extends:
+  - recommended
+
+apis:
+  authn@v0.1:
+    root: ./openapi.yaml
+
+rules:
+  # We deliberately leave `paths: {}` empty until OA-2 onward lands real endpoints.
+  # The following rules are NOT relaxed — we rely on them to enforce house style:
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-operationId-url-safe: error
+  operation-summary: error
+  operation-description: error
+  operation-tag-defined: error
+  operation-2xx-response: error
+  operation-4xx-response: warn
+  no-unresolved-refs: error
+  no-undefined-server-variable: error
+  no-invalid-media-type-examples: warn
+  no-empty-servers: error
+  spec-strict-refs: error
+  # The skeleton ships reusable components (Id, Timestamp, Metadata, PaginatedList, Error,
+  # ErrorResponse, the standard response refs, common parameters) before any paths reference
+  # them. OA-2 onward will start using them; until then this rule would shout at every one.
+  no-unused-components: off
+  tag-description: error
+
+  # Tighten security expectations.
+  security-defined: error
+
+  # We use snake_case for property names.
+  no-identical-paths: error
+
+  # Allow (-) in operationId so we can use kebab-case path segments cleanly.
+  # The default rule already permits letters/digits/underscores/dashes; nothing extra needed.

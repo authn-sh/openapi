@@ -1,0 +1,14 @@
+{
+  "printWidth": 100,
+  "singleQuote": false,
+  "tabWidth": 2,
+  "useTabs": false,
+  "overrides": [
+    {
+      "files": ["*.yaml", "*.yml"],
+      "options": {
+        "singleQuote": false
+      }
+    }
+  ]
+}

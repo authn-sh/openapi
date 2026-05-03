@@ -1,0 +1,39 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint spec
+        run: npm run lint
+
+      - name: Bundle spec
+        run: npm run bundle
+
+      - name: Spec stats
+        run: npm run stats
+
+      - name: Upload bundled artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-bundled
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
