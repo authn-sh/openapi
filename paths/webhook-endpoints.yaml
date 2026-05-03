@@ -1,0 +1,92 @@
+get:
+  operationId: listWebhookEndpoints
+  summary: List webhook endpoints
+  description: Paginated list of every endpoint configured on the environment.
+  tags: [Webhooks]
+  parameters:
+    - $ref: ../components/parameters/LimitParam.yaml
+    - $ref: ../components/parameters/OffsetParam.yaml
+  responses:
+    "200":
+      description: A page of endpoints. `signing_secret` is omitted on every row.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../components/schemas/WebhookEndpoint.yaml }
+          examples:
+            page:
+              summary: Two endpoints — neither carries `signing_secret`.
+              value:
+                data:
+                  - id: whe_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                    object: webhook_endpoint
+                    url: https://app.acme.com/webhooks/authn
+                    signing_secret_prefix: "whsec_dG"
+                    enabled_event_types: ["user.created", "user.deleted"]
+                    enabled: true
+                    created_at: 1714895999000
+                    updated_at: 1714895999000
+                  - id: whe_01HKX9SY9V7H7TF8C8K7J9X4ZJ
+                    object: webhook_endpoint
+                    url: https://app.acme.com/webhooks/sessions
+                    signing_secret_prefix: "whsec_xY"
+                    enabled_event_types: ["session.created", "session.revoked"]
+                    enabled: false
+                    created_at: 1714809600000
+                    updated_at: 1714895500000
+                total_count: 2
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+
+post:
+  operationId: createWebhookEndpoint
+  summary: Create a webhook endpoint
+  description: |
+    Mint a new endpoint **and** its `signing_secret`. The secret is
+    returned exactly once in this response — copy it into the customer
+    side immediately. Subsequent `GET` calls won't include it.
+  tags: [Webhooks]
+  parameters:
+    - $ref: ../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/WebhookEndpointCreateRequest.yaml }
+        examples:
+          subscribe_users:
+            summary: Subscribe to every user.* event
+            value:
+              url: https://app.acme.com/webhooks/authn
+              enabled_event_types: ["user.created", "user.updated", "user.deleted"]
+          everything:
+            summary: Catch-all
+            value:
+              url: https://app.acme.com/webhooks/authn
+              enabled_event_types: ["*"]
+  responses:
+    "201":
+      description: The new endpoint, with the one-time `signing_secret`.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/WebhookEndpoint.yaml }
+          examples:
+            created:
+              value:
+                id: whe_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                object: webhook_endpoint
+                url: https://app.acme.com/webhooks/authn
+                signing_secret: "whsec_dGVzdC1zZWNyZXQtZG8tbm90LXJldXNlLXRoaXM="
+                signing_secret_prefix: "whsec_dG"
+                enabled_event_types: ["user.created", "user.updated", "user.deleted"]
+                enabled: true
+                created_at: 1714895999000
+                updated_at: 1714895999000
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../components/responses/Conflict.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }

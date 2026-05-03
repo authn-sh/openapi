@@ -1,0 +1,63 @@
+parameters:
+  - name: endpoint_id
+    in: path
+    required: true
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+post:
+  operationId: rotateWebhookEndpointSecret
+  summary: Rotate a webhook endpoint's signing secret
+  description: |
+    Mint a fresh `signing_secret` and return it once. The previous
+    secret stays live for an overlap window (5 minutes by default) so
+    in-flight deliveries continue to verify; after that, the new
+    secret is the only valid one.
+
+    The dispatcher signs each delivery during the overlap with a
+    multi-value `svix-signature` header (`v1,<old> v1,<new>`) so
+    customer verifiers that already accept multiple `v1,…` entries
+    won't see any failed deliveries.
+  tags: [Webhooks]
+  parameters:
+    - $ref: ../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          type: object
+          additionalProperties: false
+          properties:
+            overlap_seconds:
+              type: integer
+              minimum: 0
+              maximum: 86400
+              default: 300
+              description: |
+                How long both secrets stay valid. `0` cuts over instantly
+                (use only when you trust the customer endpoint to update
+                synchronously).
+        examples:
+          longer_overlap:
+            summary: One-hour overlap during a coordinated rollout
+            value: { overlap_seconds: 3600 }
+  responses:
+    "200":
+      description: The endpoint with the new one-time `signing_secret`.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/WebhookEndpoint.yaml }
+          examples:
+            rotated:
+              value:
+                id: whe_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                object: webhook_endpoint
+                url: https://app.acme.com/webhooks/authn
+                signing_secret: "whsec_bmV3LXNlY3JldC1jb3B5LWl0LW5vdyE="
+                signing_secret_prefix: "whsec_bm"
+                enabled_event_types: ["user.created", "user.updated", "user.deleted"]
+                enabled: true
+                created_at: 1714895999000
+                updated_at: 1714896500000
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }

@@ -1,0 +1,19 @@
+parameters:
+  - name: delivery_id
+    in: path
+    required: true
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+get:
+  operationId: getWebhookDelivery
+  summary: Get a webhook delivery
+  description: Fetch one delivery attempt by ID.
+  tags: [Webhooks]
+  responses:
+    "200":
+      description: The delivery.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/WebhookDelivery.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }

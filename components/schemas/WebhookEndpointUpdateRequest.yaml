@@ -1,0 +1,14 @@
+type: object
+description: Body for `PATCH /v1/webhooks/endpoints/{endpoint_id}`. Every field optional.
+additionalProperties: false
+properties:
+  url:
+    type: string
+    format: uri
+  enabled_event_types:
+    type: array
+    minItems: 1
+    items:
+      type: string
+  enabled:
+    type: boolean

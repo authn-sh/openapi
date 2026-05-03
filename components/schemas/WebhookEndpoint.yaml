@@ -1,0 +1,63 @@
+type: object
+description: |
+  A customer-controlled HTTPS endpoint the dispatcher delivers events
+  to. Each endpoint has its own `signing_secret` so customers can rotate
+  one without disturbing others.
+
+  `signing_secret` is **write-only**: it appears once on `createWebhookEndpoint`
+  and once on `rotateWebhookEndpointSecret`, never on subsequent
+  `getWebhookEndpoint` / `listWebhookEndpoints` reads.
+required:
+  - id
+  - object
+  - url
+  - enabled_event_types
+  - enabled
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: webhook_endpoint
+  url:
+    type: string
+    format: uri
+    description: HTTPS URL the dispatcher POSTs events to.
+    examples: ["https://app.acme.com/webhooks/authn"]
+  signing_secret:
+    type: string
+    writeOnly: true
+    description: |
+      Per-endpoint HMAC-SHA256 secret. Format: `whsec_<base64>`.
+      Returned exactly once, on create and on rotate. Subsequent reads
+      omit this field entirely.
+    examples: ["whsec_dGVzdC1zZWNyZXQ="]
+  signing_secret_prefix:
+    type: [string, "null"]
+    description: |
+      Read-safe partial fingerprint (first 8 chars of `signing_secret`)
+      so the dashboard can display "ends in `…dGVz`" without exposing
+      the secret.
+    examples: ["whsec_dG"]
+  enabled_event_types:
+    type: array
+    description: |
+      Subset of the `WebhookEvent.type` enum the endpoint subscribes
+      to. `["*"]` means "every event"; v0.1 limits the catalog to the
+      list documented on `WebhookEvent`.
+    items:
+      type: string
+    examples: [["user.created", "user.deleted", "session.revoked"]]
+  enabled:
+    type: boolean
+    default: true
+    description: |
+      When `false`, the dispatcher skips this endpoint without retrying.
+      Toggled from the dashboard during incidents.
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
