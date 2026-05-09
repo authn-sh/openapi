@@ -1,0 +1,35 @@
+type: object
+description: Body for `POST /v1/organizations/{org_id}/invitations`.
+required: [email_address, role]
+additionalProperties: false
+properties:
+  email_address:
+    type: string
+    format: email
+    maxLength: 254
+  role:
+    type: string
+    description: Role `key` the recipient receives on accept.
+  redirect_url:
+    type: string
+    format: uri
+    description: Must match the redirect-URL allowlist.
+  inviter_user_id:
+    type: string
+    description: |
+      Override the recorded inviter. **BAPI only** — FAPI pulls
+      this from the calling session and rejects requests that set
+      it explicitly.
+  public_metadata:
+    $ref: ./Metadata.yaml
+  notify:
+    type: boolean
+    default: true
+    description: |
+      When `true`, send the invitation email immediately. Set to
+      `false` to mint the ticket without sending email.
+  expires_in_days:
+    type: [integer, "null"]
+    minimum: 1
+    maximum: 365
+    description: Days until `expires_at`. `null` for invitations that don't expire.

@@ -1,0 +1,30 @@
+type: object
+description: Body for `POST /v1/organizations/{org_id}/domains`.
+required: [name]
+additionalProperties: false
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 253
+  enrollment_mode:
+    type: string
+    enum:
+      - manual_invitation
+      - automatic_invitation
+      - automatic_suggestion
+    default: manual_invitation
+  verification_strategy:
+    type: string
+    enum: [dns, email_code]
+    default: dns
+    description: |
+      Which proof channel to use. `dns` writes a TXT record check
+      to `verification`; `email_code` sends a code to
+      `affiliation_email_address`.
+  affiliation_email_address:
+    type: string
+    format: email
+    description: |
+      Required when `verification_strategy === 'email_code'`. Must
+      sit at the domain being verified.

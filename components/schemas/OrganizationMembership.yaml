@@ -1,0 +1,62 @@
+type: object
+description: |
+  Join row tying a `User` to an `Organization`. Carries a single
+  `role` (the role's `key`) plus the *computed* `permissions[]`
+  derived from that role at read time — consumers should not cache
+  the permissions list across role changes.
+
+  v0.2 supports exactly one role per membership; multi-role per
+  membership is post-v1.0.
+required:
+  - id
+  - object
+  - role
+  - role_name
+  - permissions
+  - public_metadata
+  - private_metadata
+  - organization
+  - public_user_data
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: organization_membership
+  role:
+    type: string
+    description: |
+      The role's stable `key` (e.g. `org:admin`, `org:member`, or
+      a custom `org:billing`). Mutating this field requires the
+      caller to hold `org:sys_memberships:manage` in the same
+      organization.
+    examples:
+      - org:admin
+      - org:member
+  role_name:
+    type: string
+    description: Human-readable display name for the role at the time of read.
+  permissions:
+    type: array
+    description: |
+      The full permission set granted to this member, computed by
+      walking the role's permissions at read time. Order is stable
+      (alphabetical) so SDK comparisons are deterministic.
+    items:
+      type: string
+      description: Permission `key` (e.g. `org:sys_memberships:manage`).
+  public_metadata:
+    $ref: ./Metadata.yaml
+  private_metadata:
+    $ref: ./Metadata.yaml
+  organization:
+    $ref: ./Organization.yaml
+  public_user_data:
+    $ref: ./PublicUserData.yaml
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml

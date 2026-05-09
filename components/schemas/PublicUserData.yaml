@@ -1,0 +1,33 @@
+type: object
+description: |
+  Minimal user summary embedded in organization-related resources
+  so list views don't need a follow-up `GET /v1/users/{id}`. All
+  fields mirror the corresponding `User` fields at the time of
+  read.
+required:
+  - identifier
+  - has_image
+additionalProperties: false
+properties:
+  first_name:
+    type: [string, "null"]
+    maxLength: 256
+  last_name:
+    type: [string, "null"]
+    maxLength: 256
+  image_url:
+    type: [string, "null"]
+    format: uri
+  has_image:
+    type: boolean
+  identifier:
+    type: string
+    description: |
+      Best-available human-readable handle for the user — the
+      primary email address, or username if no email is set.
+  user_id:
+    type: string
+    description: |
+      `User.id`. Always present for memberships; on
+      `OrganizationMembershipRequest.public_user_data` it's set as
+      soon as the requester signs up.

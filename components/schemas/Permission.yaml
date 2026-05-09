@@ -1,0 +1,80 @@
+type: object
+description: |
+  An atomic capability. Members hold permissions transitively
+  through their `OrganizationMembership.role`. The
+  `org:<feature>:<verb>` naming is a convention, not enforced by
+  schema, so dashboards can list custom permissions cleanly.
+
+  System permissions (`is_system: true`) are seeded per environment
+  at bootstrap and cannot be edited or deleted. Custom permissions
+  are reserved for v0.3+ — v0.2 ships only the system catalog.
+
+  ### System permissions catalog (v0.2)
+
+  Every environment is seeded with exactly these twelve system
+  permissions:
+
+  | `key` | Purpose |
+  |---|---|
+  | `org:sys_profile:manage` | Edit org name, slug, image, metadata. |
+  | `org:sys_profile:delete` | Delete the org (subject to `admin_delete_enabled`). |
+  | `org:sys_memberships:read` | List members and pending requests. |
+  | `org:sys_memberships:manage` | Invite, remove, change roles, accept membership requests. |
+  | `org:sys_domains:read` | List verified domains. |
+  | `org:sys_domains:manage` | Add, verify, change enrollment mode, delete domains. |
+  | `org:sys_billing:read` | Reserved for the billing milestone (private). |
+  | `org:sys_billing:manage` | Reserved for the billing milestone (private). |
+  | `org:sys_sso:read` | Reserved for v0.6 (`EnterpriseConnection`). |
+  | `org:sys_sso:manage` | Reserved for v0.6. |
+  | `org:sys_provisioning:read` | Reserved for v0.6 (SCIM). |
+  | `org:sys_provisioning:manage` | Reserved for v0.6. |
+
+  v0.2 only exercises the four `sys_profile`, `sys_memberships`,
+  `sys_domains` pairs at runtime; the rest are seeded so default
+  roles can declare them now and downstream milestones can wire up
+  the corresponding endpoints without a fresh seed step.
+required:
+  - id
+  - object
+  - key
+  - name
+  - is_system
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: permission
+  key:
+    type: string
+    minLength: 1
+    maxLength: 128
+    pattern: "^org:[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+    description: |
+      Stable, lowercase, snake-case identifier in the form
+      `org:<feature>:<verb>`. System permissions live under the
+      reserved `org:sys_*` prefix.
+    examples:
+      - org:sys_memberships:manage
+      - org:sys_domains:read
+      - org:billing:export
+  name:
+    type: string
+    minLength: 1
+    maxLength: 256
+  description:
+    type: [string, "null"]
+    maxLength: 1024
+  is_system:
+    type: boolean
+    description: |
+      `true` for the seeded system catalog above. System
+      permissions cannot be edited or deleted; only their `name`
+      and `description` may be localized at render time.
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml

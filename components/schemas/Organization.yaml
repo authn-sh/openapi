@@ -1,0 +1,90 @@
+type: object
+description: |
+  An organization within an `Environment`. Groups users via
+  `OrganizationMembership` and carries its own roles, invitations,
+  and verified domains.
+
+  The slug is unique per environment and is what end users see in
+  routing-aware components (e.g. `<OrganizationProfile />` deep
+  links). `members_count` and `pending_invitations_count` are
+  denormalized so list views don't need a follow-up aggregation.
+required:
+  - id
+  - object
+  - name
+  - slug
+  - has_image
+  - members_count
+  - pending_invitations_count
+  - admin_delete_enabled
+  - public_metadata
+  - private_metadata
+  - created_by
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: organization
+  name:
+    type: string
+    minLength: 1
+    maxLength: 256
+  slug:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    description: |
+      Unique within the environment. Used in Account Portal URLs
+      (`/organization/<slug>`) and as the routing key for
+      `<OrganizationProfile />`.
+  image_url:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Cached CDN URL for the organization's logo. `null` when
+      `has_image` is `false`.
+  has_image:
+    type: boolean
+  members_count:
+    type: integer
+    minimum: 0
+    description: Active `OrganizationMembership` rows.
+  pending_invitations_count:
+    type: integer
+    minimum: 0
+    description: |
+      `OrganizationInvitation` rows still in `pending` status. Does
+      not include accepted, revoked, or expired invitations.
+  max_allowed_memberships:
+    type: [integer, "null"]
+    minimum: 0
+    description: |
+      Cap on `members_count`. `null` (default) means no cap. `0`
+      effectively freezes the org. Reaching the cap returns
+      `422 organization_membership_quota_exceeded` on further
+      `POST /memberships` and `POST /invitations`.
+  admin_delete_enabled:
+    type: boolean
+    description: |
+      Mirrors the environment-level setting at the time of read;
+      tells the dashboard whether `org:admin` members can
+      `DELETE /v1/organizations/{id}` themselves (as opposed to
+      requiring a workspace operator).
+  public_metadata:
+    $ref: ./Metadata.yaml
+  private_metadata:
+    $ref: ./Metadata.yaml
+  created_by:
+    type: [string, "null"]
+    description: |
+      `User.id` of the member who created the organization. `null`
+      when created via BAPI without an `actor` user.
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml

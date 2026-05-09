@@ -1,0 +1,13 @@
+type: object
+description: |
+  Body for `PATCH /v1/organizations/{org_id}/domains/{id}`. Only the
+  enrollment policy is editable post-create; to change the domain
+  name itself, delete and re-add.
+additionalProperties: false
+properties:
+  enrollment_mode:
+    type: string
+    enum:
+      - manual_invitation
+      - automatic_invitation
+      - automatic_suggestion

@@ -1,0 +1,35 @@
+type: object
+description: |
+  Body for `POST /v1/organizations` (BAPI) and
+  `POST /v1/organizations` (FAPI).
+
+  On BAPI, `created_by` is required. On FAPI, the server fills it
+  with the calling user automatically; passing it is rejected.
+required: [name]
+additionalProperties: false
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 256
+  slug:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    description: |
+      Optional. When omitted, the server slugifies `name` and
+      appends a short suffix to disambiguate.
+  max_allowed_memberships:
+    type: [integer, "null"]
+    minimum: 0
+  public_metadata:
+    $ref: ./Metadata.yaml
+  private_metadata:
+    $ref: ./Metadata.yaml
+  created_by:
+    type: string
+    description: |
+      `User.id` to record as the creator. **BAPI only.** FAPI
+      requests that include this field are rejected with
+      `422 invalid_field`.

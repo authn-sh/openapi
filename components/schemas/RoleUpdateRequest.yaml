@@ -1,0 +1,21 @@
+type: object
+description: |
+  Body for `PATCH /v1/roles/{id}` (BAPI). System roles allow only
+  `name` / `description` edits; custom roles allow the full set.
+additionalProperties: false
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 256
+  description:
+    type: [string, "null"]
+    maxLength: 1024
+  is_creator_eligible:
+    type: boolean
+  is_default:
+    type: boolean
+  permissions:
+    type: array
+    items:
+      type: string

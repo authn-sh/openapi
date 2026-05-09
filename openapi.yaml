@@ -290,6 +290,24 @@ components:
     WebhookEndpointCreateRequest:      { $ref: ./components/schemas/WebhookEndpointCreateRequest.yaml }
     WebhookEndpointUpdateRequest:      { $ref: ./components/schemas/WebhookEndpointUpdateRequest.yaml }
     WebhookDelivery:                   { $ref: ./components/schemas/WebhookDelivery.yaml }
+    PublicUserData:                            { $ref: ./components/schemas/PublicUserData.yaml }
+    Organization:                              { $ref: ./components/schemas/Organization.yaml }
+    OrganizationCreateRequest:                 { $ref: ./components/schemas/OrganizationCreateRequest.yaml }
+    OrganizationUpdateRequest:                 { $ref: ./components/schemas/OrganizationUpdateRequest.yaml }
+    OrganizationMembership:                    { $ref: ./components/schemas/OrganizationMembership.yaml }
+    OrganizationMembershipCreateRequest:       { $ref: ./components/schemas/OrganizationMembershipCreateRequest.yaml }
+    OrganizationMembershipUpdateRequest:       { $ref: ./components/schemas/OrganizationMembershipUpdateRequest.yaml }
+    OrganizationInvitation:                    { $ref: ./components/schemas/OrganizationInvitation.yaml }
+    OrganizationInvitationCreateRequest:       { $ref: ./components/schemas/OrganizationInvitationCreateRequest.yaml }
+    OrganizationInvitationBulkCreateRequest:   { $ref: ./components/schemas/OrganizationInvitationBulkCreateRequest.yaml }
+    OrganizationDomain:                        { $ref: ./components/schemas/OrganizationDomain.yaml }
+    OrganizationDomainCreateRequest:           { $ref: ./components/schemas/OrganizationDomainCreateRequest.yaml }
+    OrganizationDomainUpdateRequest:           { $ref: ./components/schemas/OrganizationDomainUpdateRequest.yaml }
+    OrganizationMembershipRequest:             { $ref: ./components/schemas/OrganizationMembershipRequest.yaml }
+    Permission:                                { $ref: ./components/schemas/Permission.yaml }
+    Role:                                      { $ref: ./components/schemas/Role.yaml }
+    RoleCreateRequest:                         { $ref: ./components/schemas/RoleCreateRequest.yaml }
+    RoleUpdateRequest:                         { $ref: ./components/schemas/RoleUpdateRequest.yaml }
 
   responses:
     BadRequest:           { $ref: ./components/responses/BadRequest.yaml }
