@@ -1,0 +1,68 @@
+parameters:
+  - name: role_id
+    in: path
+    required: true
+    description: ID of the role.
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+get:
+  operationId: getRole
+  summary: Get a role
+  description: Fetch a single `Role` by ID.
+  tags: [Roles]
+  responses:
+    "200":
+      description: The role.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/Role.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateRole
+  summary: Update a role
+  description: |
+    Edit role metadata. System roles (`is_system: true`) accept
+    `name` and `description` only; attempts to edit
+    `permissions[]`, `is_creator_eligible`, or `is_default` on a
+    system role return `422 invalid_field`. Custom roles accept
+    the full update set.
+  tags: [Roles]
+  parameters:
+    - $ref: ../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/RoleUpdateRequest.yaml }
+        examples:
+          rename:
+            summary: Rename
+            value:
+              name: Billing Admin
+  responses:
+    "200":
+      description: The updated role.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/Role.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteRole
+  summary: Delete a custom role
+  description: |
+    Delete a custom role. System roles cannot be deleted (`422
+    invalid_field`). Memberships referencing the deleted role are
+    automatically downgraded to the environment's `is_default`
+    role.
+  tags: [Roles]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }

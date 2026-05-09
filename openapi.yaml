@@ -66,6 +66,10 @@ tags:
     description: Pending invitations to join an organization. Populated in v0.2.
   - name: Org Domains
     description: Verified domains attached to an organization. Populated in v0.2.
+  - name: Roles
+    description: Custom and system roles, scoped per environment. Populated in v0.2.
+  - name: Permissions
+    description: System permissions catalog (and custom permissions, post-v0.2). Populated in v0.2.
   - name: Invitations
     description: Application-level (non-organization) invitations.
   - name: Allowlist Identifiers
@@ -109,6 +113,34 @@ paths:
     $ref: ./paths/email-addresses.yaml
   /v1/email_addresses/{email_address_id}:
     $ref: ./paths/email-address.yaml
+  /v1/organizations:
+    $ref: ./paths/organizations.yaml
+  /v1/organizations/{organization_id}:
+    $ref: ./paths/organization.yaml
+  /v1/organizations/{organization_id}/memberships:
+    $ref: ./paths/organization-memberships.yaml
+  /v1/organizations/{organization_id}/memberships/{user_id}:
+    $ref: ./paths/organization-membership.yaml
+  /v1/organizations/{organization_id}/invitations:
+    $ref: ./paths/organization-invitations.yaml
+  /v1/organizations/{organization_id}/invitations/bulk:
+    $ref: ./paths/organization-invitations-bulk.yaml
+  /v1/organizations/{organization_id}/invitations/{invitation_id}/revoke:
+    $ref: ./paths/organization-invitation-revoke.yaml
+  /v1/organizations/{organization_id}/domains:
+    $ref: ./paths/organization-domains.yaml
+  /v1/organizations/{organization_id}/domains/{domain_id}:
+    $ref: ./paths/organization-domain.yaml
+  /v1/organizations/{organization_id}/domains/{domain_id}/verify:
+    $ref: ./paths/organization-domain-verify.yaml
+  /v1/roles:
+    $ref: ./paths/roles.yaml
+  /v1/roles/{role_id}:
+    $ref: ./paths/role.yaml
+  /v1/roles/{role_id}/permissions:
+    $ref: ./paths/role-permissions.yaml
+  /v1/permissions:
+    $ref: ./paths/permissions.yaml
   /v1/sessions:
     $ref: ./paths/sessions.yaml
   /v1/sessions/{session_id}:
@@ -308,6 +340,7 @@ components:
     Role:                                      { $ref: ./components/schemas/Role.yaml }
     RoleCreateRequest:                         { $ref: ./components/schemas/RoleCreateRequest.yaml }
     RoleUpdateRequest:                         { $ref: ./components/schemas/RoleUpdateRequest.yaml }
+    RolePermissionsRequest:                    { $ref: ./components/schemas/RolePermissionsRequest.yaml }
 
   responses:
     BadRequest:           { $ref: ./components/responses/BadRequest.yaml }

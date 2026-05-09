@@ -1,0 +1,57 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../components/schemas/Id.yaml }
+  - name: user_id
+    in: path
+    required: true
+    description: |
+      `User.id` of the member. Memberships are addressed by the
+      member's user ID rather than the membership ID itself, since
+      a user has at most one membership per organization in v0.2.
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+patch:
+  operationId: updateOrganizationMembership
+  summary: Change a member's role
+  description: |
+    Change the role for the user's membership in this organization.
+    Metadata edits are permitted alongside the role change.
+  tags: [Org Memberships]
+  parameters:
+    - $ref: ../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/OrganizationMembershipUpdateRequest.yaml }
+        examples:
+          promote:
+            summary: Promote to admin
+            value:
+              role: "org:admin"
+  responses:
+    "200":
+      description: The updated membership.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/OrganizationMembership.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "409": { $ref: ../components/responses/Conflict.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteOrganizationMembership
+  summary: Remove a member from an organization
+  description: |
+    Drop the user's membership. Idempotent: removing a non-member
+    returns `404`. Emits `organizationMembership.deleted`.
+  tags: [Org Memberships]
+  responses:
+    "204":
+      description: Removed.
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
