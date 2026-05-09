@@ -46,11 +46,23 @@ properties:
     type: array
     description: |
       Subset of the `WebhookEvent.type` enum the endpoint subscribes
-      to. `["*"]` means "every event"; v0.1 limits the catalog to the
-      list documented on `WebhookEvent`.
+      to. `["*"]` means "every event in every milestone" and is the
+      simplest way to opt into v0.2 organization events without
+      revisiting subscriptions on every release.
+
+      Wildcards at the resource level are also accepted —
+      `"organization.*"` matches every `organization.*` event,
+      `"organizationMembership.*"` matches the membership lifecycle,
+      etc. Wildcard expansion is evaluated at delivery time so an
+      endpoint listed with `organization.*` automatically receives
+      future event types added to the resource without an explicit
+      update.
     items:
       type: string
-    examples: [["user.created", "user.deleted", "session.revoked"]]
+    examples:
+      - ["user.created", "user.deleted", "session.revoked"]
+      - ["organization.*", "organizationMembership.*", "user.created"]
+      - ["*"]
   enabled:
     type: boolean
     default: true
