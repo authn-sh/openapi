@@ -9,7 +9,7 @@ description: |
 
   | `key` | Permissions | `is_creator_eligible` | `is_default` |
   |---|---|:-:|:-:|
-  | `org:admin` | All twelve `org:sys_*` system permissions. | `true` | `false` |
+  | `org:admin` | All thirteen `org:sys_*` system permissions. | `true` | `false` |
   | `org:member` | `org:sys_profile:read`, `org:sys_memberships:read`, `org:sys_domains:read` *(read-only subset; v0.2 introduces the implicit `:read` companion to each `sys_*:manage` system permission as a separate seeded row)*. | `false` | `true` |
 
   `is_creator_eligible` controls which roles can be picked as the
