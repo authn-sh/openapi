@@ -51,8 +51,47 @@ properties:
   last_active_organization_id:
     type: [string, "null"]
     description: |
-      Set by `POST /v1/client/sessions/{id}/touch`. Populated once
-      organizations land in v0.2.
+      Set by `POST /v1/client/sessions/{id}/touch` (or
+      `setMyActiveOrganization`). Mirrors the `org.id` claim minted
+      into the session JWT.
+  organization:
+    description: |
+      Active-organization context for this session. Present whenever
+      `last_active_organization_id` is non-null — the embedded
+      `id`/`slug`/`role`/`permissions[]` are exactly what the next
+      `getSessionToken` will fold into the JWT's `org` claim, so
+      handlers receiving `session.created` / `session.touched`
+      events don't need a follow-up `getOrganizationMembership`
+      round-trip.
+
+      **Additive in v0.2** — the field is omitted in v0.1 payloads,
+      so existing handlers see no change until the producing
+      environment is on a v0.2 server.
+    oneOf:
+      - type: object
+        required: [id, slug, role, permissions]
+        additionalProperties: false
+        properties:
+          id:
+            type: string
+            description: Active `Organization.id`.
+          slug:
+            type: string
+            description: Active `Organization.slug`.
+          role:
+            type: string
+            description: |
+              `OrganizationMembership.role` for the calling user in
+              this organization.
+            examples: ["org:admin", "org:member"]
+          permissions:
+            type: array
+            description: |
+              The full permission set granted by `role` at the time
+              this token was minted. Order is stable (alphabetical).
+            items:
+              type: string
+      - type: "null"
   expire_at:
     $ref: ./Timestamp.yaml
   abandon_at:
