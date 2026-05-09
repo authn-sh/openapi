@@ -14,9 +14,18 @@ patch:
         schema: { $ref: ../../components/schemas/OrganizationSettingsUpdateRequest.yaml }
   responses:
     "200":
-      description: The updated instance settings.
+      description: The updated organization settings.
       content:
         application/json:
-          schema: { $ref: ../../components/schemas/InstanceSettings.yaml }
+          schema:
+            type: object
+            required: [object]
+            additionalProperties: true
+            properties:
+              object:
+                type: string
+                const: organization_settings
+              enabled:
+                type: boolean
     "401": { $ref: ../../components/responses/Unauthorized.yaml }
     "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

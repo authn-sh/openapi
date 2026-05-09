@@ -17,4 +17,10 @@ properties:
     type: object
     additionalProperties: true
   client:
-    $ref: ./Client.yaml
+    description: |
+      Updated `Client` snapshot. `null` when the operation signs the
+      device out (e.g. `DELETE /v1/client`) so the SDK clears its
+      local cache before the cookie is forgotten.
+    oneOf:
+      - $ref: ./Client.yaml
+      - type: "null"

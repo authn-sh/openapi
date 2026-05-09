@@ -4,6 +4,8 @@ description: |
   SDK fetches this once at boot and uses it to render the right sign-in
   flow, branding, and locale set. No authentication required.
 required:
+  - object
+  - id
   - auth_config
   - display_config
   - user_settings
@@ -12,8 +14,39 @@ required:
   - captcha
   - localization
   - oauth_providers
+  - paths
+  - sessions
+  - created_at
+  - updated_at
 additionalProperties: false
 properties:
+  object:
+    type: string
+    const: environment
+  id:
+    $ref: ./Id.yaml
+  paths:
+    type: object
+    description: |
+      Per-env path overrides for the Account Portal. Free-form in
+      v0.1; the dashboard editor lands later.
+    additionalProperties: true
+  sessions:
+    type: object
+    description: |
+      Per-env session settings the SDK needs at boot (refresh
+      cadence, multi-session policy).
+    additionalProperties: true
+    properties:
+      session_token_lifetime_seconds:
+        type: integer
+        minimum: 1
+      multi_session:
+        type: boolean
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
   auth_config:
     type: object
     description: |
@@ -91,6 +124,9 @@ properties:
         type: boolean
         description: '`true` for the free tier (shows "powered by authn.sh").'
         default: false
+      brand_color:
+        type: [string, "null"]
+        description: 'Hex color for the primary brand accent. `null` until the operator sets one.'
       theme:
         type: object
         description: Hex colors / radii. Free-form in v0.1.
