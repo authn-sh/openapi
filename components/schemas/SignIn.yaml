@@ -5,7 +5,51 @@ description: |
   (optionally) prepare/attempt a second factor → `complete`.
 
   v0.1 ships `password` + `email_code` + `reset_password_email_code`
-  + `ticket`. OAuth/SAML/passkey/TOTP land in later milestones.
+  + `ticket`. v0.2 adds `email_link` (magic link). OAuth/SAML/passkey/TOTP
+  land in later milestones.
+
+  ### Magic-link cross-device polling (PLAN §9.10)
+
+  `email_link` is the only first-factor strategy that completes
+  out-of-band — the user clicks the link in their inbox, possibly on a
+  different device, while the originating device polls for the result.
+
+  1. Caller calls `prepareFirstFactor` with `strategy: email_link` on
+     the originating device. The server emails a click-through URL of
+     shape:
+
+     `https://{env_slug}.authn.sh/v1/client/handshake?__authn_ticket=<jwt>&__authn_status=complete`
+
+     The JWT carries `purpose=email_link`, the originating
+     `sign_in_id`, and the verifying `email_address_id`. Its
+     `external_verification_redirect_url` is mirrored into
+     `first_factor_verification.external_verification_redirect_url`
+     so the originating device can render a "Open the email" UI.
+
+  2. The originating device calls `attemptFirstFactor` with
+     `strategy: email_link` and **no payload** — the body is just
+     `{strategy: "email_link"}`. This commits the SDK to polling but
+     does not synchronously verify anything.
+
+  3. The originating device polls `getClient` (the recommended
+     cadence is **every 2 seconds for the first 60 seconds, then 5
+     seconds for the next 5 minutes, then stop**). Each poll returns
+     the same `SignIn` with its `first_factor_verification.status`
+     unchanged until the link is clicked.
+
+  4. When the link is clicked — possibly on a different device —
+     the click hits `clientHandshake`
+     (`GET /v1/client/handshake?__authn_ticket=…`) on the FAPI host.
+     `clientHandshake` decodes the ticket, marks the originating
+     attempt's `first_factor_verification.status` as `verified` (or
+     `transferable` for an unknown identifier — see `Verification`),
+     and the next poll on the originating device sees the new
+     status, completing the sign-in.
+
+  Cross-device polling does *not* use SSE or WebSockets — plain
+  `getClient` polling keeps the FAPI infrastructure simple and works
+  across every browser. Servers may rate-limit polling above the
+  recommended cadence (`429 too_many_requests`).
 required:
   - id
   - object
@@ -62,6 +106,14 @@ properties:
       properties:
         strategy:
           type: string
+          description: |
+            v0.1 emits `password`, `email_code`,
+            `reset_password_email_code`. v0.2 adds `email_link`.
+          examples:
+            - password
+            - email_code
+            - email_link
+            - reset_password_email_code
         email_address_id:
           type: string
         phone_number_id:

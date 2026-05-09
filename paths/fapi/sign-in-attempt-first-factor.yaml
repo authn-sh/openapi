@@ -16,6 +16,13 @@ post:
       `{strategy: "reset_password_email_code", code: "…"}` — on success
       the sign-in transitions to `needs_new_password`.
     - `ticket` — body `{strategy: "ticket", ticket: "…"}`.
+    - `email_link` (v0.2) — body `{strategy: "email_link"}` — **no
+      payload**. This commits the SDK to polling
+      `first_factor_verification.status` via `getClient`; the actual
+      verification happens out-of-band when the user clicks the
+      magic link. The response is the polled state, not a
+      synchronous success. See the cross-device polling note on
+      `SignIn`.
   tags: [Sign-Ins]
   security:
     - client_cookie: []
@@ -31,7 +38,7 @@ post:
           properties:
             strategy:
               type: string
-              enum: [password, email_code, reset_password_email_code, ticket]
+              enum: [password, email_code, reset_password_email_code, ticket, email_link]
             password: { type: string }
             code:     { type: string }
             ticket:   { type: string }
@@ -43,6 +50,9 @@ post:
             value: { strategy: password, password: "correct horse battery staple" }
           email_code:
             value: { strategy: email_code, code: "542178" }
+          email_link:
+            summary: Magic-link — no payload, poll for completion
+            value: { strategy: email_link }
   responses:
     "200":
       description: Sign-in transitioned (possibly to `complete`), wrapped.

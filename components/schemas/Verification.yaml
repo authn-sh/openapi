@@ -21,18 +21,34 @@ properties:
     description: |
       - `unverified` — challenge created, no successful attempt yet.
       - `verified` — challenge succeeded; the parent identifier is now trusted.
-      - `transferable` — succeeded against an OAuth provider but the local
-        account doesn't exist yet (used during sign-up).
+      - `transferable` — succeeded against the wrong flow type — the SDK
+        should bounce to the opposite flow with `transfer: true`. v0.2
+        cases:
+          1. **Magic-link sign-in for an unknown identifier** — the user
+             clicked a sign-in `email_link` for an address with no
+             matching `User`. The SDK creates a fresh sign-up via
+             `POST /v1/client/sign_ups { transfer: true }` to convert
+             the verified link into account creation.
+          2. **Magic-link sign-up for an existing identifier** — the
+             user clicked a sign-up `email_link` for an address that
+             already has a `User`. The SDK creates a fresh sign-in via
+             `POST /v1/client/sign_ins { transfer: true }` to convert
+             the verified link into a session. (Future OAuth flows
+             reuse the same status; the `transfer: true` body field is
+             unchanged from v0.1.)
       - `failed` — too many wrong attempts; the challenge can no longer be retried.
       - `expired` — `expire_at` is in the past; the challenge must be re-issued.
   strategy:
     type: string
     description: |
       How this verification is being completed. v0.1 issues `email_code`,
-      `reset_password_email_code`, `ticket`, `password`, and `transfer`;
-      OAuth, phone, passkeys, and TOTP land in later milestones.
+      `reset_password_email_code`, `ticket`, `password`, and `transfer`.
+      v0.2 adds `email_link` (magic link) — see the cross-device polling
+      note on `SignIn` / `SignUp`. OAuth, phone, passkeys, and TOTP
+      land in later milestones.
     examples:
       - email_code
+      - email_link
       - reset_password_email_code
       - password
       - ticket
@@ -69,3 +85,29 @@ properties:
     oneOf:
       - $ref: "./Error.yaml"
       - type: "null"
+examples:
+  - status: unverified
+    strategy: email_link
+    attempts: 0
+    expire_at: 1714724000000
+    external_verification_redirect_url: "https://acme.authn.sh/v1/client/handshake?__authn_ticket=tkt_01HKX9SY9V7H7TF8C8K7J9X4ZG&__authn_status=complete"
+    nonce: null
+    error: null
+  - status: verified
+    strategy: email_link
+    attempts: 1
+    expire_at: 1714724000000
+    external_verification_redirect_url: null
+    nonce: null
+    error: null
+  - status: transferable
+    strategy: email_link
+    attempts: 1
+    expire_at: 1714724000000
+    external_verification_redirect_url: null
+    nonce: null
+    error:
+      code: identifier_not_found
+      message: "No user matches this email address."
+      long_message: "No user matches this email address. Bounce to sign-up with `transfer: true`."
+      meta: {}
