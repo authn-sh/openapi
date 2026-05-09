@@ -1,0 +1,96 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getOrganization
+  summary: Get an organization
+  description: |
+    Fetch a single `Organization`. Visible to any signed-in user
+    when `Environment.organization_settings.allow_personal_accounts`
+    is `true`; otherwise only members of the organization can read
+    it (`403 not_a_member`).
+
+    **Access**: any member; or any signed-in user when
+    `allow_personal_accounts: true`.
+  tags: [Organizations]
+  responses:
+    "200":
+      description: The organization.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Organization.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateOrganization
+  summary: Update an organization
+  description: |
+    Partial update of organization metadata.
+
+    **Access**: requires `org:sys_profile:manage` in this organization.
+  tags: [Organizations]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 256
+            slug:
+              type: string
+              minLength: 1
+              maxLength: 64
+              pattern: "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+            public_metadata:
+              $ref: ../../components/schemas/Metadata.yaml
+            max_allowed_memberships:
+              type: [integer, "null"]
+              minimum: 0
+        examples:
+          rename:
+            summary: Rename
+            value:
+              name: Acme Corporation
+  responses:
+    "200":
+      description: The updated organization, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteOrganization
+  summary: Delete an organization
+  description: |
+    Permanently delete the organization, all its memberships,
+    invitations, and domains.
+
+    **Access**: requires `org:sys_profile:delete` in this
+    organization, and `Organization.admin_delete_enabled` must be
+    `true`. If disabled, a workspace operator must delete via the
+    BAPI's `deleteOrganization` instead. Emits `organization.deleted`.
+  tags: [Organizations]
+  responses:
+    "200":
+      description: Deletion result, wrapped (the deleted organization is removed from the embedded `client`).
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

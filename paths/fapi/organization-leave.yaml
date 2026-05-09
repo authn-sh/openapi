@@ -1,0 +1,29 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: leaveOrganization
+  summary: Leave an organization
+  description: |
+    Drop the current user's membership in this organization.
+    Returns `422 last_admin` if the caller is the last
+    `org:admin` and the org still has other members — promote
+    another member to admin first, then leave.
+
+    **Access**: any member of the organization. Emits
+    `organizationMembership.deleted`.
+  tags: [Organizations]
+  responses:
+    "200":
+      description: The removed membership, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

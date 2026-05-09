@@ -1,0 +1,15 @@
+get:
+  operationId: getEnvironment
+  summary: Get environment bootstrap config
+  description: |
+    Public, unauthenticated. Returned at SDK boot to drive flow rendering,
+    branding, and locale selection. Cacheable for ~30 seconds.
+  tags: [Environment]
+  security: []
+  responses:
+    "200":
+      description: Environment configuration.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Environment.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

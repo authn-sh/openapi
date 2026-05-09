@@ -1,0 +1,246 @@
+openapi: 3.1.0
+
+info:
+  title: authn.sh BAPI
+  version: 0.1.0-pre
+  summary: Backend API (server-to-server) for authn.sh.
+  description: |
+    The **BAPI** is the server-to-server admin surface. Authenticated
+    with a workspace secret key (`sk_test_…` / `sk_live_…`), it lives
+    at `https://api.authn.sh/v1` and handles every operation that
+    requires elevated privileges — creating/banning users, minting
+    invitations, managing organizations, configuring webhooks,
+    rotating signing keys, etc.
+
+    The browser-facing surface (FAPI) is documented separately in
+    [`fapi.yaml`](./fapi.yaml). The two surfaces share the
+    `components/` directory but have distinct paths, security
+    schemes, and SDK consumers.
+
+    SDKs that consume this surface include `@authn-sh/sdk-php` and
+    the BAPI half of any future server-side SDK. They generate
+    request/response types from `dist/bapi.bundled.json`.
+  license:
+    name: AGPL-3.0-only
+    identifier: AGPL-3.0-only
+  contact:
+    name: authn.sh
+    url: https://authn.sh
+  termsOfService: https://authn.sh/terms
+
+servers:
+  - url: https://api.authn.sh/v1
+    description: Production BAPI (workspace-scoped, server-to-server).
+
+tags:
+  - name: Users
+    description: End-user identities.
+  - name: Email Addresses
+    description: User-owned email identifiers and their verification state.
+  - name: Sessions
+    description: Live authenticated sessions across devices (admin view).
+  - name: Organizations
+    description: Organizations within an environment.
+  - name: Org Memberships
+    description: User ↔ organization joins.
+  - name: Org Invitations
+    description: Pending invitations to join an organization.
+  - name: Org Domains
+    description: Verified domains attached to an organization.
+  - name: Roles
+    description: Custom and system roles, scoped per environment.
+  - name: Permissions
+    description: System permissions catalog (and custom permissions, post-v0.2).
+  - name: Invitations
+    description: Application-level (non-organization) invitations.
+  - name: Allowlist Identifiers
+    description: Identifier patterns allowed to sign up under restricted mode.
+  - name: Blocklist Identifiers
+    description: Identifier patterns refused at sign-up.
+  - name: Redirect URLs
+    description: URLs allowed as post-flow redirect targets.
+  - name: Instance
+    description: Per-environment settings (`InstanceSetting`).
+  - name: Webhooks
+    description: Webhook endpoints, deliveries, and the event envelope.
+
+security:
+  - bearer_secret_key: []
+
+paths:
+  /v1/users:
+    $ref: ./paths/bapi/users.yaml
+  /v1/users/count:
+    $ref: ./paths/bapi/users-count.yaml
+  /v1/users/{user_id}:
+    $ref: ./paths/bapi/user.yaml
+  /v1/users/{user_id}/ban:
+    $ref: ./paths/bapi/user-ban.yaml
+  /v1/users/{user_id}/unban:
+    $ref: ./paths/bapi/user-unban.yaml
+  /v1/users/{user_id}/lock:
+    $ref: ./paths/bapi/user-lock.yaml
+  /v1/users/{user_id}/unlock:
+    $ref: ./paths/bapi/user-unlock.yaml
+  /v1/users/{user_id}/profile_image:
+    $ref: ./paths/bapi/user-profile-image.yaml
+  /v1/users/{user_id}/metadata:
+    $ref: ./paths/bapi/user-metadata.yaml
+  /v1/users/{user_id}/verify_password:
+    $ref: ./paths/bapi/user-verify-password.yaml
+  /v1/email_addresses:
+    $ref: ./paths/bapi/email-addresses.yaml
+  /v1/email_addresses/{email_address_id}:
+    $ref: ./paths/bapi/email-address.yaml
+  /v1/sessions:
+    $ref: ./paths/bapi/sessions.yaml
+  /v1/sessions/{session_id}:
+    $ref: ./paths/bapi/session.yaml
+  /v1/sessions/{session_id}/revoke:
+    $ref: ./paths/bapi/session-revoke.yaml
+  /v1/sessions/{session_id}/tokens:
+    $ref: ./paths/bapi/session-tokens.yaml
+  /v1/sessions/{session_id}/tokens/{template_name}:
+    $ref: ./paths/bapi/session-tokens-template.yaml
+  /v1/organizations:
+    $ref: ./paths/bapi/organizations.yaml
+  /v1/organizations/{organization_id}:
+    $ref: ./paths/bapi/organization.yaml
+  /v1/organizations/{organization_id}/memberships:
+    $ref: ./paths/bapi/organization-memberships.yaml
+  /v1/organizations/{organization_id}/memberships/{user_id}:
+    $ref: ./paths/bapi/organization-membership.yaml
+  /v1/organizations/{organization_id}/invitations:
+    $ref: ./paths/bapi/organization-invitations.yaml
+  /v1/organizations/{organization_id}/invitations/bulk:
+    $ref: ./paths/bapi/organization-invitations-bulk.yaml
+  /v1/organizations/{organization_id}/invitations/{invitation_id}/revoke:
+    $ref: ./paths/bapi/organization-invitation-revoke.yaml
+  /v1/organizations/{organization_id}/domains:
+    $ref: ./paths/bapi/organization-domains.yaml
+  /v1/organizations/{organization_id}/domains/{domain_id}:
+    $ref: ./paths/bapi/organization-domain.yaml
+  /v1/organizations/{organization_id}/domains/{domain_id}/verify:
+    $ref: ./paths/bapi/organization-domain-verify.yaml
+  /v1/roles:
+    $ref: ./paths/bapi/roles.yaml
+  /v1/roles/{role_id}:
+    $ref: ./paths/bapi/role.yaml
+  /v1/roles/{role_id}/permissions:
+    $ref: ./paths/bapi/role-permissions.yaml
+  /v1/permissions:
+    $ref: ./paths/bapi/permissions.yaml
+  /v1/invitations:
+    $ref: ./paths/bapi/invitations.yaml
+  /v1/invitations/bulk:
+    $ref: ./paths/bapi/invitations-bulk.yaml
+  /v1/invitations/{invitation_id}/revoke:
+    $ref: ./paths/bapi/invitation-revoke.yaml
+  /v1/allowlist_identifiers:
+    $ref: ./paths/bapi/allowlist-identifiers.yaml
+  /v1/allowlist_identifiers/{identifier_id}:
+    $ref: ./paths/bapi/allowlist-identifier.yaml
+  /v1/blocklist_identifiers:
+    $ref: ./paths/bapi/blocklist-identifiers.yaml
+  /v1/blocklist_identifiers/{identifier_id}:
+    $ref: ./paths/bapi/blocklist-identifier.yaml
+  /v1/redirect_urls:
+    $ref: ./paths/bapi/redirect-urls.yaml
+  /v1/redirect_urls/{redirect_url_id}:
+    $ref: ./paths/bapi/redirect-url.yaml
+  /v1/instance:
+    $ref: ./paths/bapi/instance.yaml
+  /v1/instance/restrictions:
+    $ref: ./paths/bapi/instance-restrictions.yaml
+  /v1/instance/organization_settings:
+    $ref: ./paths/bapi/instance-organization-settings.yaml
+  /v1/webhooks/endpoints:
+    $ref: ./paths/bapi/webhook-endpoints.yaml
+  /v1/webhooks/endpoints/{endpoint_id}:
+    $ref: ./paths/bapi/webhook-endpoint.yaml
+  /v1/webhooks/endpoints/{endpoint_id}/rotate_secret:
+    $ref: ./paths/bapi/webhook-endpoint-rotate.yaml
+  /v1/webhooks/deliveries:
+    $ref: ./paths/bapi/webhook-deliveries.yaml
+  /v1/webhooks/deliveries/{delivery_id}:
+    $ref: ./paths/bapi/webhook-delivery.yaml
+  /v1/webhooks/deliveries/{delivery_id}/replay:
+    $ref: ./paths/bapi/webhook-delivery-replay.yaml
+
+components:
+  securitySchemes:
+    bearer_secret_key:
+      type: http
+      scheme: bearer
+      bearerFormat: secret_key
+      description: |
+        Workspace-scoped secret key. Format: `sk_test_<…>` or `sk_live_<…>`.
+        Resolves to a single `Environment`. Issued and rotated from the
+        Dashboard or `POST /v1/api_keys` (post-v0.1).
+
+  schemas:
+    Id:                                        { $ref: ./components/schemas/Id.yaml }
+    Timestamp:                                 { $ref: ./components/schemas/Timestamp.yaml }
+    Metadata:                                  { $ref: ./components/schemas/Metadata.yaml }
+    PaginatedList:                             { $ref: ./components/schemas/PaginatedList.yaml }
+    Error:                                     { $ref: ./components/schemas/Error.yaml }
+    ErrorResponse:                             { $ref: ./components/schemas/ErrorResponse.yaml }
+    Verification:                              { $ref: ./components/schemas/Verification.yaml }
+    EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
+    User:                                      { $ref: ./components/schemas/User.yaml }
+    UserCreateRequest:                         { $ref: ./components/schemas/UserCreateRequest.yaml }
+    UserUpdateRequest:                         { $ref: ./components/schemas/UserUpdateRequest.yaml }
+    EmailAddressCreateRequest:                 { $ref: ./components/schemas/EmailAddressCreateRequest.yaml }
+    EmailAddressUpdateRequest:                 { $ref: ./components/schemas/EmailAddressUpdateRequest.yaml }
+    Session:                                   { $ref: ./components/schemas/Session.yaml }
+    SessionActivity:                           { $ref: ./components/schemas/SessionActivity.yaml }
+    Invitation:                                { $ref: ./components/schemas/Invitation.yaml }
+    InvitationCreateRequest:                   { $ref: ./components/schemas/InvitationCreateRequest.yaml }
+    InvitationBulkCreateRequest:               { $ref: ./components/schemas/InvitationBulkCreateRequest.yaml }
+    AllowlistIdentifier:                       { $ref: ./components/schemas/AllowlistIdentifier.yaml }
+    BlocklistIdentifier:                       { $ref: ./components/schemas/BlocklistIdentifier.yaml }
+    RedirectUrl:                               { $ref: ./components/schemas/RedirectUrl.yaml }
+    InstanceSettings:                          { $ref: ./components/schemas/InstanceSettings.yaml }
+    AttributeSetting:                          { $ref: ./components/schemas/AttributeSetting.yaml }
+    InstanceUpdateRequest:                     { $ref: ./components/schemas/InstanceUpdateRequest.yaml }
+    RestrictionsUpdateRequest:                 { $ref: ./components/schemas/RestrictionsUpdateRequest.yaml }
+    OrganizationSettingsUpdateRequest:         { $ref: ./components/schemas/OrganizationSettingsUpdateRequest.yaml }
+    WebhookEvent:                              { $ref: ./components/schemas/WebhookEvent.yaml }
+    WebhookEndpoint:                           { $ref: ./components/schemas/WebhookEndpoint.yaml }
+    WebhookEndpointCreateRequest:              { $ref: ./components/schemas/WebhookEndpointCreateRequest.yaml }
+    WebhookEndpointUpdateRequest:              { $ref: ./components/schemas/WebhookEndpointUpdateRequest.yaml }
+    WebhookDelivery:                           { $ref: ./components/schemas/WebhookDelivery.yaml }
+    PublicUserData:                            { $ref: ./components/schemas/PublicUserData.yaml }
+    Organization:                              { $ref: ./components/schemas/Organization.yaml }
+    OrganizationCreateRequest:                 { $ref: ./components/schemas/OrganizationCreateRequest.yaml }
+    OrganizationUpdateRequest:                 { $ref: ./components/schemas/OrganizationUpdateRequest.yaml }
+    OrganizationMembership:                    { $ref: ./components/schemas/OrganizationMembership.yaml }
+    OrganizationMembershipCreateRequest:       { $ref: ./components/schemas/OrganizationMembershipCreateRequest.yaml }
+    OrganizationMembershipUpdateRequest:       { $ref: ./components/schemas/OrganizationMembershipUpdateRequest.yaml }
+    OrganizationInvitation:                    { $ref: ./components/schemas/OrganizationInvitation.yaml }
+    OrganizationInvitationCreateRequest:       { $ref: ./components/schemas/OrganizationInvitationCreateRequest.yaml }
+    OrganizationInvitationBulkCreateRequest:   { $ref: ./components/schemas/OrganizationInvitationBulkCreateRequest.yaml }
+    OrganizationDomain:                        { $ref: ./components/schemas/OrganizationDomain.yaml }
+    OrganizationDomainCreateRequest:           { $ref: ./components/schemas/OrganizationDomainCreateRequest.yaml }
+    OrganizationDomainUpdateRequest:           { $ref: ./components/schemas/OrganizationDomainUpdateRequest.yaml }
+    OrganizationMembershipRequest:             { $ref: ./components/schemas/OrganizationMembershipRequest.yaml }
+    Permission:                                { $ref: ./components/schemas/Permission.yaml }
+    Role:                                      { $ref: ./components/schemas/Role.yaml }
+    RoleCreateRequest:                         { $ref: ./components/schemas/RoleCreateRequest.yaml }
+    RoleUpdateRequest:                         { $ref: ./components/schemas/RoleUpdateRequest.yaml }
+    RolePermissionsRequest:                    { $ref: ./components/schemas/RolePermissionsRequest.yaml }
+
+  responses:
+    BadRequest:           { $ref: ./components/responses/BadRequest.yaml }
+    Unauthorized:         { $ref: ./components/responses/Unauthorized.yaml }
+    Forbidden:            { $ref: ./components/responses/Forbidden.yaml }
+    NotFound:             { $ref: ./components/responses/NotFound.yaml }
+    Conflict:             { $ref: ./components/responses/Conflict.yaml }
+    UnprocessableEntity:  { $ref: ./components/responses/UnprocessableEntity.yaml }
+    TooManyRequests:      { $ref: ./components/responses/TooManyRequests.yaml }
+
+  parameters:
+    LimitParam:           { $ref: ./components/parameters/LimitParam.yaml }
+    OffsetParam:          { $ref: ./components/parameters/OffsetParam.yaml }
+    OrderByParam:         { $ref: ./components/parameters/OrderByParam.yaml }
+    IdempotencyKeyHeader: { $ref: ./components/parameters/IdempotencyKeyHeader.yaml }

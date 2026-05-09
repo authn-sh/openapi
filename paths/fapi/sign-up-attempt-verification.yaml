@@ -1,0 +1,46 @@
+parameters:
+  - name: sign_up_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: attemptVerification
+  summary: Attempt sign-up verification
+  description: |
+    Submit the user's answer to a sign-up challenge (the email code in
+    v0.1). On success the matching attribute moves out of
+    `unverified_fields` and — if no other requirements remain — the
+    sign-up transitions to `complete` (sets `created_user_id` and
+    `created_session_id`).
+  tags: [Sign-Ups]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [strategy]
+          additionalProperties: false
+          properties:
+            strategy:
+              type: string
+              enum: [email_code]
+            code:      { type: string }
+            signature: { type: string, description: Reserved for v0.5 (passkey). }
+        examples:
+          email_code:
+            value: { strategy: email_code, code: "542178" }
+  responses:
+    "200":
+      description: Sign-up transitioned (possibly to `complete`), wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

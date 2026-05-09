@@ -1,0 +1,26 @@
+get:
+  operationId: listMyOrganizationMemberships
+  summary: List my organization memberships
+  description: |
+    Every organization the current user is a member of, with the
+    member's `role` and computed `permissions[]` in each. Drives
+    `<OrganizationSwitcher />` and the organization list in
+    `<UserProfile />`.
+  tags: [Me]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+  responses:
+    "200":
+      description: A page of memberships.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/OrganizationMembership.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }

@@ -1,0 +1,39 @@
+parameters:
+  - name: role_id
+    in: path
+    required: true
+    description: ID of the role.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+put:
+  operationId: setRolePermissions
+  summary: Replace a role's permission set
+  description: |
+    Replace the role's `permissions[]` wholesale. The resulting
+    set is exactly the keys in the request body. System roles
+    reject this call (`422 invalid_field`).
+  tags: [Roles]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/RolePermissionsRequest.yaml }
+        examples:
+          replace:
+            summary: Replace billing role's permissions
+            value:
+              permissions:
+                - "org:sys_billing:read"
+                - "org:sys_billing:manage"
+                - "org:sys_memberships:read"
+  responses:
+    "200":
+      description: The updated role with the new permission set.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Role.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

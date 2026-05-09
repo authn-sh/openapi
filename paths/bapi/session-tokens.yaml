@@ -1,0 +1,35 @@
+parameters:
+  - name: session_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: getSessionToken
+  summary: Mint a session JWT (BAPI)
+  description: |
+    Admin-side JWT mint. Same shape as the FAPI variant
+    (`getClientSessionToken`) but BAPI-secured: useful for server-side
+    rendering pipelines that need to forward a token to a downstream
+    service on behalf of a user.
+  tags: [Sessions]
+  responses:
+    "200":
+      description: The minted token.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [object, jwt]
+            additionalProperties: false
+            properties:
+              object: { type: string, const: token }
+              jwt:    { type: string }
+          examples:
+            token:
+              value:
+                object: token
+                jwt: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImpfMTIifQ.eyJzdWIiOiJ1c2VyXzE…"
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

@@ -1,0 +1,84 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: request_id
+    in: path
+    required: true
+    description: ID of the membership request.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: acceptOrganizationMembershipRequest
+  summary: Accept a membership request
+  description: |
+    Convert a pending `OrganizationMembershipRequest` into an
+    `OrganizationMembership`. The new member is enrolled with the
+    organization's `default_role`. Emits
+    `organizationMembership.created`.
+
+    **Access**: requires `org:sys_memberships:manage` in this
+    organization.
+  tags: [Org Membership Requests]
+  responses:
+    "200":
+      description: The new membership, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+          examples:
+            accepted:
+              summary: Admin accepts a request — new membership returned, request removed
+              value:
+                response:
+                  id: orgmem_01HKX9SY9V7H7TF8C8K7J9X4ZJ
+                  object: organization_membership
+                  role: "org:member"
+                  role_name: Member
+                  permissions:
+                    - "org:sys_domains:read"
+                    - "org:sys_memberships:read"
+                    - "org:sys_profile:read"
+                  public_metadata: {}
+                  private_metadata: {}
+                  organization:
+                    id: org_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                    object: organization
+                    name: Acme Inc.
+                    slug: acme
+                    image_url: null
+                    has_image: false
+                    members_count: 13
+                    pending_invitations_count: 3
+                    max_allowed_memberships: null
+                    admin_delete_enabled: true
+                    public_metadata: {}
+                    private_metadata: {}
+                    created_by: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                    created_at: 1714723200000
+                    updated_at: 1714895999000
+                  public_user_data:
+                    first_name: Kate
+                    last_name: Lin
+                    image_url: null
+                    has_image: false
+                    identifier: kate@acme.com
+                    user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZL
+                  created_at: 1714896050000
+                  updated_at: 1714896050000
+                client:
+                  id: client_01HKX9SY9V7H7TF8C8K7J9X4ZA
+                  object: client
+                  sessions: []
+                  sign_in: null
+                  sign_up: null
+                  last_active_session_id: sess_01HKX9SY9V7H7TF8C8K7J9X4ZC
+                  created_at: 1714895990000
+                  updated_at: 1714896050000
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

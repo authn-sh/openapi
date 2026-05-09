@@ -1,0 +1,31 @@
+patch:
+  operationId: updateRestrictions
+  summary: Patch sign-up restrictions
+  description: |
+    Convenience endpoint that scopes the patch to the
+    `restrictions` group. Equivalent to `PATCH /v1/instance` with
+    `{ "restrictions": { … } }` but doesn't require sending the rest of
+    the settings tree.
+  tags: [Instance]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/RestrictionsUpdateRequest.yaml }
+        examples:
+          turn_on_allowlist:
+            summary: Switch to allowlist mode and refuse disposable email domains
+            value:
+              allowlist_enabled: true
+              block_disposable_email_domains: true
+              block_email_subaddresses: false
+  responses:
+    "200":
+      description: The updated instance settings.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/InstanceSettings.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

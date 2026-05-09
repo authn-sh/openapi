@@ -1,0 +1,46 @@
+parameters:
+  - name: session_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: revokeSession
+  summary: Revoke a session (BAPI)
+  description: |
+    Admin-side revocation. Marks the session `revoked` and immediately
+    invalidates its tokens. Idempotent.
+  tags: [Sessions]
+  responses:
+    "200":
+      description: The revoked session.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Session.yaml }
+          examples:
+            revoked:
+              value:
+                id: sess_01HKX9SY9V7H7TF8C8K7J9X4ZC
+                object: session
+                client_id: clt_01HKX9SY9V7H7TF8C8K7J9X4ZA
+                user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                status: revoked
+                last_active_at: 1714895999000
+                last_active_organization_id: null
+                expire_at: 1717487999000
+                abandon_at: 1717487999000
+                actor: null
+                latest_activity:
+                  id: sa_01HKX9SY9V7H7TF8C8K7J9X4ZF
+                  object: session_activity
+                  device_type: desktop
+                  is_mobile: false
+                  browser_name: Chrome
+                  browser_version: "124.0"
+                  ip_address: "203.0.113.0"
+                  city: Berlin
+                  country: DE
+                created_at: 1714723200000
+                updated_at: 1714896500000
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

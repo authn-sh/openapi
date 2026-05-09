@@ -1,0 +1,39 @@
+parameters:
+  - name: email_address_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: prepareMyEmailVerification
+  summary: Prepare email verification
+  description: Issue a fresh email-code challenge for one of my unverified addresses.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [strategy]
+          additionalProperties: false
+          properties:
+            strategy:
+              type: string
+              enum: [email_code]
+        examples:
+          basic:
+            value: { strategy: email_code }
+  responses:
+    "200":
+      description: The address with the new verification, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

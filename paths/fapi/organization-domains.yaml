@@ -1,0 +1,76 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: listOrganizationDomains
+  summary: List organization domains
+  description: |
+    Paginated list of `OrganizationDomain` rows.
+
+    **Access**: requires `org:sys_domains:read` in this organization.
+  tags: [Org Domains]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+    - name: verified
+      in: query
+      required: false
+      schema: { type: boolean }
+    - name: enrollment_mode
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [manual_invitation, automatic_invitation, automatic_suggestion]
+  responses:
+    "200":
+      description: A page of domains.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/OrganizationDomain.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+post:
+  operationId: createOrganizationDomain
+  summary: Add a domain to the organization
+  description: |
+    Add a new domain. Verification is issued lazily — call
+    `verifyOrganizationDomain` to kick off the proof flow.
+
+    **Access**: requires `org:sys_domains:manage` in this organization.
+  tags: [Org Domains]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/OrganizationDomainCreateRequest.yaml }
+        examples:
+          basic:
+            value:
+              name: acme.com
+              enrollment_mode: automatic_invitation
+              verification_strategy: dns
+  responses:
+    "200":
+      description: The new domain, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

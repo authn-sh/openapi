@@ -1,0 +1,45 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: listOrganizationMembershipRequests
+  summary: List pending membership requests
+  description: |
+    Paginated list of `OrganizationMembershipRequest` rows.
+    Membership requests are created automatically when a user
+    signs up (or adds a verified email) whose address matches an
+    `OrganizationDomain` whose `enrollment_mode` is
+    `automatic_suggestion`.
+
+    **Access**: requires `org:sys_memberships:manage` in this
+    organization.
+  tags: [Org Membership Requests]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+    - name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [pending, accepted, revoked, expired]
+  responses:
+    "200":
+      description: A page of membership requests.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/OrganizationMembershipRequest.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

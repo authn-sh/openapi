@@ -2,12 +2,12 @@ extends:
   - recommended
 
 apis:
-  authn@v0.1:
-    root: ./openapi.yaml
+  bapi@v0.1:
+    root: ./bapi.yaml
+  fapi@v0.1:
+    root: ./fapi.yaml
 
 rules:
-  # We deliberately leave `paths: {}` empty until OA-2 onward lands real endpoints.
-  # The following rules are NOT relaxed — we rely on them to enforce house style:
   operation-operationId: error
   operation-operationId-unique: error
   operation-operationId-url-safe: error
@@ -21,17 +21,11 @@ rules:
   no-invalid-media-type-examples: warn
   no-empty-servers: error
   spec-strict-refs: error
-  # The skeleton ships reusable components (Id, Timestamp, Metadata, PaginatedList, Error,
-  # ErrorResponse, the standard response refs, common parameters) before any paths reference
-  # them. OA-2 onward will start using them; until then this rule would shout at every one.
+  # Each root spec only registers the components its paths reference; the
+  # shared `components/` dir contains a few that one surface uses but the
+  # other doesn't (e.g. SignIn / SignUp are FAPI-only). Don't shout about
+  # that — `no-unused-components` is intentionally off.
   no-unused-components: off
   tag-description: error
-
-  # Tighten security expectations.
   security-defined: error
-
-  # We use snake_case for property names.
   no-identical-paths: error
-
-  # Allow (-) in operationId so we can use kebab-case path segments cleanly.
-  # The default rule already permits letters/digits/underscores/dashes; nothing extra needed.

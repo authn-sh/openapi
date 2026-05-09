@@ -1,0 +1,72 @@
+get:
+  operationId: listRoles
+  summary: List roles
+  description: |
+    Paginated list of roles in the environment. Includes the two
+    seeded system roles (`org:admin`, `org:member`) by default;
+    pass `is_system: false` to list custom roles only.
+  tags: [Roles]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+    - $ref: ../../components/parameters/OrderByParam.yaml
+    - name: is_system
+      in: query
+      required: false
+      schema: { type: boolean }
+    - name: query
+      in: query
+      description: Free-text substring match against `key` and `name`.
+      required: false
+      schema: { type: string }
+  responses:
+    "200":
+      description: A page of roles.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/Role.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+post:
+  operationId: createRole
+  summary: Create a custom role
+  description: |
+    Create a new custom role. System roles (`is_system: true`) are
+    seeded at bootstrap and cannot be created through this
+    endpoint — attempts return `422 invalid_field`.
+  tags: [Roles]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/RoleCreateRequest.yaml }
+        examples:
+          billing:
+            summary: A billing-only role
+            value:
+              key: "org:billing"
+              name: Billing
+              description: Read and edit billing settings.
+              permissions:
+                - "org:sys_billing:read"
+                - "org:sys_billing:manage"
+  responses:
+    "201":
+      description: The new role.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Role.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }
