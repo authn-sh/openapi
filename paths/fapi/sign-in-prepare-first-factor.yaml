@@ -10,6 +10,18 @@ post:
   description: |
     Issue a first-factor challenge (e.g. send the email code) without
     yet evaluating an answer. The next step is `attempt_first_factor`.
+
+    Supported strategies:
+
+    - `email_code` — sends a 6-digit code to the resolved email.
+    - `reset_password_email_code` — same channel; on success the
+      sign-in transitions to `needs_new_password` instead of
+      `complete`.
+    - `email_link` (v0.2) — sends a click-through link instead of a
+      code. The originating device must follow up with
+      `attempt_first_factor { strategy: "email_link" }` (no payload)
+      and poll `getClient` until the verification flips. See the
+      cross-device polling note on `SignIn`.
   tags: [Sign-Ins]
   security:
     - client_cookie: []
@@ -25,7 +37,7 @@ post:
           properties:
             strategy:
               type: string
-              enum: [email_code, reset_password_email_code]
+              enum: [email_code, reset_password_email_code, email_link]
             email_address_id:
               type: string
             phone_number_id:
@@ -33,9 +45,18 @@ post:
             redirect_url:
               type: string
               format: uri
+              description: |
+                For `email_link`, the URL the magic link bounces back
+                to after `clientHandshake` consumes the ticket. Must
+                be on the redirect-URL allowlist.
         examples:
           email_code:
             value: { strategy: email_code, email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE }
+          email_link:
+            value:
+              strategy: email_link
+              email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
+              redirect_url: https://app.acme.com/dashboard
   responses:
     "200":
       description: Sign-in with the new `first_factor_verification`, wrapped.

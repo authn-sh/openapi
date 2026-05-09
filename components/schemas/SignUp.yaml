@@ -4,8 +4,47 @@ description: |
   requires, which the caller has already supplied, which still need
   verification, and the per-attribute verification challenges.
 
-  v0.1 supports email + password sign-ups; phone, OAuth, SAML, and
-  passkey sign-ups ship in later milestones.
+  v0.1 supports email + password sign-ups via `email_code`. v0.2 adds
+  `email_link` (magic link). Phone, OAuth, SAML, and passkey sign-ups
+  ship in later milestones.
+
+  ### Magic-link cross-device polling (PLAN §9.10)
+
+  Sign-up `email_link` works the same way as sign-in `email_link`
+  — the click can happen on a different device while the originating
+  device polls the FAPI for completion. The full handshake is:
+
+  1. Caller calls `prepareVerification` with `strategy: email_link`.
+     The server emails a click-through URL of shape:
+
+     `https://{env_slug}.authn.sh/v1/client/handshake?__authn_ticket=<jwt>&__authn_status=complete`
+
+     The JWT carries `purpose=email_link`, the `sign_up_id`, and the
+     attribute being verified (always `email_address` in v0.2). The
+     URL is mirrored into the matching
+     `verifications.email_address.external_verification_redirect_url`
+     so the SDK can render a "Open the email" UI.
+
+  2. Caller calls `attemptVerification` with
+     `strategy: email_link` and **no payload** — body is just
+     `{strategy: "email_link"}`. This commits the SDK to polling.
+
+  3. Caller polls `getClient` (recommended cadence: **every 2
+     seconds for the first 60 seconds, then 5 seconds for the next
+     5 minutes**) until the matching
+     `verifications.email_address.status` flips to `verified` or
+     `transferable`.
+
+  4. The click on any device hits `clientHandshake`
+     (`GET /v1/client/handshake?__authn_ticket=…`), which marks the
+     verification on the originating attempt and lets the polling
+     device complete.
+
+  If the address being signed up already has a `User`, the
+  verification flips to `transferable` instead of `verified` and the
+  SDK should bounce to sign-in via
+  `POST /v1/client/sign_ins { transfer: true }` — see the
+  `Verification` schema for the full transferable rules.
 required:
   - id
   - object
@@ -41,8 +80,11 @@ properties:
         to verify.
       - `complete` — `created_user_id` and `created_session_id` are set;
         SDK can stop driving.
-      - `transferable` — an OAuth identity matched but no local user
-        exists; the caller can transfer to sign-up. (v0.4.)
+      - `transferable` — the verified identity belongs in the opposite
+        flow. v0.2: a sign-up `email_link` was clicked for an address
+        that already has a `User` — the SDK should bounce to sign-in
+        with `POST /v1/client/sign_ins { transfer: true }`. v0.4
+        extends this to OAuth.
       - `abandoned` — `abandon_at` passed.
   required_fields:
     type: array
