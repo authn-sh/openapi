@@ -69,6 +69,19 @@ properties:
     description: |
       When `false`, the dispatcher skips this endpoint without retrying.
       Toggled from the dashboard during incidents.
+  rotation_window_expires_at:
+    type: [integer, "null"]
+    format: int64
+    description: |
+      When set, the prior `signing_secret` is still accepted on
+      replay until this timestamp. Cleared once the rotation
+      window closes.
+  disabled_at:
+    type: [integer, "null"]
+    format: int64
+    description: |
+      Set by the dispatcher when an endpoint is auto-disabled
+      after sustained delivery failures. `null` while healthy.
   created_at:
     $ref: ./Timestamp.yaml
   updated_at:

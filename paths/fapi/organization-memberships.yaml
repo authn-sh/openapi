@@ -84,7 +84,7 @@ post:
               role: "org:member"
               redirect_url: https://app.acme.com/welcome
   responses:
-    "200":
+    "201":
       description: The new invitation, wrapped.
       content:
         application/json:

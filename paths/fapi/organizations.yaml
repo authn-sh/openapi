@@ -41,7 +41,7 @@ post:
               name: Acme Inc.
               slug: acme
   responses:
-    "200":
+    "201":
       description: The new organization, wrapped.
       content:
         application/json:
