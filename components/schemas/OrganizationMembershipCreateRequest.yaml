@@ -1,0 +1,21 @@
+type: object
+description: |
+  Body for `POST /v1/organizations/{org_id}/memberships`. Adds an
+  existing user to the organization as a member with the given
+  role.
+
+  To enroll a user who hasn't signed up yet, create an
+  `OrganizationInvitation` instead.
+required: [user_id, role]
+additionalProperties: false
+properties:
+  user_id:
+    type: string
+    description: "`User.id` to enroll."
+  role:
+    type: string
+    description: "Role `key` (e.g. `org:admin`)."
+  public_metadata:
+    $ref: ./Metadata.yaml
+  private_metadata:
+    $ref: ./Metadata.yaml

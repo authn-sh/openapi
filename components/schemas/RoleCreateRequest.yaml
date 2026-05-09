@@ -1,0 +1,40 @@
+type: object
+description: |
+  Body for `POST /v1/roles` (BAPI). Custom roles only — system
+  roles are seeded and not creatable through the API.
+required: [key, name, permissions]
+additionalProperties: false
+properties:
+  key:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: "^org:[a-z][a-z0-9_]*$"
+    description: |
+      Custom keys must not collide with the reserved
+      `org:admin` / `org:member` defaults or anything under the
+      `org:sys_*` permission prefix.
+  name:
+    type: string
+    minLength: 1
+    maxLength: 256
+  description:
+    type: string
+    maxLength: 1024
+  is_creator_eligible:
+    type: boolean
+    default: false
+  is_default:
+    type: boolean
+    default: false
+    description: |
+      Setting this to `true` clears the flag on whichever role
+      currently holds it (exactly one default per environment).
+  permissions:
+    type: array
+    description: |
+      The role's permission set as `Permission.key` strings. Each
+      key must already exist (system or custom) at the time of
+      write.
+    items:
+      type: string

@@ -1,0 +1,86 @@
+type: object
+description: |
+  A bundle of permissions assignable to an `OrganizationMembership`.
+  Each environment is seeded with two default roles at bootstrap
+  (`org:admin` and `org:member`); custom roles are scoped to the
+  environment and shared across all its organizations.
+
+  ### Default roles (v0.2)
+
+  | `key` | Permissions | `is_creator_eligible` | `is_default` |
+  |---|---|:-:|:-:|
+  | `org:admin` | All twelve `org:sys_*` system permissions. | `true` | `false` |
+  | `org:member` | `org:sys_profile:read`, `org:sys_memberships:read`, `org:sys_domains:read` *(read-only subset; v0.2 introduces the implicit `:read` companion to each `sys_*:manage` system permission as a separate seeded row)*. | `false` | `true` |
+
+  `is_creator_eligible` controls which roles can be picked as the
+  org's `creator_role`; `is_default` flags the role assigned to
+  members enrolled via `automatic_invitation` or accepted
+  `OrganizationMembershipRequest`.
+required:
+  - id
+  - object
+  - key
+  - name
+  - is_creator_eligible
+  - is_default
+  - is_system
+  - permissions
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: role
+  key:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: "^org:[a-z][a-z0-9_]*$"
+    description: |
+      Stable, lowercase, snake-case identifier in the form
+      `org:<name>`. Defaults: `org:admin`, `org:member`.
+    examples:
+      - org:admin
+      - org:member
+      - org:billing
+  name:
+    type: string
+    minLength: 1
+    maxLength: 256
+  description:
+    type: [string, "null"]
+    maxLength: 1024
+  is_creator_eligible:
+    type: boolean
+    description: |
+      Whether this role may be picked as
+      `Organization.creator_role`. The seeded `org:admin` role is
+      eligible; `org:member` is not.
+  is_default:
+    type: boolean
+    description: |
+      Whether this role is the implicit role for members enrolled
+      automatically (`automatic_invitation`,
+      `OrganizationMembershipRequest` accept). Exactly one role per
+      environment carries `is_default: true`.
+  is_system:
+    type: boolean
+    description: |
+      `true` for the seeded `org:admin` and `org:member` rows.
+      System roles' `permissions[]` cannot be edited; only `name`
+      and `description` may be customized.
+  permissions:
+    type: array
+    description: |
+      The role's permission set as a list of `Permission.key`
+      strings (not full `Permission` objects). Order is stable
+      (alphabetical) for deterministic comparisons.
+    items:
+      type: string
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml

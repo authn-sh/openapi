@@ -1,0 +1,26 @@
+type: object
+description: |
+  Body for `PATCH /v1/organizations/{id}` (BAPI) and the FAPI
+  equivalent. All fields are optional; omitted fields are
+  unchanged.
+additionalProperties: false
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 256
+  slug:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+  max_allowed_memberships:
+    type: [integer, "null"]
+    minimum: 0
+  admin_delete_enabled:
+    type: boolean
+    description: BAPI only — FAPI updates that include this field are rejected.
+  public_metadata:
+    $ref: ./Metadata.yaml
+  private_metadata:
+    $ref: ./Metadata.yaml

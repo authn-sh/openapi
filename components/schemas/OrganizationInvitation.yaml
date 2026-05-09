@@ -1,0 +1,78 @@
+type: object
+description: |
+  Pending invitation for a future member to join an
+  `Organization`. The recipient clicks `url`, lands on the Account
+  Portal pre-fill page, and either signs up (transferring the
+  ticket into a new `User` and creating the membership) or signs
+  in (creating the membership against the existing `User`).
+
+  Mirrors the application-level `Invitation` ticket convention
+  from PLAN §9.7 — `__authn_status=sign_up` is appended for
+  recipients who don't yet have a `User`.
+required:
+  - id
+  - object
+  - organization_id
+  - email_address
+  - role
+  - role_name
+  - status
+  - url
+  - public_metadata
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: organization_invitation
+  organization_id:
+    type: string
+  email_address:
+    type: string
+    format: email
+    maxLength: 254
+  role:
+    type: string
+    description: Role `key` the recipient receives on accept.
+  role_name:
+    type: string
+    description: Human-readable display name for `role` at the time of read.
+  inviter_user_id:
+    type: [string, "null"]
+    description: |
+      `User.id` of the org member who issued the invitation. `null`
+      for invitations created via BAPI without an `actor` user.
+  redirect_url:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Where the Account Portal returns the recipient after they
+      accept. Must match the redirect-URL allowlist.
+  status:
+    type: string
+    enum: [pending, accepted, revoked, expired]
+  public_metadata:
+    $ref: ./Metadata.yaml
+  url:
+    type: string
+    format: uri
+    description: |
+      Click-through URL. Carries the ticket plus
+      `__authn_status=sign_up` (or `sign_in` when the email is
+      already attached to a `User`) and the org id, so the SDK
+      knows which flow to start. The full v0.1 query convention
+      lives in PLAN §9.7.
+    examples:
+      - "https://acme.authn.sh/v1/client/handshake?__authn_ticket=tkt_01HKX9SY9V7H7TF8C8K7J9X4ZG&__authn_status=sign_up&__authn_organization_id=org_01HKX9SY9V7H7TF8C8K7J9X4ZH&redirect_url=https%3A%2F%2Fapp.acme.com%2Fwelcome"
+  expires_at:
+    type: [integer, "null"]
+    format: int64
+    minimum: 0
+    description: Unix ms; `null` for invitations that don't expire.
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml

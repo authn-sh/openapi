@@ -1,0 +1,36 @@
+type: object
+description: |
+  Pending request from a user with a verified domain match to join
+  an `Organization`. Created automatically when a user signs up
+  (or adds a verified email) whose address matches an
+  `OrganizationDomain` whose `enrollment_mode` is
+  `automatic_suggestion`.
+
+  An admin with `org:sys_memberships:manage` accepts the request
+  to convert it into an `OrganizationMembership`.
+required:
+  - id
+  - object
+  - organization_id
+  - status
+  - public_user_data
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: organization_membership_request
+  organization_id:
+    type: string
+  status:
+    type: string
+    enum: [pending, accepted, revoked, expired]
+  public_user_data:
+    $ref: ./PublicUserData.yaml
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
