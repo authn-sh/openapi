@@ -1,0 +1,96 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: listOrganizationMemberships
+  summary: List organization memberships
+  description: |
+    Paginated list of `OrganizationMembership` rows for the
+    organization. `public_user_data` is populated inline.
+
+    **Access**: requires `org:sys_memberships:read` in this
+    organization.
+  tags: [Org Memberships]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+    - name: role
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+    - name: query
+      in: query
+      required: false
+      schema: { type: string }
+  responses:
+    "200":
+      description: A page of memberships.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/OrganizationMembership.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+post:
+  operationId: inviteOrganizationMember
+  summary: Invite a user to join the organization
+  description: |
+    Issue an `OrganizationInvitation` for the given email address.
+    The FAPI always issues an invitation — direct membership
+    creation by `user_id` is BAPI-only.
+
+    **Access**: requires `org:sys_memberships:manage` in this
+    organization.
+  tags: [Org Memberships]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [email_address, role]
+          additionalProperties: false
+          properties:
+            email_address:
+              type: string
+              format: email
+              maxLength: 254
+            role:
+              type: string
+              description: Role `key` the recipient receives on accept.
+            redirect_url:
+              type: string
+              format: uri
+        examples:
+          basic:
+            value:
+              email_address: jane@acme.com
+              role: "org:member"
+              redirect_url: https://app.acme.com/welcome
+  responses:
+    "200":
+      description: The new invitation, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

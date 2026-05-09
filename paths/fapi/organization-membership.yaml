@@ -1,0 +1,71 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: user_id
+    in: path
+    required: true
+    description: |
+      `User.id` of the member. Memberships are addressed by the
+      member's user ID (one membership per user per org in v0.2).
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+patch:
+  operationId: updateOrganizationMembership
+  summary: Change a member's role
+  description: |
+    Change the role assigned to a member of the organization.
+
+    **Access**: requires `org:sys_memberships:manage` in this
+    organization.
+  tags: [Org Memberships]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [role]
+          additionalProperties: false
+          properties:
+            role:
+              type: string
+              description: New role `key`.
+        examples:
+          promote:
+            summary: Promote to admin
+            value: { role: "org:admin" }
+  responses:
+    "200":
+      description: The updated membership, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: removeOrganizationMember
+  summary: Remove a member from the organization
+  description: |
+    Drop another user's membership.
+
+    **Access**: requires `org:sys_memberships:manage` in this
+    organization. Returns `422 last_admin` if removing the target
+    would leave the org with no `org:admin`. Emits
+    `organizationMembership.deleted`.
+  tags: [Org Memberships]
+  responses:
+    "200":
+      description: The removed membership, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

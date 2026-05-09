@@ -1,0 +1,27 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: invitation_id
+    in: path
+    required: true
+    description: ID of the invitation.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: revokeOrganizationInvitation
+  summary: Revoke an organization invitation
+  description: |
+    Mark the invitation `revoked` and invalidate its ticket.
+    Idempotent: revoking an already-revoked invitation is a no-op.
+  tags: [Org Invitations]
+  responses:
+    "200":
+      description: The revoked invitation.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/OrganizationInvitation.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

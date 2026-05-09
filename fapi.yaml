@@ -1,0 +1,237 @@
+openapi: 3.1.0
+
+info:
+  title: authn.sh FAPI
+  version: 0.1.0-pre
+  summary: Frontend API (browser-facing) for authn.sh.
+  description: |
+    The **FAPI** is the browser-facing surface — every operation an
+    authn.sh JS SDK or Account Portal page calls from a user's
+    browser. It identifies the device via the `__client` cookie set
+    on the per-environment FAPI host (`https://{env_slug}.authn.sh/v1`),
+    with a `__authn_db_jwt` query-string fallback for cross-origin
+    development.
+
+    Cross-origin XHR is enabled for origins listed in the
+    environment's allowlist; production cookies are HttpOnly,
+    `SameSite=Lax`, and `Secure`.
+
+    The server-to-server admin surface (BAPI) is documented
+    separately in [`bapi.yaml`](./bapi.yaml). The two surfaces
+    share the `components/` directory but have distinct paths,
+    security schemes, and SDK consumers.
+
+    SDKs that consume this surface include `@authn-sh/sdk-js`
+    (and transitively `@authn-sh/sdk-react`). They generate
+    request/response types from `dist/fapi.bundled.json`.
+  license:
+    name: AGPL-3.0-only
+    identifier: AGPL-3.0-only
+  contact:
+    name: authn.sh
+    url: https://authn.sh
+  termsOfService: https://authn.sh/terms
+
+servers:
+  - url: https://{env_slug}.authn.sh/v1
+    description: Production FAPI (per-environment, browser-facing).
+    variables:
+      env_slug:
+        default: example
+        description: |
+          The slug of the environment whose FAPI you're addressing. Each
+          `Environment` row gets a unique slug at creation; production envs use
+          `<project_slug>`, development envs use `<project_slug>-dev`.
+
+tags:
+  - name: Environment
+    description: Public per-environment configuration consumed at SDK boot.
+  - name: Client
+    description: Per-device state container.
+  - name: Sign-Ins
+    description: In-progress sign-in attempts (state machine).
+  - name: Sign-Ups
+    description: In-progress sign-up attempts (state machine).
+  - name: Sessions
+    description: Live authenticated sessions on the calling device.
+  - name: Me
+    description: Authenticated end-user's view of themselves.
+  - name: Organizations
+    description: Organizations the calling user can interact with.
+  - name: Org Memberships
+    description: User ↔ organization joins.
+  - name: Org Invitations
+    description: Pending invitations to join an organization.
+  - name: Org Domains
+    description: Verified domains attached to an organization.
+  - name: Org Membership Requests
+    description: Pending join requests created by domain auto-suggestion.
+  - name: JWKS / OIDC
+    description: Public keys and OIDC discovery served per-environment.
+
+security:
+  - client_cookie: []
+  - dev_browser_jwt: []
+
+paths:
+  /v1/environment:
+    $ref: ./paths/fapi/environment.yaml
+  /v1/client:
+    $ref: ./paths/fapi/client.yaml
+  /v1/client/handshake:
+    $ref: ./paths/fapi/client-handshake.yaml
+  /v1/client/sign_ins:
+    $ref: ./paths/fapi/sign-ins.yaml
+  /v1/client/sign_ins/{sign_in_id}:
+    $ref: ./paths/fapi/sign-in.yaml
+  /v1/client/sign_ins/{sign_in_id}/prepare_first_factor:
+    $ref: ./paths/fapi/sign-in-prepare-first-factor.yaml
+  /v1/client/sign_ins/{sign_in_id}/attempt_first_factor:
+    $ref: ./paths/fapi/sign-in-attempt-first-factor.yaml
+  /v1/client/sign_ins/{sign_in_id}/prepare_second_factor:
+    $ref: ./paths/fapi/sign-in-prepare-second-factor.yaml
+  /v1/client/sign_ins/{sign_in_id}/attempt_second_factor:
+    $ref: ./paths/fapi/sign-in-attempt-second-factor.yaml
+  /v1/client/sign_ins/{sign_in_id}/reset_password:
+    $ref: ./paths/fapi/sign-in-reset-password.yaml
+  /v1/client/sign_ups:
+    $ref: ./paths/fapi/sign-ups.yaml
+  /v1/client/sign_ups/{sign_up_id}:
+    $ref: ./paths/fapi/sign-up.yaml
+  /v1/client/sign_ups/{sign_up_id}/prepare_verification:
+    $ref: ./paths/fapi/sign-up-prepare-verification.yaml
+  /v1/client/sign_ups/{sign_up_id}/attempt_verification:
+    $ref: ./paths/fapi/sign-up-attempt-verification.yaml
+  /v1/client/sessions/{session_id}:
+    $ref: ./paths/fapi/client-session.yaml
+  /v1/client/sessions/{session_id}/end:
+    $ref: ./paths/fapi/client-session-end.yaml
+  /v1/client/sessions/{session_id}/remove:
+    $ref: ./paths/fapi/client-session-remove.yaml
+  /v1/client/sessions/{session_id}/touch:
+    $ref: ./paths/fapi/client-session-touch.yaml
+  /v1/client/sessions/{session_id}/tokens:
+    $ref: ./paths/fapi/client-session-tokens.yaml
+  /v1/client/sessions/{session_id}/tokens/{template_name}:
+    $ref: ./paths/fapi/client-session-tokens-template.yaml
+  /v1/me:
+    $ref: ./paths/fapi/me.yaml
+  /v1/me/profile_image:
+    $ref: ./paths/fapi/me-profile-image.yaml
+  /v1/me/email_addresses:
+    $ref: ./paths/fapi/me-email-addresses.yaml
+  /v1/me/email_addresses/{email_address_id}:
+    $ref: ./paths/fapi/me-email-address.yaml
+  /v1/me/email_addresses/{email_address_id}/prepare_verification:
+    $ref: ./paths/fapi/me-email-prepare-verification.yaml
+  /v1/me/email_addresses/{email_address_id}/attempt_verification:
+    $ref: ./paths/fapi/me-email-attempt-verification.yaml
+  /v1/me/sessions:
+    $ref: ./paths/fapi/me-sessions.yaml
+  /v1/me/change_password:
+    $ref: ./paths/fapi/me-change-password.yaml
+  /v1/me/password:
+    $ref: ./paths/fapi/me-password.yaml
+  /v1/me/delete_self:
+    $ref: ./paths/fapi/me-delete-self.yaml
+  /v1/organizations:
+    $ref: ./paths/fapi/organizations.yaml
+  /v1/organizations/{organization_id}:
+    $ref: ./paths/fapi/organization.yaml
+  /v1/organizations/{organization_id}/leave:
+    $ref: ./paths/fapi/organization-leave.yaml
+  /v1/organizations/{organization_id}/memberships:
+    $ref: ./paths/fapi/organization-memberships.yaml
+  /v1/organizations/{organization_id}/memberships/{user_id}:
+    $ref: ./paths/fapi/organization-membership.yaml
+  /v1/organizations/{organization_id}/invitations:
+    $ref: ./paths/fapi/organization-invitations.yaml
+  /v1/organizations/{organization_id}/invitations/bulk:
+    $ref: ./paths/fapi/organization-invitations-bulk.yaml
+  /v1/organizations/{organization_id}/invitations/{invitation_id}/revoke:
+    $ref: ./paths/fapi/organization-invitation-revoke.yaml
+  /v1/organizations/{organization_id}/domains:
+    $ref: ./paths/fapi/organization-domains.yaml
+  /v1/organizations/{organization_id}/domains/{domain_id}:
+    $ref: ./paths/fapi/organization-domain.yaml
+  /v1/organizations/{organization_id}/domains/{domain_id}/verify:
+    $ref: ./paths/fapi/organization-domain-verify.yaml
+  /v1/organizations/{organization_id}/membership_requests:
+    $ref: ./paths/fapi/organization-membership-requests.yaml
+  /v1/organizations/{organization_id}/membership_requests/{request_id}/accept:
+    $ref: ./paths/fapi/organization-membership-request-accept.yaml
+  /v1/organizations/{organization_id}/membership_requests/{request_id}/reject:
+    $ref: ./paths/fapi/organization-membership-request-reject.yaml
+  /v1/me/organization_memberships:
+    $ref: ./paths/fapi/me-organization-memberships.yaml
+  /v1/me/organization_invitations:
+    $ref: ./paths/fapi/me-organization-invitations.yaml
+  /v1/me/organization_invitations/{invitation_id}/accept:
+    $ref: ./paths/fapi/me-organization-invitation-accept.yaml
+  /v1/me/organization_membership_requests:
+    $ref: ./paths/fapi/me-organization-membership-requests.yaml
+  /v1/me/active_organization:
+    $ref: ./paths/fapi/me-active-organization.yaml
+
+components:
+  securitySchemes:
+    client_cookie:
+      type: apiKey
+      in: cookie
+      name: __client
+      description: |
+        FAPI device cookie. HttpOnly, `SameSite=Lax`, `Secure` in production.
+        Issued by `GET /v1/client` on first contact. Identifies the `Client`
+        row across requests on its FAPI host.
+
+    dev_browser_jwt:
+      type: apiKey
+      in: query
+      name: __authn_db_jwt
+      description: |
+        Cross-origin development fallback. When the SDK runs against a dev
+        FAPI host that can't set a SameSite=Lax cookie cross-site (no HTTPS),
+        it sends this query-string JWT instead. Production never uses this.
+
+  schemas:
+    Id:                                        { $ref: ./components/schemas/Id.yaml }
+    Timestamp:                                 { $ref: ./components/schemas/Timestamp.yaml }
+    Metadata:                                  { $ref: ./components/schemas/Metadata.yaml }
+    PaginatedList:                             { $ref: ./components/schemas/PaginatedList.yaml }
+    Error:                                     { $ref: ./components/schemas/Error.yaml }
+    ErrorResponse:                             { $ref: ./components/schemas/ErrorResponse.yaml }
+    Verification:                              { $ref: ./components/schemas/Verification.yaml }
+    EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
+    User:                                      { $ref: ./components/schemas/User.yaml }
+    Client:                                    { $ref: ./components/schemas/Client.yaml }
+    ClientResponseEnvelope:                    { $ref: ./components/schemas/ClientResponseEnvelope.yaml }
+    Environment:                               { $ref: ./components/schemas/Environment.yaml }
+    Session:                                   { $ref: ./components/schemas/Session.yaml }
+    SessionActivity:                           { $ref: ./components/schemas/SessionActivity.yaml }
+    SignIn:                                    { $ref: ./components/schemas/SignIn.yaml }
+    SignUp:                                    { $ref: ./components/schemas/SignUp.yaml }
+    AttributeSetting:                          { $ref: ./components/schemas/AttributeSetting.yaml }
+    PublicUserData:                            { $ref: ./components/schemas/PublicUserData.yaml }
+    Organization:                              { $ref: ./components/schemas/Organization.yaml }
+    OrganizationMembership:                    { $ref: ./components/schemas/OrganizationMembership.yaml }
+    OrganizationInvitation:                    { $ref: ./components/schemas/OrganizationInvitation.yaml }
+    OrganizationInvitationCreateRequest:       { $ref: ./components/schemas/OrganizationInvitationCreateRequest.yaml }
+    OrganizationInvitationBulkCreateRequest:   { $ref: ./components/schemas/OrganizationInvitationBulkCreateRequest.yaml }
+    OrganizationDomain:                        { $ref: ./components/schemas/OrganizationDomain.yaml }
+    OrganizationDomainCreateRequest:           { $ref: ./components/schemas/OrganizationDomainCreateRequest.yaml }
+    OrganizationDomainUpdateRequest:           { $ref: ./components/schemas/OrganizationDomainUpdateRequest.yaml }
+    OrganizationMembershipRequest:             { $ref: ./components/schemas/OrganizationMembershipRequest.yaml }
+
+  responses:
+    BadRequest:           { $ref: ./components/responses/BadRequest.yaml }
+    Unauthorized:         { $ref: ./components/responses/Unauthorized.yaml }
+    Forbidden:            { $ref: ./components/responses/Forbidden.yaml }
+    NotFound:             { $ref: ./components/responses/NotFound.yaml }
+    Conflict:             { $ref: ./components/responses/Conflict.yaml }
+    UnprocessableEntity:  { $ref: ./components/responses/UnprocessableEntity.yaml }
+    TooManyRequests:      { $ref: ./components/responses/TooManyRequests.yaml }
+
+  parameters:
+    LimitParam:           { $ref: ./components/parameters/LimitParam.yaml }
+    OffsetParam:          { $ref: ./components/parameters/OffsetParam.yaml }
+    OrderByParam:         { $ref: ./components/parameters/OrderByParam.yaml }

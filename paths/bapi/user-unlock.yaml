@@ -1,0 +1,19 @@
+parameters:
+  - name: user_id
+    in: path
+    required: true
+    schema: { $ref: "../../components/schemas/Id.yaml" }
+
+post:
+  operationId: unlockUser
+  summary: Unlock a user
+  description: Lift a temporary lockout. Idempotent.
+  tags: [Users]
+  responses:
+    "200":
+      description: The unlocked user.
+      content:
+        application/json:
+          schema: { $ref: "../../components/schemas/User.yaml" }
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../../components/responses/NotFound.yaml" }

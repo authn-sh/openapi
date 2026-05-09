@@ -1,22 +1,30 @@
 # @authn.sh/openapi
 
-The OpenAPI 3.1 specification for the [authn.sh](https://authn.sh) Backend API (BAPI) and Frontend API (FAPI). This is the **source of truth** for both surfaces — every authn.sh SDK, the REST reference docs, and the in-Dashboard API explorer all read from the bundled artifact published from this repo.
+The OpenAPI 3.1 specification for the [authn.sh](https://authn.sh) Backend API (BAPI) and Frontend API (FAPI). This is the **source of truth** for both surfaces — every authn.sh SDK, the REST reference docs, and the in-Dashboard API explorer all read from the bundled artifacts published from this repo.
 
 If you change request or response shapes anywhere in the platform, the change starts here.
 
-## Layout
+## Two specs, one repo
+
+The BAPI (server-to-server, `bearer_secret_key`) and FAPI (browser-facing, `__client` cookie) overlap on URL prefixes (e.g. `POST /v1/organizations` exists on both with different request/response shapes). OAS3 only allows one operation per (path, method) pair, so the two surfaces have separate root specs that share a single `components/` directory.
 
 ```
-openapi.yaml                     # root document — info, servers, tags, security, refs into:
-paths/                           # one file per resource group (added in OA-2 onward)
+bapi.yaml                          # BAPI root (server-to-server)
+fapi.yaml                          # FAPI root (browser-facing)
+paths/
+  bapi/                            # BAPI path files
+  fapi/                            # FAPI path files
 components/
-  schemas/                       # split-out schemas (added in OA-2 onward)
-  responses/                     # reusable response references
-  parameters/                    # reusable parameter references
-  securitySchemes/               # reusable security-scheme references
-dist/                            # generated bundle output (gitignored)
-.github/workflows/lint.yml       # CI
+  schemas/                         # shared resource schemas
+  responses/                       # shared response references
+  parameters/                      # shared parameter references
+dist/                              # generated bundles (gitignored)
+  bapi.bundled.{yaml,json}
+  fapi.bundled.{yaml,json}
+.github/workflows/lint.yml         # CI runs both
 ```
+
+The two roots are deliberately **separate documents** — operation IDs (`getOrganization`, `createOrganization`, …) are only unique within each spec, not across both. SDK consumers pin to whichever bundle their surface targets.
 
 ## Local development
 
@@ -24,26 +32,30 @@ Requirements: Node 20+.
 
 ```bash
 npm install
-npm run lint        # redocly lint — blocks on errors, warns on style issues
-npm run bundle      # produces dist/openapi.bundled.{yaml,json}
-npm run preview     # serves the rendered docs at http://127.0.0.1:8080
+npm run lint           # lint:bapi + lint:fapi
+npm run lint:bapi      # one surface at a time
+npm run lint:fapi
+npm run bundle         # bundle:bapi + bundle:fapi
+npm run preview:bapi   # serves BAPI docs at http://127.0.0.1:8080
+npm run preview:fapi   # serves FAPI docs
 ```
 
 ## Adding a new resource
 
-1. Create the schema(s) under `components/schemas/<Resource>.yaml`.
-2. Create the path file under `paths/v1_<resource>.yaml` (one file per top-level resource family).
-3. Reference both from `openapi.yaml` (the bundler handles the stitching — keep `openapi.yaml`'s top-level `paths:` and `components:` sections updated with the `$ref`s).
-4. Run `npm run lint` and `npm run preview` locally.
-5. Open a PR. CI runs `lint` + `bundle` and uploads the bundle as an artifact for downstream SDK PRs to consume.
+1. Create the schema(s) under `components/schemas/<Resource>.yaml` — schemas are shared between BAPI and FAPI, so a new resource only needs them written once.
+2. Create the path file under `paths/bapi/<resource>.yaml` and/or `paths/fapi/<resource>.yaml` depending on which surface(s) expose it.
+3. Reference each path file from the corresponding root (`bapi.yaml` and/or `fapi.yaml`).
+4. Add the schema to the relevant root's `components.schemas` map (each root only registers what its paths reference).
+5. Run `npm run lint` and `npm run preview:<surface>` locally.
+6. Open a PR. CI runs both lints + bundles and uploads `dist/` as an artifact for downstream SDK PRs to consume.
 
-## How SDKs consume the bundle
+## How SDKs consume the bundles
 
-SDK repos pull `dist/openapi.bundled.json` from this repo's CI artifacts (or from a tagged release for stable versions) and feed it into their codegen pipeline:
+SDK repos pull `dist/bapi.bundled.json` and/or `dist/fapi.bundled.json` from this repo's CI artifacts (or from a tagged release for stable versions) and feed them into their codegen pipeline:
 
-- `@authn.sh/sdk-js` / `@authn.sh/sdk-react` (`authn-sh/javascript`) — generates `@authn.sh/types` from the bundle.
-- `authn/sdk` PHP (`authn-sh/sdk-php`) — contract tests validate fixtures against the bundled schemas.
-- `authn-sh/cli` (Go) — `oapi-codegen` produces typed clients.
+- `@authn-sh/sdk-js` / `@authn-sh/sdk-react` (`authn-sh/javascript`) — consumes **`fapi.bundled.json`** (browser-facing).
+- `authn-sh/sdk-php` — consumes **`bapi.bundled.json`** (server-to-server).
+- `authn-sh/cli` (Go) — admin tooling, consumes **`bapi.bundled.json`**.
 
 Pin the spec version in each SDK's `package.json` / `composer.json` / `go.mod` to the openapi tag you want to track.
 

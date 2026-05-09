@@ -1,0 +1,94 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: listOrganizationInvitations
+  summary: List organization invitations
+  description: Paginated list of `OrganizationInvitation` rows for the organization.
+  tags: [Org Invitations]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+    - $ref: ../../components/parameters/OrderByParam.yaml
+    - name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [pending, accepted, revoked, expired]
+    - name: query
+      in: query
+      description: Free-text match against `email_address`.
+      required: false
+      schema: { type: string }
+  responses:
+    "200":
+      description: A page of invitations.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/OrganizationInvitation.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+post:
+  operationId: createOrganizationInvitation
+  summary: Create an organization invitation
+  description: |
+    Mint an invitation tied to this organization. By default an
+    email is sent immediately; set `notify: false` to mint a
+    ticket without sending.
+  tags: [Org Invitations]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/OrganizationInvitationCreateRequest.yaml }
+        examples:
+          basic:
+            summary: Single invitation as org:member
+            value:
+              email_address: jane@acme.com
+              role: "org:member"
+              redirect_url: https://app.acme.com/welcome
+  responses:
+    "201":
+      description: The new invitation.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/OrganizationInvitation.yaml }
+          examples:
+            created:
+              value:
+                id: orginv_01HKX9SY9V7H7TF8C8K7J9X4ZK
+                object: organization_invitation
+                organization_id: org_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                email_address: jane@acme.com
+                role: "org:member"
+                role_name: Member
+                inviter_user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                redirect_url: https://app.acme.com/welcome
+                status: pending
+                public_metadata: {}
+                url: "https://acme.authn.sh/v1/client/handshake?__authn_ticket=tkt_01HKX9SY9V7H7TF8C8K7J9X4ZK&__authn_status=sign_up&__authn_organization_id=org_01HKX9SY9V7H7TF8C8K7J9X4ZH&redirect_url=https%3A%2F%2Fapp.acme.com%2Fwelcome"
+                expires_at: 1717487999000
+                created_at: 1714895999000
+                updated_at: 1714895999000
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

@@ -1,0 +1,38 @@
+parameters:
+  - name: session_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: template_name
+    in: path
+    required: true
+    schema:
+      type: string
+      pattern: "^[A-Za-z0-9_-]{1,64}$"
+    description: Name of the JWT template configured on the environment.
+
+post:
+  operationId: getClientSessionTokenWithTemplate
+  summary: Mint a session JWT with a custom template (v0.7)
+  description: |
+    Issue a JWT shaped by the named template. Always returns
+    `404 jwt_template_not_found` in v0.1; the templating layer ships in
+    v0.7 alongside the IdP role.
+  tags: [Sessions]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The minted token.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [object, jwt]
+            additionalProperties: false
+            properties:
+              object: { type: string, const: token }
+              jwt:    { type: string }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

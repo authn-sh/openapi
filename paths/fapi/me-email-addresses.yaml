@@ -1,0 +1,53 @@
+get:
+  operationId: listMyEmailAddresses
+  summary: List my email addresses
+  description: Every email address attached to the current user, with verification state.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: My email addresses.
+      content:
+        application/json:
+          schema:
+            type: array
+            items: { $ref: ../../components/schemas/EmailAddress.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+
+post:
+  operationId: createMyEmailAddress
+  summary: Add an email address to my account
+  description: |
+    Attach a new email to the current user. Always created unverified;
+    follow up with `prepare_verification` + `attempt_verification`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [email_address]
+          additionalProperties: false
+          properties:
+            email_address:
+              type: string
+              format: email
+              maxLength: 254
+        examples:
+          add:
+            value: { email_address: jane.alt@acme.com }
+  responses:
+    "200":
+      description: The new email address, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

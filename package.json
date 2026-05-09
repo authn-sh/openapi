@@ -2,7 +2,7 @@
   "name": "@authn.sh/openapi",
   "version": "0.0.0",
   "private": true,
-  "description": "OpenAPI 3.1 specification for the authn.sh BAPI and FAPI. Source of truth for SDK code generation.",
+  "description": "OpenAPI 3.1 specifications for the authn.sh BAPI and FAPI (two roots, shared components). Source of truth for SDK code generation.",
   "license": "AGPL-3.0-only",
   "homepage": "https://github.com/authn-sh/openapi",
   "repository": {
@@ -16,12 +16,16 @@
     "node": ">=20"
   },
   "scripts": {
-    "lint": "redocly lint openapi.yaml",
-    "bundle": "npm run bundle:yaml && npm run bundle:json",
-    "bundle:yaml": "redocly bundle openapi.yaml -o dist/openapi.bundled.yaml --ext yaml",
-    "bundle:json": "redocly bundle openapi.yaml -o dist/openapi.bundled.json --ext json",
-    "preview": "redocly preview-docs openapi.yaml",
-    "stats": "redocly stats openapi.yaml"
+    "lint": "npm run lint:bapi && npm run lint:fapi",
+    "lint:bapi": "redocly lint bapi.yaml",
+    "lint:fapi": "redocly lint fapi.yaml",
+    "bundle": "npm run bundle:bapi && npm run bundle:fapi",
+    "bundle:bapi": "redocly bundle bapi.yaml -o dist/bapi.bundled.yaml --ext yaml && redocly bundle bapi.yaml -o dist/bapi.bundled.json --ext json",
+    "bundle:fapi": "redocly bundle fapi.yaml -o dist/fapi.bundled.yaml --ext yaml && redocly bundle fapi.yaml -o dist/fapi.bundled.json --ext json",
+    "preview:bapi": "redocly preview-docs bapi.yaml",
+    "preview:fapi": "redocly preview-docs fapi.yaml",
+    "stats:bapi": "redocly stats bapi.yaml",
+    "stats:fapi": "redocly stats fapi.yaml"
   },
   "devDependencies": {
     "@redocly/cli": "^1.34.0"

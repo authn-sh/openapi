@@ -1,0 +1,33 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: bulkCreateOrganizationInvitations
+  summary: Bulk-create organization invitations
+  description: |
+    Atomic batch create. If any invitation fails validation the
+    entire request is rejected. Maximum 500 per call.
+
+    **Access**: requires `org:sys_memberships:manage` in this
+    organization.
+  tags: [Org Invitations]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/OrganizationInvitationBulkCreateRequest.yaml }
+  responses:
+    "200":
+      description: Created invitations, wrapped (`response.data` carries the array).
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

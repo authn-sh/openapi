@@ -21,14 +21,23 @@ jobs:
 
       - run: npm ci
 
-      - name: Lint spec
-        run: npm run lint
+      - name: Lint BAPI
+        run: npm run lint:bapi
 
-      - name: Bundle spec
-        run: npm run bundle
+      - name: Lint FAPI
+        run: npm run lint:fapi
 
-      - name: Spec stats
-        run: npm run stats
+      - name: Bundle BAPI
+        run: npm run bundle:bapi
+
+      - name: Bundle FAPI
+        run: npm run bundle:fapi
+
+      - name: BAPI stats
+        run: npm run stats:bapi
+
+      - name: FAPI stats
+        run: npm run stats:fapi
 
       - name: Upload bundled artifacts
         uses: actions/upload-artifact@v4

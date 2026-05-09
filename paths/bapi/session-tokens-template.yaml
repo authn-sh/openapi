@@ -1,0 +1,34 @@
+parameters:
+  - name: session_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: template_name
+    in: path
+    required: true
+    schema:
+      type: string
+      pattern: "^[A-Za-z0-9_-]{1,64}$"
+
+post:
+  operationId: getSessionTokenWithTemplate
+  summary: Mint a session JWT with a custom template (BAPI, v0.7)
+  description: |
+    Admin-side templated token mint. Always returns
+    `404 jwt_template_not_found` in v0.1; the templating layer ships in
+    v0.7 alongside the IdP role.
+  tags: [Sessions]
+  responses:
+    "200":
+      description: The minted token.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [object, jwt]
+            additionalProperties: false
+            properties:
+              object: { type: string, const: token }
+              jwt:    { type: string }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

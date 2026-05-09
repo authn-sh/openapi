@@ -1,0 +1,49 @@
+put:
+  operationId: setMyActiveOrganization
+  summary: Set the active organization for the current session
+  description: |
+    Sets `Session.last_active_organization_id` for the active
+    session and refreshes the session JWT so the next
+    `getSessionToken` issues a token whose `org` claim points at
+    the new organization. Pass `organization_id: null` to clear
+    the active org (issues tokens with no `org` claim).
+
+    Returns `403 not_a_member` if the current user has no
+    membership in `organization_id`.
+
+    Sibling to passing `active_organization_id` on
+    `touchClientSession`. Use this `PUT` when the only thing
+    changing is the active org (e.g. an `<OrganizationSwitcher />`
+    selection); use the touch endpoint when bumping
+    `last_active_at` at the same time.
+  tags: [Me]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [organization_id]
+          additionalProperties: false
+          properties:
+            organization_id:
+              type: [string, "null"]
+              description: |
+                ID of the organization to make active, or `null`
+                to clear.
+        examples:
+          switch:
+            summary: Switch to Acme
+            value: { organization_id: org_01HKX9SY9V7H7TF8C8K7J9X4ZH }
+          clear:
+            summary: Clear active org
+            value: { organization_id: null }
+  responses:
+    "200":
+      description: The updated session, wrapped (`response` carries the refreshed `Session`).
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

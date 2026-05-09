@@ -1,0 +1,19 @@
+get:
+  operationId: listMySessions
+  summary: List my active sessions
+  description: |
+    All non-ended sessions for the current user across every device.
+    Powers the "active sessions" panel in the user profile.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: My sessions.
+      content:
+        application/json:
+          schema:
+            type: array
+            items: { $ref: ../../components/schemas/Session.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }

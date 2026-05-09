@@ -1,0 +1,108 @@
+get:
+  operationId: getMe
+  summary: Get the current user
+  description: |
+    Return the authenticated user. Works on any active session; the SDK
+    uses this to hydrate `useUser()` / `currentUser` in the framework
+    bindings.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The user.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/User.yaml }
+          examples:
+            me:
+              summary: A signed-in user
+              value:
+                id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                object: user
+                external_id: null
+                username: jane
+                first_name: Jane
+                last_name: Doe
+                image_url: null
+                has_image: false
+                primary_email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
+                primary_phone_number_id: null
+                email_addresses: []
+                phone_numbers: []
+                external_accounts: []
+                enterprise_accounts: []
+                passkeys: []
+                password_enabled: true
+                two_factor_enabled: false
+                totp_enabled: false
+                backup_code_enabled: false
+                mfa_enabled_at: null
+                mfa_disabled_at: null
+                banned: false
+                locked: false
+                lockout_expires_at: null
+                last_sign_in_at: 1714809600000
+                last_active_at: 1714895999000
+                delete_self_enabled: true
+                locale: en-US
+                public_metadata: { plan: pro }
+                private_metadata: {}
+                unsafe_metadata: {}
+                created_at: 1714723200000
+                updated_at: 1714895999000
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+
+patch:
+  operationId: updateMe
+  summary: Update the current user
+  description: |
+    Partial update over the FAPI-writable subset (display name fields,
+    `unsafe_metadata`, `locale`). Privileged fields (`public_metadata`,
+    `private_metadata`, `external_id`, password lifecycle) live on
+    BAPI's `PATCH /v1/users/{id}`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          additionalProperties: false
+          properties:
+            username:        { type: [string, "null"] }
+            first_name:      { type: [string, "null"] }
+            last_name:       { type: [string, "null"] }
+            unsafe_metadata: { $ref: ../../components/schemas/Metadata.yaml }
+            locale:          { type: [string, "null"] }
+  responses:
+    "200":
+      description: The updated user, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteMe
+  summary: Delete the current user (alias for delete_self)
+  description: |
+    Convenience wrapper around `POST /v1/me/delete_self`. Subject to
+    the environment's `delete_self_enabled` setting.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The destroyed user, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }

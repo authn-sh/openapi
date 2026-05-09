@@ -1,0 +1,30 @@
+parameters:
+  - name: redirect_url_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getRedirectUrl
+  summary: Get a redirect URL
+  description: Fetch a single redirect URL by ID.
+  tags: [Redirect URLs]
+  responses:
+    "200":
+      description: The redirect URL.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/RedirectUrl.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+delete:
+  operationId: deleteRedirectUrl
+  summary: Delete a redirect URL
+  description: Idempotent removal.
+  tags: [Redirect URLs]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

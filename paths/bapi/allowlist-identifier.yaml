@@ -1,0 +1,16 @@
+parameters:
+  - name: identifier_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+delete:
+  operationId: deleteAllowlistIdentifier
+  summary: Delete an allowlist identifier
+  description: Idempotent removal of a single allowlist row.
+  tags: [Allowlist Identifiers]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

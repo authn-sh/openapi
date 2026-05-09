@@ -1,0 +1,87 @@
+get:
+  operationId: listInvitations
+  summary: List invitations
+  description: Paginated list of invitations, filterable by `status` and free-text `query`.
+  tags: [Invitations]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+    - $ref: ../../components/parameters/OrderByParam.yaml
+    - name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [pending, accepted, revoked, expired]
+    - name: query
+      in: query
+      description: Free-text match against `email_address`.
+      required: false
+      schema: { type: string }
+  responses:
+    "200":
+      description: A page of invitations.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/Invitation.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+post:
+  operationId: createInvitation
+  summary: Create an invitation
+  description: |
+    Mint a single invitation. By default an email is sent immediately;
+    set `notify: false` to mint a ticket without sending.
+  tags: [Invitations]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/InvitationCreateRequest.yaml }
+        examples:
+          basic:
+            summary: Email + redirect_url, default expiry
+            value:
+              email_address: jane@acme.com
+              redirect_url: https://app.acme.com/welcome
+              public_metadata: { plan: pro }
+          silent:
+            summary: Mint ticket only, no email
+            value:
+              email_address: jane@acme.com
+              notify: false
+              expires_in_days: 30
+  responses:
+    "201":
+      description: The new invitation.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Invitation.yaml }
+          examples:
+            created:
+              value:
+                id: inv_01HKX9SY9V7H7TF8C8K7J9X4ZG
+                object: invitation
+                email_address: jane@acme.com
+                redirect_url: https://app.acme.com/welcome
+                public_metadata: { plan: pro }
+                status: pending
+                revoked: false
+                url: "https://acme.authn.sh/v1/client/handshake?__authn_ticket=tkt_01HKX9SY9V7H7TF8C8K7J9X4ZG&__authn_status=sign_up&redirect_url=https%3A%2F%2Fapp.acme.com%2Fwelcome"
+                expires_at: 1717487999000
+                created_at: 1714895999000
+                updated_at: 1714895999000
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

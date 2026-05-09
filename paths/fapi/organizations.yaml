@@ -1,0 +1,79 @@
+post:
+  operationId: createOrganization
+  summary: Create an organization
+  description: |
+    The signed-in user creates a new organization and is enrolled
+    as its first member with the role configured as the
+    environment's `creator_role` (defaults to `org:admin`).
+
+    Subject to `Environment.organization_settings.allow_user_created_organizations`
+    and `max_organizations_per_user`. Returns
+    `422 organization_creation_disabled` and
+    `422 organization_quota_exceeded` respectively.
+  tags: [Organizations]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [name]
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 256
+            slug:
+              type: string
+              minLength: 1
+              maxLength: 64
+              pattern: "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+              description: |
+                Optional. When omitted, the server slugifies `name`
+                and appends a short suffix to disambiguate.
+            public_metadata:
+              $ref: ../../components/schemas/Metadata.yaml
+        examples:
+          basic:
+            summary: Create "Acme Inc."
+            value:
+              name: Acme Inc.
+              slug: acme
+  responses:
+    "200":
+      description: The new organization, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+          examples:
+            created:
+              value:
+                response:
+                  id: org_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                  object: organization
+                  name: Acme Inc.
+                  slug: acme
+                  image_url: null
+                  has_image: false
+                  members_count: 1
+                  pending_invitations_count: 0
+                  max_allowed_memberships: null
+                  admin_delete_enabled: true
+                  public_metadata: {}
+                  private_metadata: {}
+                  created_by: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                  created_at: 1714895999000
+                  updated_at: 1714895999000
+                client:
+                  id: client_01HKX9SY9V7H7TF8C8K7J9X4ZA
+                  object: client
+                  sessions: []
+                  sign_in: null
+                  sign_up: null
+                  last_active_session_id: sess_01HKX9SY9V7H7TF8C8K7J9X4ZC
+                  created_at: 1714895990000
+                  updated_at: 1714895999000
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

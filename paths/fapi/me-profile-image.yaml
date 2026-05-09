@@ -1,0 +1,56 @@
+post:
+  operationId: uploadMyProfileImage
+  summary: Upload my profile image
+  description: |
+    Upload a new profile image. Replaces the existing image, if any.
+    Maximum 10 MiB; allowed content types: `image/png`, `image/jpeg`,
+    `image/webp`, `image/gif`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [file]
+          additionalProperties: false
+          properties:
+            file:
+              type: string
+              format: binary
+  responses:
+    "200":
+      description: The user with the new `image_url`, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "413":
+      description: Image too large.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }
+    "415":
+      description: Unsupported image type.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }
+
+delete:
+  operationId: deleteMyProfileImage
+  summary: Delete my profile image
+  description: Remove the profile image and clear `image_url`. Idempotent.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The user with `image_url = null`, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }

@@ -1,0 +1,35 @@
+parameters:
+  - name: invitation_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: revokeInvitation
+  summary: Revoke an invitation
+  description: |
+    Mark the invitation `revoked` and invalidate its ticket. Idempotent:
+    revoking an already-revoked invitation is a no-op.
+  tags: [Invitations]
+  responses:
+    "200":
+      description: The revoked invitation.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Invitation.yaml }
+          examples:
+            revoked:
+              value:
+                id: inv_01HKX9SY9V7H7TF8C8K7J9X4ZG
+                object: invitation
+                email_address: jane@acme.com
+                redirect_url: null
+                public_metadata: {}
+                status: revoked
+                revoked: true
+                url: "https://acme.authn.sh/v1/client/handshake?__authn_ticket=tkt_01HKX9SY9V7H7TF8C8K7J9X4ZG&__authn_status=sign_up"
+                expires_at: 1717487999000
+                created_at: 1714895999000
+                updated_at: 1714896200000
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

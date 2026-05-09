@@ -1,0 +1,83 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getOrganization
+  summary: Get an organization
+  description: Fetch a single `Organization` by ID.
+  tags: [Organizations]
+  responses:
+    "200":
+      description: The organization.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Organization.yaml }
+          examples:
+            org:
+              value:
+                id: org_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                object: organization
+                name: Acme Inc.
+                slug: acme
+                image_url: null
+                has_image: false
+                members_count: 12
+                pending_invitations_count: 3
+                max_allowed_memberships: null
+                admin_delete_enabled: true
+                public_metadata: { plan: pro }
+                private_metadata: {}
+                created_by: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                created_at: 1714723200000
+                updated_at: 1714895999000
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }
+
+patch:
+  operationId: updateOrganization
+  summary: Update an organization
+  description: |
+    Partial update. Only the fields you send are touched; nullable
+    fields can be cleared by sending `null`.
+  tags: [Organizations]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/OrganizationUpdateRequest.yaml }
+        examples:
+          rename:
+            summary: Rename + bump max members
+            value:
+              name: Acme Corporation
+              max_allowed_memberships: 100
+  responses:
+    "200":
+      description: The updated organization.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Organization.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteOrganization
+  summary: Delete an organization
+  description: |
+    Permanently delete the organization, all its memberships,
+    invitations, domains, and metadata. Emits `organization.deleted`.
+  tags: [Organizations]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
