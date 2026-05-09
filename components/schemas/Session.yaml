@@ -105,6 +105,16 @@ properties:
       user. Carries `iss`, `sub`, `sid` of the actor's session.
   latest_activity:
     $ref: ./SessionActivity.yaml
+  user:
+    description: |
+      Optional embedded `User` snapshot. Present when the FAPI returns
+      this Session inside a `Client` envelope so the SDK can hydrate
+      the active user without a follow-up `GET /v1/me` round-trip.
+      Omitted on standalone `GET /v1/client/sessions/{id}` reads
+      (consumers can still fetch the user via the `user_id` field).
+    oneOf:
+      - $ref: ./User.yaml
+      - type: "null"
   created_at:
     $ref: ./Timestamp.yaml
   updated_at:
