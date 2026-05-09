@@ -57,14 +57,17 @@ properties:
   public_metadata:
     $ref: ./Metadata.yaml
   url:
-    type: string
+    type: [string, "null"]
     format: uri
     description: |
       Click-through URL. Carries the ticket plus
       `__authn_status=sign_up` (or `sign_in` when the email is
       already attached to a `User`) and the org id, so the SDK
-      knows which flow to start. The full v0.1 query convention
-      lives in PLAN §9.7.
+      knows which flow to start.
+
+      Returned for `pending` invitations only. `null` once the
+      invitation is `revoked` / `accepted` / `expired` since the
+      ticket can no longer be exchanged.
     examples:
       - "https://acme.authn.sh/v1/client/handshake?__authn_ticket=tkt_01HKX9SY9V7H7TF8C8K7J9X4ZG&__authn_status=sign_up&__authn_organization_id=org_01HKX9SY9V7H7TF8C8K7J9X4ZH&redirect_url=https%3A%2F%2Fapp.acme.com%2Fwelcome"
   expires_at:
