@@ -1,0 +1,57 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+post:
+  operationId: bulkCreateOrganizationInvitations
+  summary: Bulk-create organization invitations
+  description: |
+    Atomic batch create. If any invitation fails validation the
+    entire request is rejected; the response describes the
+    offending row(s). Maximum 500 invitations per call.
+  tags: [Org Invitations]
+  parameters:
+    - $ref: ../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/OrganizationInvitationBulkCreateRequest.yaml }
+        examples:
+          batch:
+            summary: Three invitations in one call
+            value:
+              invitations:
+                - email_address: jane@acme.com
+                  role: "org:admin"
+                  redirect_url: https://app.acme.com/welcome
+                - email_address: john@acme.com
+                  role: "org:member"
+                - email_address: kate@acme.com
+                  role: "org:member"
+                  notify: false
+                  expires_in_days: 30
+  responses:
+    "201":
+      description: Created invitations.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data, total_count]
+            additionalProperties: false
+            properties:
+              data:
+                type: array
+                items: { $ref: ../components/schemas/OrganizationInvitation.yaml }
+              total_count:
+                type: integer
+                minimum: 0
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "409": { $ref: ../components/responses/Conflict.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../components/responses/TooManyRequests.yaml }

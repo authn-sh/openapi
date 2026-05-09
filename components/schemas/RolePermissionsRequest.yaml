@@ -1,0 +1,16 @@
+type: object
+description: |
+  Body for `PUT /v1/roles/{role_id}/permissions`. Replaces the
+  role's permission set wholesale — the resulting set is exactly
+  the keys you send. Pass `[]` to clear all permissions.
+required: [permissions]
+additionalProperties: false
+properties:
+  permissions:
+    type: array
+    description: |
+      Permission `key` strings. Each must already exist (system or
+      custom) at the time of write; missing keys return
+      `422 invalid_field` and the role is not modified.
+    items:
+      type: string
