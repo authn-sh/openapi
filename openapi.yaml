@@ -66,6 +66,8 @@ tags:
     description: Pending invitations to join an organization. Populated in v0.2.
   - name: Org Domains
     description: Verified domains attached to an organization. Populated in v0.2.
+  - name: Org Membership Requests
+    description: Pending join requests created by domain auto-suggestion. Populated in v0.2.
   - name: Roles
     description: Custom and system roles, scoped per environment. Populated in v0.2.
   - name: Permissions
@@ -206,6 +208,44 @@ paths:
     $ref: ./paths/me-email-prepare-verification.yaml
   /v1/me/email_addresses/{email_address_id}/attempt_verification:
     $ref: ./paths/me-email-attempt-verification.yaml
+  /v1/me/organizations:
+    $ref: ./paths/me-organizations.yaml
+  /v1/me/organizations/{organization_id}:
+    $ref: ./paths/me-organization.yaml
+  /v1/me/organizations/{organization_id}/leave:
+    $ref: ./paths/me-organization-leave.yaml
+  /v1/me/organizations/{organization_id}/memberships:
+    $ref: ./paths/me-organization-memberships.yaml
+  /v1/me/organizations/{organization_id}/memberships/{user_id}:
+    $ref: ./paths/me-organization-membership.yaml
+  /v1/me/organizations/{organization_id}/invitations:
+    $ref: ./paths/me-organization-invitations.yaml
+  /v1/me/organizations/{organization_id}/invitations/bulk:
+    $ref: ./paths/me-organization-invitations-bulk.yaml
+  /v1/me/organizations/{organization_id}/invitations/{invitation_id}/revoke:
+    $ref: ./paths/me-organization-invitation-revoke.yaml
+  /v1/me/organizations/{organization_id}/domains:
+    $ref: ./paths/me-organization-domains.yaml
+  /v1/me/organizations/{organization_id}/domains/{domain_id}:
+    $ref: ./paths/me-organization-domain.yaml
+  /v1/me/organizations/{organization_id}/domains/{domain_id}/verify:
+    $ref: ./paths/me-organization-domain-verify.yaml
+  /v1/me/organizations/{organization_id}/membership_requests:
+    $ref: ./paths/me-organization-membership-requests.yaml
+  /v1/me/organizations/{organization_id}/membership_requests/{request_id}/accept:
+    $ref: ./paths/me-organization-membership-request-accept.yaml
+  /v1/me/organizations/{organization_id}/membership_requests/{request_id}/reject:
+    $ref: ./paths/me-organization-membership-request-reject.yaml
+  /v1/me/organization_memberships:
+    $ref: ./paths/me-org-memberships.yaml
+  /v1/me/organization_invitations:
+    $ref: ./paths/me-org-invitations.yaml
+  /v1/me/organization_invitations/{invitation_id}/accept:
+    $ref: ./paths/me-org-invitation-accept.yaml
+  /v1/me/organization_membership_requests:
+    $ref: ./paths/me-org-membership-requests.yaml
+  /v1/me/active_organization:
+    $ref: ./paths/me-active-organization.yaml
   /v1/me/sessions:
     $ref: ./paths/me-sessions.yaml
   /v1/me/change_password:

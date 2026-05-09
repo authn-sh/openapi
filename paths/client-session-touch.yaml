@@ -8,9 +8,20 @@ post:
   operationId: touchClientSession
   summary: Touch a session
   description: |
-    Update `last_active_at` and (optionally) the active organization.
-    The SDK calls this on every page view so the dashboard "active
-    sessions" view is fresh.
+    Update `last_active_at` and (optionally) the active
+    organization. The SDK calls this on every page view so the
+    dashboard "active sessions" view is fresh.
+
+    Passing `active_organization_id` sets
+    `Session.last_active_organization_id` and refreshes the session
+    JWT so the next `getSessionToken` issues a token whose `org`
+    claim points at the new organization. Pass `null` to clear.
+    Returns `403 not_a_member` if the current user has no
+    membership in the target organization.
+
+    For pure switcher flows that don't need to bump
+    `last_active_at` at the same time, prefer
+    `setMyActiveOrganization` (`PUT /v1/me/active_organization`).
   tags: [Sessions]
   security:
     - client_cookie: []
@@ -26,8 +37,11 @@ post:
             active_organization_id:
               type: [string, "null"]
               description: |
-                Switch the active organization. Always `null` in v0.1
-                since organizations land in v0.2.
+                Switch the active organization. `null` clears the
+                active org (issues tokens with no `org` claim).
+                Setting a new value refreshes the session JWT so
+                the next `getSessionToken` carries the matching
+                `org` claim.
   responses:
     "200":
       description: The touched session, wrapped.
@@ -35,4 +49,6 @@ post:
         application/json:
           schema: { $ref: ../components/schemas/ClientResponseEnvelope.yaml }
     "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../components/responses/Forbidden.yaml }
     "404": { $ref: ../components/responses/NotFound.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }

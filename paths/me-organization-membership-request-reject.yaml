@@ -1,0 +1,36 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../components/schemas/Id.yaml }
+  - name: request_id
+    in: path
+    required: true
+    description: ID of the membership request.
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+post:
+  operationId: rejectOrganizationMembershipRequest
+  summary: Reject a membership request
+  description: |
+    Mark a pending `OrganizationMembershipRequest` as `revoked`.
+    The requester is not notified by default — caller may surface
+    the rejection in their own product.
+
+    **Access**: requires `org:sys_memberships:manage` in this
+    organization.
+  tags: [Org Membership Requests]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The rejected request, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../components/responses/Forbidden.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }

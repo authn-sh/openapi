@@ -1,0 +1,83 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+get:
+  operationId: listOrganizationInvitationsFapi
+  summary: List organization invitations (FAPI)
+  description: |
+    Paginated list of `OrganizationInvitation` rows for the
+    organization.
+
+    **Access**: requires `org:sys_memberships:read` in this
+    organization.
+  tags: [Org Invitations]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  parameters:
+    - $ref: ../components/parameters/LimitParam.yaml
+    - $ref: ../components/parameters/OffsetParam.yaml
+    - name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [pending, accepted, revoked, expired]
+  responses:
+    "200":
+      description: A page of invitations.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../components/schemas/OrganizationInvitation.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../components/responses/Forbidden.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+
+post:
+  operationId: createOrganizationInvitationFapi
+  summary: Create an organization invitation (FAPI)
+  description: |
+    Mint a single invitation. By default an email is sent
+    immediately; set `notify: false` to mint a ticket without
+    sending.
+
+    **Access**: requires `org:sys_memberships:manage` in this
+    organization.
+  tags: [Org Invitations]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../components/schemas/OrganizationInvitationCreateRequest.yaml }
+        examples:
+          basic:
+            value:
+              email_address: jane@acme.com
+              role: "org:member"
+              redirect_url: https://app.acme.com/welcome
+  responses:
+    "200":
+      description: The new invitation, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../components/responses/Forbidden.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "409": { $ref: ../components/responses/Conflict.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../components/responses/TooManyRequests.yaml }

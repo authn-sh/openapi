@@ -1,0 +1,28 @@
+get:
+  operationId: listMyOrganizationInvitations
+  summary: List my pending organization invitations
+  description: |
+    `OrganizationInvitation` rows addressed to one of the current
+    user's verified email addresses, in `pending` status.
+    Accepted, revoked, and expired invitations are filtered out.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  parameters:
+    - $ref: ../components/parameters/LimitParam.yaml
+    - $ref: ../components/parameters/OffsetParam.yaml
+  responses:
+    "200":
+      description: A page of pending invitations.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../components/schemas/OrganizationInvitation.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }

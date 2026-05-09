@@ -1,0 +1,33 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../components/schemas/Id.yaml }
+  - name: invitation_id
+    in: path
+    required: true
+    description: ID of the invitation.
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+post:
+  operationId: revokeOrganizationInvitationFapi
+  summary: Revoke an organization invitation (FAPI)
+  description: |
+    Mark the invitation `revoked` and invalidate its ticket.
+
+    **Access**: requires `org:sys_memberships:manage` in this
+    organization. Idempotent.
+  tags: [Org Invitations]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The revoked invitation, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../components/responses/Forbidden.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }

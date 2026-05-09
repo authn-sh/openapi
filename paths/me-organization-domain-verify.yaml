@@ -1,0 +1,35 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../components/schemas/Id.yaml }
+  - name: domain_id
+    in: path
+    required: true
+    description: ID of the domain.
+    schema: { $ref: ../components/schemas/Id.yaml }
+
+post:
+  operationId: verifyOrganizationDomainFapi
+  summary: Issue or re-issue a domain verification challenge (FAPI)
+  description: |
+    Issue (or re-issue) the proof challenge attached to the
+    domain. The actual DNS record check runs asynchronously.
+
+    **Access**: requires `org:sys_domains:manage` in this organization.
+  tags: [Org Domains]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The domain with the freshly-issued verification challenge, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../components/responses/Forbidden.yaml }
+    "404": { $ref: ../components/responses/NotFound.yaml }
+    "422": { $ref: ../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../components/responses/TooManyRequests.yaml }

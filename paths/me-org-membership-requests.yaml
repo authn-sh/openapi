@@ -1,0 +1,35 @@
+get:
+  operationId: listMyOrganizationMembershipRequests
+  summary: List my outgoing membership requests
+  description: |
+    `OrganizationMembershipRequest` rows the current user
+    generated — typically by signing up (or adding a verified
+    email) whose address matched an `OrganizationDomain` whose
+    `enrollment_mode` is `automatic_suggestion`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  parameters:
+    - $ref: ../components/parameters/LimitParam.yaml
+    - $ref: ../components/parameters/OffsetParam.yaml
+    - name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [pending, accepted, revoked, expired]
+  responses:
+    "200":
+      description: A page of membership requests.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../components/schemas/OrganizationMembershipRequest.yaml }
+    "401": { $ref: ../components/responses/Unauthorized.yaml }
