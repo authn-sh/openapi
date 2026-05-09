@@ -82,15 +82,15 @@ paths:
     $ref: ./paths/bapi/user-lock.yaml
   /v1/users/{user_id}/unlock:
     $ref: ./paths/bapi/user-unlock.yaml
-  /v1/users/{user_id}/profile_image:
+  /v1/users/{user_id}/profile-image:
     $ref: ./paths/bapi/user-profile-image.yaml
   /v1/users/{user_id}/metadata:
     $ref: ./paths/bapi/user-metadata.yaml
-  /v1/users/{user_id}/verify_password:
+  /v1/users/{user_id}/verify-password:
     $ref: ./paths/bapi/user-verify-password.yaml
-  /v1/email_addresses:
+  /v1/email-addresses:
     $ref: ./paths/bapi/email-addresses.yaml
-  /v1/email_addresses/{email_address_id}:
+  /v1/email-addresses/{email_address_id}:
     $ref: ./paths/bapi/email-address.yaml
   /v1/sessions:
     $ref: ./paths/bapi/sessions.yaml
@@ -136,29 +136,29 @@ paths:
     $ref: ./paths/bapi/invitations-bulk.yaml
   /v1/invitations/{invitation_id}/revoke:
     $ref: ./paths/bapi/invitation-revoke.yaml
-  /v1/allowlist_identifiers:
+  /v1/allowlist-identifiers:
     $ref: ./paths/bapi/allowlist-identifiers.yaml
-  /v1/allowlist_identifiers/{identifier_id}:
+  /v1/allowlist-identifiers/{identifier_id}:
     $ref: ./paths/bapi/allowlist-identifier.yaml
-  /v1/blocklist_identifiers:
+  /v1/blocklist-identifiers:
     $ref: ./paths/bapi/blocklist-identifiers.yaml
-  /v1/blocklist_identifiers/{identifier_id}:
+  /v1/blocklist-identifiers/{identifier_id}:
     $ref: ./paths/bapi/blocklist-identifier.yaml
-  /v1/redirect_urls:
+  /v1/redirect-urls:
     $ref: ./paths/bapi/redirect-urls.yaml
-  /v1/redirect_urls/{redirect_url_id}:
+  /v1/redirect-urls/{redirect_url_id}:
     $ref: ./paths/bapi/redirect-url.yaml
   /v1/instance:
     $ref: ./paths/bapi/instance.yaml
   /v1/instance/restrictions:
     $ref: ./paths/bapi/instance-restrictions.yaml
-  /v1/instance/organization_settings:
+  /v1/instance/organization-settings:
     $ref: ./paths/bapi/instance-organization-settings.yaml
   /v1/webhooks/endpoints:
     $ref: ./paths/bapi/webhook-endpoints.yaml
   /v1/webhooks/endpoints/{endpoint_id}:
     $ref: ./paths/bapi/webhook-endpoint.yaml
-  /v1/webhooks/endpoints/{endpoint_id}/rotate_secret:
+  /v1/webhooks/endpoints/{endpoint_id}/rotate-secret:
     $ref: ./paths/bapi/webhook-endpoint-rotate.yaml
   /v1/webhooks/deliveries:
     $ref: ./paths/bapi/webhook-deliveries.yaml

@@ -80,27 +80,27 @@ paths:
     $ref: ./paths/fapi/client.yaml
   /v1/client/handshake:
     $ref: ./paths/fapi/client-handshake.yaml
-  /v1/client/sign_ins:
+  /v1/client/sign-ins:
     $ref: ./paths/fapi/sign-ins.yaml
-  /v1/client/sign_ins/{sign_in_id}:
+  /v1/client/sign-ins/{sign_in_id}:
     $ref: ./paths/fapi/sign-in.yaml
-  /v1/client/sign_ins/{sign_in_id}/prepare_first_factor:
+  /v1/client/sign-ins/{sign_in_id}/prepare-first-factor:
     $ref: ./paths/fapi/sign-in-prepare-first-factor.yaml
-  /v1/client/sign_ins/{sign_in_id}/attempt_first_factor:
+  /v1/client/sign-ins/{sign_in_id}/attempt-first-factor:
     $ref: ./paths/fapi/sign-in-attempt-first-factor.yaml
-  /v1/client/sign_ins/{sign_in_id}/prepare_second_factor:
+  /v1/client/sign-ins/{sign_in_id}/prepare-second-factor:
     $ref: ./paths/fapi/sign-in-prepare-second-factor.yaml
-  /v1/client/sign_ins/{sign_in_id}/attempt_second_factor:
+  /v1/client/sign-ins/{sign_in_id}/attempt-second-factor:
     $ref: ./paths/fapi/sign-in-attempt-second-factor.yaml
-  /v1/client/sign_ins/{sign_in_id}/reset_password:
+  /v1/client/sign-ins/{sign_in_id}/reset-password:
     $ref: ./paths/fapi/sign-in-reset-password.yaml
-  /v1/client/sign_ups:
+  /v1/client/sign-ups:
     $ref: ./paths/fapi/sign-ups.yaml
-  /v1/client/sign_ups/{sign_up_id}:
+  /v1/client/sign-ups/{sign_up_id}:
     $ref: ./paths/fapi/sign-up.yaml
-  /v1/client/sign_ups/{sign_up_id}/prepare_verification:
+  /v1/client/sign-ups/{sign_up_id}/prepare-verification:
     $ref: ./paths/fapi/sign-up-prepare-verification.yaml
-  /v1/client/sign_ups/{sign_up_id}/attempt_verification:
+  /v1/client/sign-ups/{sign_up_id}/attempt-verification:
     $ref: ./paths/fapi/sign-up-attempt-verification.yaml
   /v1/client/sessions/{session_id}:
     $ref: ./paths/fapi/client-session.yaml
@@ -116,23 +116,23 @@ paths:
     $ref: ./paths/fapi/client-session-tokens-template.yaml
   /v1/me:
     $ref: ./paths/fapi/me.yaml
-  /v1/me/profile_image:
+  /v1/me/profile-image:
     $ref: ./paths/fapi/me-profile-image.yaml
-  /v1/me/email_addresses:
+  /v1/me/email-addresses:
     $ref: ./paths/fapi/me-email-addresses.yaml
-  /v1/me/email_addresses/{email_address_id}:
+  /v1/me/email-addresses/{email_address_id}:
     $ref: ./paths/fapi/me-email-address.yaml
-  /v1/me/email_addresses/{email_address_id}/prepare_verification:
+  /v1/me/email-addresses/{email_address_id}/prepare-verification:
     $ref: ./paths/fapi/me-email-prepare-verification.yaml
-  /v1/me/email_addresses/{email_address_id}/attempt_verification:
+  /v1/me/email-addresses/{email_address_id}/attempt-verification:
     $ref: ./paths/fapi/me-email-attempt-verification.yaml
   /v1/me/sessions:
     $ref: ./paths/fapi/me-sessions.yaml
-  /v1/me/change_password:
+  /v1/me/change-password:
     $ref: ./paths/fapi/me-change-password.yaml
   /v1/me/password:
     $ref: ./paths/fapi/me-password.yaml
-  /v1/me/delete_self:
+  /v1/me/delete-self:
     $ref: ./paths/fapi/me-delete-self.yaml
   /v1/organizations:
     $ref: ./paths/fapi/organizations.yaml
@@ -156,21 +156,21 @@ paths:
     $ref: ./paths/fapi/organization-domain.yaml
   /v1/organizations/{organization_id}/domains/{domain_id}/verify:
     $ref: ./paths/fapi/organization-domain-verify.yaml
-  /v1/organizations/{organization_id}/membership_requests:
+  /v1/organizations/{organization_id}/membership-requests:
     $ref: ./paths/fapi/organization-membership-requests.yaml
-  /v1/organizations/{organization_id}/membership_requests/{request_id}/accept:
+  /v1/organizations/{organization_id}/membership-requests/{request_id}/accept:
     $ref: ./paths/fapi/organization-membership-request-accept.yaml
-  /v1/organizations/{organization_id}/membership_requests/{request_id}/reject:
+  /v1/organizations/{organization_id}/membership-requests/{request_id}/reject:
     $ref: ./paths/fapi/organization-membership-request-reject.yaml
-  /v1/me/organization_memberships:
+  /v1/me/organization-memberships:
     $ref: ./paths/fapi/me-organization-memberships.yaml
-  /v1/me/organization_invitations:
+  /v1/me/organization-invitations:
     $ref: ./paths/fapi/me-organization-invitations.yaml
-  /v1/me/organization_invitations/{invitation_id}/accept:
+  /v1/me/organization-invitations/{invitation_id}/accept:
     $ref: ./paths/fapi/me-organization-invitation-accept.yaml
-  /v1/me/organization_membership_requests:
+  /v1/me/organization-membership-requests:
     $ref: ./paths/fapi/me-organization-membership-requests.yaml
-  /v1/me/active_organization:
+  /v1/me/active-organization:
     $ref: ./paths/fapi/me-active-organization.yaml
 
 components:
