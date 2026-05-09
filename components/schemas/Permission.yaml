@@ -11,28 +11,24 @@ description: |
 
   ### System permissions catalog (v0.2)
 
-  Every environment is seeded with exactly these twelve system
+  Every environment is seeded with exactly these thirteen system
   permissions:
 
   | `key` | Purpose |
   |---|---|
+  | `org:sys_profile:read` | Read org name, slug, image, metadata. |
   | `org:sys_profile:manage` | Edit org name, slug, image, metadata. |
   | `org:sys_profile:delete` | Delete the org (subject to `admin_delete_enabled`). |
   | `org:sys_memberships:read` | List members and pending requests. |
   | `org:sys_memberships:manage` | Invite, remove, change roles, accept membership requests. |
+  | `org:sys_invitations:read` | List outgoing invitations. |
+  | `org:sys_invitations:manage` | Create, revoke, and resend invitations. |
   | `org:sys_domains:read` | List verified domains. |
   | `org:sys_domains:manage` | Add, verify, change enrollment mode, delete domains. |
-  | `org:sys_billing:read` | Reserved for the billing milestone (private). |
-  | `org:sys_billing:manage` | Reserved for the billing milestone (private). |
-  | `org:sys_sso:read` | Reserved for v0.6 (`EnterpriseConnection`). |
-  | `org:sys_sso:manage` | Reserved for v0.6. |
-  | `org:sys_provisioning:read` | Reserved for v0.6 (SCIM). |
-  | `org:sys_provisioning:manage` | Reserved for v0.6. |
-
-  v0.2 only exercises the four `sys_profile`, `sys_memberships`,
-  `sys_domains` pairs at runtime; the rest are seeded so default
-  roles can declare them now and downstream milestones can wire up
-  the corresponding endpoints without a fresh seed step.
+  | `org:sys_roles:read` | List roles and their permission assignments. |
+  | `org:sys_roles:manage` | Create, update, and delete roles; assign permissions. |
+  | `org:sys_permissions:read` | List available permissions. |
+  | `org:sys_permissions:manage` | Create and delete custom permissions. |
 required:
   - id
   - object

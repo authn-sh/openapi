@@ -3,7 +3,7 @@ get:
   summary: List permissions
   description: |
     Paginated list of permissions in the environment. Includes the
-    twelve seeded system permissions by default; pass `is_system:
+    thirteen seeded system permissions by default; pass `is_system:
     false` to list custom permissions only (custom permissions
     arrive in v0.3+).
   tags: [Permissions]
