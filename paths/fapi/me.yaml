@@ -92,7 +92,7 @@ delete:
   operationId: deleteMe
   summary: Delete the current user (alias for delete_self)
   description: |
-    Convenience wrapper around `POST /v1/me/delete_self`. Subject to
+    Convenience wrapper around `POST /v1/me/delete-self`. Subject to
     the environment's `delete_self_enabled` setting.
   tags: [Me]
   security:

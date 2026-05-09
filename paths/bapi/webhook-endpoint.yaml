@@ -37,7 +37,7 @@ patch:
   summary: Update a webhook endpoint
   description: |
     Patch any of `url` / `enabled_event_types` / `enabled`. The
-    `signing_secret` cannot be set this way — use `rotate_secret`.
+    `signing_secret` cannot be set this way — use `rotate-secret`.
   tags: [Webhooks]
   parameters:
     - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml

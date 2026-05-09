@@ -25,7 +25,7 @@ post:
     to `complete` (sets `created_user_id` and `created_session_id`).
     For `email_link` against an existing identifier, the verification
     flips to `transferable` and the SDK should bounce to sign-in via
-    `POST /v1/client/sign_ins { transfer: true }` instead.
+    `POST /v1/client/sign-ins { transfer: true }` instead.
   tags: [Sign-Ups]
   security:
     - client_cookie: []

@@ -21,7 +21,7 @@ post:
 
     For pure switcher flows that don't need to bump
     `last_active_at` at the same time, prefer
-    `setMyActiveOrganization` (`PUT /v1/me/active_organization`).
+    `setMyActiveOrganization` (`PUT /v1/me/active-organization`).
   tags: [Sessions]
   requestBody:
     required: false
