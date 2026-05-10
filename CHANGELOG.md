@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **Multi-factor authentication surface (v0.3)**.
+  - `TotpSecret` (one per `User`, `totp_` prefix) and `BackupCode` (`bcc_` prefix) resource schemas, plus `BackupCodeBatch` envelope for the one-time plaintext reveal.
+  - `Challenge.strategy` enum gains `totp` and `backup_code`. `ChallengeCreateRequest` documents the second-factor variants (no extra fields needed beyond `strategy`); `ChallengeAnswerRequest` documents the `{ code }` answer shape for both.
+  - FAPI: `POST /v1/me/totp` (start enrollment), `POST /v1/me/totp/verify` (confirm with first code), `DELETE /v1/me/totp` (remove). `POST /v1/me/backup-codes` ((re)generate batch), `DELETE /v1/me/backup-codes` (remove all unused).
+  - BAPI: `POST /v1/users/{user_id}/verify-totp` (operator-driven TOTP check) and `DELETE /v1/users/{user_id}/mfa` (operator MFA reset).
+  - `SignIn` documents the `needs_second_factor` step end-to-end — second-factor Challenge issuance with `step: "second"`, `supported_strategies` narrowing per the resolved user's enrolled methods (`totp` / `backup_code`), and the answer + transition rules.
+  - `InstanceSettings.multi_factor` block — per-env `totp.enabled`, `backup_codes.enabled`, `backup_codes.default_count` (4..24, default 10). Matching `InstanceUpdateRequest.multi_factor` patch shape.
+
 ## [0.2.0] — 2026-05-10
 
 ### Added
