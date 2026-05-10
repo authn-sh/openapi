@@ -63,6 +63,8 @@ tags:
     description: Per-environment settings (`InstanceSetting`).
   - name: OAuth Providers
     description: Per-environment social-IdP configuration (`OauthProvider`).
+  - name: SMS Templates
+    description: Per-environment outbound SMS body customization (`SmsTemplate`).
   - name: Webhooks
     description: Webhook endpoints, deliveries, and the event envelope.
 
@@ -170,6 +172,12 @@ paths:
     $ref: ./paths/bapi/oauth-provider.yaml
   /v1/oauth-providers/{oauth_provider_id}/test:
     $ref: ./paths/bapi/oauth-provider-test.yaml
+  /v1/sms-templates:
+    $ref: ./paths/bapi/sms-templates.yaml
+  /v1/sms-templates/{sms_template_slug}:
+    $ref: ./paths/bapi/sms-template.yaml
+  /v1/sms-templates/{sms_template_slug}/revert:
+    $ref: ./paths/bapi/sms-template-revert.yaml
   /v1/webhooks/endpoints:
     $ref: ./paths/bapi/webhook-endpoints.yaml
   /v1/webhooks/endpoints/{endpoint_id}:
@@ -255,6 +263,8 @@ components:
     OauthProvider:                             { $ref: ./components/schemas/OauthProvider.yaml }
     OauthProviderRequest:                      { $ref: ./components/schemas/OauthProviderRequest.yaml }
     OauthProviderTestResult:                   { $ref: ./components/schemas/OauthProviderTestResult.yaml }
+    SmsTemplate:                               { $ref: ./components/schemas/SmsTemplate.yaml }
+    SmsTemplateRequest:                        { $ref: ./components/schemas/SmsTemplateRequest.yaml }
 
   responses:
     BadRequest:           { $ref: ./components/responses/BadRequest.yaml }
