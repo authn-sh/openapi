@@ -1,25 +1,37 @@
 type: object
 description: |
-  Body for `POST /sign-ins/{sid}/challenges` and
-  `POST /sign-ups/{sid}/challenges`. Picks a strategy and supplies any
-  fields the strategy needs to *issue* the challenge (e.g. which
-  identifier to send the code to, which redirect URL to bounce back to).
+  Body for `POST /…/challenges` against any parent that owns
+  challenges (`SignIn`, `SignUp`, `EmailAddress`, `OrganizationDomain`).
+  Picks a strategy and supplies any fields the strategy needs to
+  *issue* the challenge (e.g. which identifier to send the code to,
+  which redirect URL to bounce back to).
 
   The answer to the challenge is submitted separately via
   `POST .../challenges/{cid}/answer` with `ChallengeAnswerRequest`.
-  Strategies that have nothing to issue (e.g. `password`) return a
-  `pending` challenge with `nonce: null` and the caller proceeds
-  straight to `answer`.
+  Strategies that have nothing to issue (e.g. `password`,
+  `domain_dns_txt`) return a `pending` challenge straight away — for
+  `domain_dns_txt` the proof token is surfaced in `nonce`; for
+  `password` `nonce` stays `null` and the caller proceeds straight
+  to `answer`.
+
+  Per-parent legal strategies:
+
+  - `SignIn` — `password`, `email_code`, `email_link`,
+    `reset_password_email_code`, `ticket`, `transfer`.
+  - `SignUp` — `email_code`, `email_link`, `ticket`, `transfer`.
+  - `EmailAddress` — `email_code`, `email_link`.
+  - `OrganizationDomain` — `domain_dns_txt`, `email_code`.
 required: [strategy]
 additionalProperties: false
 properties:
   strategy:
     type: string
     description: |
-      v0.2 surface:
+      v0.2 surface across all parents:
       `password`, `email_code`, `email_link`, `reset_password_email_code`,
-      `ticket`, `transfer`. Future strategies (TOTP, backup_code, SMS,
-      OAuth, passkey) plug in here without spec changes.
+      `ticket`, `transfer`, `domain_dns_txt`. Future strategies (TOTP,
+      backup_code, SMS, OAuth, passkey) plug in here without spec
+      changes.
     examples:
       - password
       - email_code
@@ -27,13 +39,15 @@ properties:
       - reset_password_email_code
       - ticket
       - transfer
+      - domain_dns_txt
   email_address_id:
     type: string
     description: |
       For `email_code` / `email_link` first-factor sign-in, the address to
       challenge. Must be one of `SignIn.supported_strategies`'s implied
       identifiers. Ignored for sign-up (the address comes from the
-      attempt itself).
+      attempt itself) and for the `EmailAddress` parent (the address is
+      the parent itself).
   phone_number_id:
     type: string
     description: Reserved for `phone_code` (v0.3+).
@@ -52,3 +66,5 @@ examples:
     redirect_url: https://app.acme.com/dashboard
   - strategy: reset_password_email_code
     email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
+  - { strategy: email_code }
+  - { strategy: domain_dns_txt }

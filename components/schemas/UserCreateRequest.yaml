@@ -23,8 +23,8 @@ properties:
   email_address:
     type: array
     description: |
-      Initial email addresses for the user. Each is created with
-      `verification.status = "verified"` (BAPI is privileged).
+      Initial email addresses for the user. Each is created already
+      verified (BAPI is privileged).
     items:
       type: string
       format: email

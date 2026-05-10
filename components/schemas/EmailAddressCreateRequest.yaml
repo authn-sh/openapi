@@ -14,8 +14,8 @@ properties:
     type: boolean
     default: false
     description: |
-      When `true`, the address is created with
-      `verification.status = "verified"` and no challenge is issued.
+      When `true`, the address is created already verified and no
+      challenge is issued.
   primary:
     type: boolean
     default: false

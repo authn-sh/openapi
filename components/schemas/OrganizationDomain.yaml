@@ -5,15 +5,17 @@ description: |
   with a matching email get an automatic invitation, an automatic
   membership-request suggestion, or nothing at all.
 
-  Verification reuses the existing `Verification` shape; the proof
-  channel (DNS TXT or email-to-`affiliation_email_address`) is
-  recorded in `verification.strategy` (`dns` or `email_code`).
+  Verification runs through a `Challenge` against
+  `/v1/organizations/{org}/domains/{id}/challenges`. The proof channel
+  (DNS TXT or email-to-`affiliation_email_address`) is selected by the
+  challenge's `strategy` (`domain_dns_txt` or `email_code`).
 required:
   - id
   - object
   - organization_id
   - name
   - verified
+  - current_challenge_id
   - enrollment_mode
   - total_pending_invitations
   - total_pending_suggestions
@@ -38,9 +40,17 @@ properties:
   verified:
     type: boolean
     description: |
-      `true` once `verification.status === 'verified'`. The two
-      flags are kept in sync but `verified` is denormalized for
-      cheap list filtering.
+      `true` once a verification challenge against this domain has
+      reached `status: verified`.
+  current_challenge_id:
+    description: |
+      Pointer to the live `Challenge` if one's in flight against this
+      domain. `null` when no challenge has been issued yet, the
+      previous one was answered to a terminal status, or the operator
+      has rotated the proof token.
+    oneOf:
+      - $ref: ./Id.yaml
+      - type: "null"
   enrollment_mode:
     type: string
     enum:
@@ -55,20 +65,14 @@ properties:
       - `automatic_suggestion` — sign-ups with a matching email get
         an `OrganizationMembershipRequest` row that an admin must
         approve.
-  verification:
-    description: |
-      Latest verification challenge. `null` when verification is
-      not in flight (e.g. an admin has just rotated the token).
-    oneOf:
-      - $ref: ./Verification.yaml
-      - type: "null"
   affiliation_email_address:
     type: [string, "null"]
     format: email
     description: |
-      Address used as the `email_code` verification target when
-      `verification.strategy === 'email_code'`. Always sits at the
-      domain being verified (e.g. `admin@acme.com`).
+      Address used as the `email_code` verification target when the
+      domain is being verified via the `email_code` challenge
+      strategy. Always sits at the domain being verified
+      (e.g. `admin@acme.com`).
   total_pending_invitations:
     type: integer
     minimum: 0

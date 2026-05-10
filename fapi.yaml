@@ -120,10 +120,12 @@ paths:
     $ref: ./paths/fapi/me-email-addresses.yaml
   /v1/me/email-addresses/{email_address_id}:
     $ref: ./paths/fapi/me-email-address.yaml
-  /v1/me/email-addresses/{email_address_id}/prepare-verification:
-    $ref: ./paths/fapi/me-email-prepare-verification.yaml
-  /v1/me/email-addresses/{email_address_id}/attempt-verification:
-    $ref: ./paths/fapi/me-email-attempt-verification.yaml
+  /v1/me/email-addresses/{email_address_id}/challenges:
+    $ref: ./paths/fapi/me-email-address-challenges.yaml
+  /v1/me/email-addresses/{email_address_id}/challenges/{challenge_id}:
+    $ref: ./paths/fapi/me-email-address-challenge.yaml
+  /v1/me/email-addresses/{email_address_id}/challenges/{challenge_id}/answer:
+    $ref: ./paths/fapi/me-email-address-challenge-answer.yaml
   /v1/me/sessions:
     $ref: ./paths/fapi/me-sessions.yaml
   /v1/me/change-password:
@@ -152,8 +154,6 @@ paths:
     $ref: ./paths/fapi/organization-domains.yaml
   /v1/organizations/{organization_id}/domains/{domain_id}:
     $ref: ./paths/fapi/organization-domain.yaml
-  /v1/organizations/{organization_id}/domains/{domain_id}/verify:
-    $ref: ./paths/fapi/organization-domain-verify.yaml
   /v1/organizations/{organization_id}/membership-requests:
     $ref: ./paths/fapi/organization-membership-requests.yaml
   /v1/organizations/{organization_id}/membership-requests/{request_id}/accept:
@@ -198,7 +198,6 @@ components:
     PaginatedList:                             { $ref: ./components/schemas/PaginatedList.yaml }
     Error:                                     { $ref: ./components/schemas/Error.yaml }
     ErrorResponse:                             { $ref: ./components/schemas/ErrorResponse.yaml }
-    Verification:                              { $ref: ./components/schemas/Verification.yaml }
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
     User:                                      { $ref: ./components/schemas/User.yaml }
     Client:                                    { $ref: ./components/schemas/Client.yaml }

@@ -21,7 +21,8 @@ post:
   summary: Add an email address to my account
   description: |
     Attach a new email to the current user. Always created unverified;
-    follow up with `prepare_verification` + `attempt_verification`.
+    follow up with `createEmailAddressChallenge` +
+    `answerEmailAddressChallenge` to verify it.
   tags: [Me]
   security:
     - client_cookie: []

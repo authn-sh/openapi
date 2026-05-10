@@ -1,17 +1,38 @@
 type: object
 description: |
-  A single verification challenge bound to a `SignIn` or `SignUp`. The
-  parent owns at most one live challenge at a time (`current_challenge_id`).
-  Challenges replace the per-factor `prepare-*` / `attempt-*` endpoint
+  A single verification challenge bound to a parent resource — a `SignIn`,
+  `SignUp`, `EmailAddress`, or `OrganizationDomain`. The parent owns at
+  most one live challenge at a time (`current_challenge_id`). Challenges
+  replace the per-parent `prepare-*` / `attempt-*` / `verify` action
   pairs with a uniform sub-resource shape: create the challenge, then
-  answer it (or poll it for out-of-band strategies like `email_link`).
+  answer it (or poll it for out-of-band strategies like `email_link`
+  or `domain_dns_txt`).
+
+  ### Parent reference
+
+  Exactly one of `sign_in_id`, `sign_up_id`, `email_address_id`,
+  `organization_domain_id` is non-null per Challenge — the others are
+  `null`. The non-null pointer identifies the parent resource the
+  challenge is verifying. The set of legal `strategy` values is
+  parent-specific:
+
+  - `SignIn` — `password`, `email_code`, `email_link`,
+    `reset_password_email_code`, `ticket`, `transfer`.
+  - `SignUp` — `email_code`, `email_link`, `ticket`, `transfer`.
+  - `EmailAddress` — `email_code`, `email_link`. Used by FAPI
+    `/v1/me/email-addresses/{id}/challenges` to verify additional
+    addresses on an already-signed-in user.
+  - `OrganizationDomain` — `domain_dns_txt`, `email_code`. Used by
+    BAPI `/v1/organizations/{org}/domains/{id}/challenges` to prove
+    operator control of a domain.
 
   ### Lifecycle
 
   - `pending` — challenge issued, no successful answer yet.
-  - `verified` — challenge succeeded; the parent advances its state machine.
-  - `transferable` — succeeded against the wrong flow type. The SDK should
-    bounce to the opposite flow with `transfer: true`. v0.2 cases:
+  - `verified` — challenge succeeded; the parent advances its state.
+  - `transferable` — succeeded against the wrong flow type. The SDK
+    should bounce to the opposite flow with `transfer: true`. v0.2
+    cases (sign-in / sign-up only):
       1. **Magic-link sign-in for an unknown identifier** — bounce to
          sign-up via `POST /v1/client/sign-ups { transfer: true }`.
       2. **Magic-link sign-up for an existing identifier** — bounce to
@@ -20,11 +41,12 @@ description: |
     answered. Issue a fresh one to retry.
   - `expired` — `expire_at` is in the past; issue a fresh one.
 
-  ### Cross-device polling (PLAN §9.10 — magic link)
+  ### Cross-device polling (magic link)
 
-  `email_link` is the only v0.2 strategy that completes out-of-band. The
-  click can land on a different device than the one driving the flow, so
-  the originating device polls the focused challenge resource:
+  `email_link` is the only sign-in/sign-up strategy that completes
+  out-of-band. The click can land on a different device than the one
+  driving the flow, so the originating device polls the focused
+  challenge resource:
 
   1. `POST /sign-ins/{sid}/challenges { strategy: "email_link", ... }` —
      server emails a click-through URL of shape
@@ -46,11 +68,32 @@ description: |
   Polling does *not* use SSE or WebSockets — plain HTTP polling keeps the
   FAPI infrastructure simple and works in every browser. Servers may
   rate-limit polling above the recommended cadence (`429`).
+
+  ### Async DNS verification (`domain_dns_txt`)
+
+  `domain_dns_txt` is the strategy for organization-domain proof. The
+  flow mirrors magic link in shape but is admin-driven:
+
+  1. `POST /organizations/{org}/domains/{did}/challenges { strategy: "domain_dns_txt" }`
+     mints a Challenge with `nonce` set to the TXT value the operator
+     must publish under `_authn-challenge.<domain>`. Status starts
+     `pending`.
+  2. `POST .../challenges/{cid}/answer { }` (empty body) tells the
+     server to attempt the DNS lookup right now. Returns the
+     Challenge with `status: pending` (the lookup was queued and
+     the record was not yet visible) or `status: verified` (the
+     lookup succeeded synchronously). The server also keeps polling
+     DNS in the background regardless of this hint.
+  3. `GET .../challenges/{cid}` polling reflects the live status —
+     it flips to `verified` once the background DNS job confirms,
+     or `expired` once `expire_at` passes without a successful lookup.
 required:
   - id
   - object
   - sign_in_id
   - sign_up_id
+  - email_address_id
+  - organization_domain_id
   - step
   - strategy
   - status
@@ -71,14 +114,32 @@ properties:
   sign_in_id:
     description: |
       Set when this challenge is bound to a `SignIn`. Mutually exclusive
-      with `sign_up_id` — exactly one of the two is non-null.
+      with the other parent ids — exactly one of `sign_in_id`,
+      `sign_up_id`, `email_address_id`, `organization_domain_id` is
+      non-null.
     oneOf:
       - $ref: ./Id.yaml
       - type: "null"
   sign_up_id:
     description: |
       Set when this challenge is bound to a `SignUp`. Mutually exclusive
-      with `sign_in_id` — exactly one of the two is non-null.
+      with the other parent ids.
+    oneOf:
+      - $ref: ./Id.yaml
+      - type: "null"
+  email_address_id:
+    description: |
+      Set when this challenge is bound to an `EmailAddress` — i.e. a
+      signed-in user verifying an additional email. Mutually exclusive
+      with the other parent ids.
+    oneOf:
+      - $ref: ./Id.yaml
+      - type: "null"
+  organization_domain_id:
+    description: |
+      Set when this challenge is bound to an `OrganizationDomain` — i.e.
+      an operator proving control of a domain. Mutually exclusive with
+      the other parent ids.
     oneOf:
       - $ref: ./Id.yaml
       - type: "null"
@@ -86,21 +147,31 @@ properties:
     type: string
     enum: [first, second, single]
     description: |
-      Server-assigned at issue time based on the parent SignIn/SignUp state.
+      Server-assigned at issue time based on the parent's state.
 
-      - `first` — first authentication factor (typical password /
-        email_code / oauth / magic-link).
-      - `second` — second factor for MFA (TOTP, backup_code, sms_code, …).
-        v0.3+.
-      - `single` — sign-up email/phone verification, ticket-bound flows,
-        magic-link sign-up. There's no MFA layered on top.
+      - `first` — first authentication factor on a `SignIn` (typical
+        password / email_code / oauth / magic-link).
+      - `second` — second factor for MFA on a `SignIn` (TOTP,
+        backup_code, sms_code, …). v0.3+.
+      - `single` — every other case: sign-up email/phone verification,
+        ticket-bound flows, magic-link sign-up, email-address
+        verification, and organization-domain verification. There's no
+        MFA layered on top.
   strategy:
     type: string
     description: |
       How this challenge is being completed. v0.2 surface:
-      `password`, `email_code`, `email_link`, `reset_password_email_code`,
-      `ticket`, `transfer`. Future strategies (TOTP, backup_code, SMS,
-      OAuth, passkey) plug in here without spec changes.
+
+      - `password`, `email_code`, `email_link`,
+        `reset_password_email_code`, `ticket`, `transfer` — sign-in /
+        sign-up.
+      - `email_code`, `email_link` — email-address verification on a
+        signed-in user.
+      - `domain_dns_txt`, `email_code` — organization-domain
+        verification.
+
+      Future strategies (TOTP, backup_code, SMS, OAuth, passkey) plug
+      in here without spec changes.
     examples:
       - password
       - email_code
@@ -108,6 +179,7 @@ properties:
       - reset_password_email_code
       - ticket
       - transfer
+      - domain_dns_txt
       - oauth_google
       - phone_code
       - passkey
@@ -127,7 +199,9 @@ properties:
     description: |
       Strategy-specific token surfaced to the client. Magic-link
       challenges return the polling token clients use to drive
-      `GET /challenges/{id}`. Other strategies leave this null.
+      `GET /challenges/{id}`. `domain_dns_txt` challenges return the
+      TXT value the operator must publish under
+      `_authn-challenge.<domain>`. Other strategies leave this null.
   external_verification_redirect_url:
     type: [string, "null"]
     format: uri
@@ -153,6 +227,8 @@ examples:
     object: challenge
     sign_in_id: sia_01HKX9SY9V7H7TF8C8K7J9X4ZA
     sign_up_id: null
+    email_address_id: null
+    organization_domain_id: null
     step: first
     strategy: email_link
     status: pending
@@ -167,6 +243,8 @@ examples:
     object: challenge
     sign_in_id: sia_01HKX9SY9V7H7TF8C8K7J9X4ZA
     sign_up_id: null
+    email_address_id: null
+    organization_domain_id: null
     step: first
     strategy: email_link
     status: verified
@@ -177,3 +255,35 @@ examples:
     error: null
     created_at: 1714723000000
     updated_at: 1714723500000
+  - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZN
+    object: challenge
+    sign_in_id: null
+    sign_up_id: null
+    email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
+    organization_domain_id: null
+    step: single
+    strategy: email_code
+    status: pending
+    attempts: 0
+    expire_at: 1714724000000
+    nonce: null
+    external_verification_redirect_url: null
+    error: null
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZP
+    object: challenge
+    sign_in_id: null
+    sign_up_id: null
+    email_address_id: null
+    organization_domain_id: orgdom_01HKX9SY9V7H7TF8C8K7J9X4ZM
+    step: single
+    strategy: domain_dns_txt
+    status: pending
+    attempts: 0
+    expire_at: 1714983300000
+    nonce: "authn-domain-verification=01HKX9SY9V7H7TF8C8K7J9X4ZQ"
+    external_verification_redirect_url: null
+    error: null
+    created_at: 1714896900000
+    updated_at: 1714896900000

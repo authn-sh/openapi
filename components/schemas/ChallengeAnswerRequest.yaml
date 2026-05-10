@@ -1,8 +1,9 @@
 type: object
 description: |
-  Body for `POST /sign-ins/{sid}/challenges/{cid}/answer` and
-  `POST /sign-ups/{sid}/challenges/{cid}/answer`. The challenge already
-  knows its strategy; the body carries the strategy-specific answer.
+  Body for `POST /…/challenges/{cid}/answer` against any parent that
+  owns challenges (`SignIn`, `SignUp`, `EmailAddress`,
+  `OrganizationDomain`). The challenge already knows its strategy;
+  the body carries the strategy-specific answer.
 
   - `password` — `{ password: "…" }`.
   - `email_code` / `reset_password_email_code` — `{ code: "123456" }`.
@@ -11,6 +12,11 @@ description: |
     `GET .../challenges/{cid}`; the verification happens out-of-band when
     the user clicks the magic link. The response is the polled state,
     not a synchronous success.
+  - `domain_dns_txt` — `{ }` (empty body). Hints the server to attempt
+    the DNS lookup right now. The response reflects the immediate
+    result — `verified` if the TXT record was visible, `pending` if
+    the lookup was queued. The server keeps polling DNS in the
+    background regardless.
   - `signature` is reserved for v0.5 (passkey).
 
   On a `reset_password_email_code` answer the parent SignIn transitions

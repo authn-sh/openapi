@@ -48,7 +48,8 @@ post:
   summary: Add a domain to the organization
   description: |
     Add a new domain. Verification is issued lazily — call
-    `verifyOrganizationDomain` to kick off the proof flow.
+    `createOrganizationDomainChallenge` (BAPI) to kick off the proof
+    flow.
 
     **Access**: requires `org:sys_domains:manage` in this organization.
   tags: [Org Domains]
@@ -62,7 +63,6 @@ post:
             value:
               name: acme.com
               enrollment_mode: automatic_invitation
-              verification_strategy: dns
   responses:
     "200":
       description: The new domain, wrapped.

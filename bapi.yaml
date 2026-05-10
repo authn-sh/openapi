@@ -120,8 +120,12 @@ paths:
     $ref: ./paths/bapi/organization-domains.yaml
   /v1/organizations/{organization_id}/domains/{domain_id}:
     $ref: ./paths/bapi/organization-domain.yaml
-  /v1/organizations/{organization_id}/domains/{domain_id}/verify:
-    $ref: ./paths/bapi/organization-domain-verify.yaml
+  /v1/organizations/{organization_id}/domains/{domain_id}/challenges:
+    $ref: ./paths/bapi/organization-domain-challenges.yaml
+  /v1/organizations/{organization_id}/domains/{domain_id}/challenges/{challenge_id}:
+    $ref: ./paths/bapi/organization-domain-challenge.yaml
+  /v1/organizations/{organization_id}/domains/{domain_id}/challenges/{challenge_id}/answer:
+    $ref: ./paths/bapi/organization-domain-challenge-answer.yaml
   /v1/roles:
     $ref: ./paths/bapi/roles.yaml
   /v1/roles/{role_id}:
@@ -185,7 +189,9 @@ components:
     PaginatedList:                             { $ref: ./components/schemas/PaginatedList.yaml }
     Error:                                     { $ref: ./components/schemas/Error.yaml }
     ErrorResponse:                             { $ref: ./components/schemas/ErrorResponse.yaml }
-    Verification:                              { $ref: ./components/schemas/Verification.yaml }
+    Challenge:                                 { $ref: ./components/schemas/Challenge.yaml }
+    ChallengeCreateRequest:                    { $ref: ./components/schemas/ChallengeCreateRequest.yaml }
+    ChallengeAnswerRequest:                    { $ref: ./components/schemas/ChallengeAnswerRequest.yaml }
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
     User:                                      { $ref: ./components/schemas/User.yaml }
     UserCreateRequest:                         { $ref: ./components/schemas/UserCreateRequest.yaml }

@@ -1,0 +1,49 @@
+parameters:
+  - name: email_address_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: createEmailAddressChallenge
+  summary: Create a challenge on one of my email addresses
+  description: |
+    Issue a verification challenge against one of the calling user's
+    email addresses. Replaces the old
+    `prepare-verification` / `attempt-verification` pair on
+    `/v1/me/email-addresses/{id}` with the same uniform challenge
+    sub-resource shape used on sign-in / sign-up.
+
+    Legal strategies are `email_code` (server emails a numeric code,
+    answer with `{ code }`) and `email_link` (server emails a magic
+    link, answer with `{}` and poll). On success the address flips to
+    `verified: true` and `current_challenge_id` clears.
+
+    Issuing a new challenge supersedes any previous live challenge on
+    the same address — the old one rolls to `expired`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/ChallengeCreateRequest.yaml }
+        examples:
+          email_code:
+            value: { strategy: email_code }
+          email_link:
+            value:
+              strategy: email_link
+              redirect_url: https://app.acme.com/account
+  responses:
+    "200":
+      description: The freshly-created `Challenge`, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

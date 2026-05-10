@@ -1,0 +1,36 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: domain_id
+    in: path
+    required: true
+    description: ID of the domain.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: challenge_id
+    in: path
+    required: true
+    description: ID of the challenge.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getOrganizationDomainChallenge
+  summary: Get a verification challenge on an organization domain
+  description: |
+    Fetch the focused `Challenge` resource. Used to poll the live
+    status of an asynchronous DNS lookup for `domain_dns_txt`
+    challenges — the background worker flips `status` to `verified`
+    once the TXT record is visible, or `expired` once `expire_at`
+    passes without a successful lookup.
+  tags: [Org Domains]
+  responses:
+    "200":
+      description: The current state of the challenge.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Challenge.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

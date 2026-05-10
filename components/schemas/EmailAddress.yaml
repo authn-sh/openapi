@@ -3,13 +3,15 @@ description: |
   An email identifier owned by a `User`. A user may have many email
   addresses; exactly one is the primary (referenced by
   `User.primary_email_address_id`). A new address starts unverified
-  and becomes a usable sign-in identifier once `verification.status`
-  reaches `verified`.
+  and becomes a usable sign-in identifier once `verified` flips to
+  `true` — typically by issuing and answering a `Challenge` against
+  `/v1/me/email-addresses/{id}/challenges`.
 required:
   - id
   - object
   - email_address
-  - verification
+  - verified
+  - current_challenge_id
   - linked_to
   - created_at
   - updated_at
@@ -25,13 +27,20 @@ properties:
     format: email
     maxLength: 254
     description: The address itself, lower-cased and trimmed by the server.
-  verification:
+  verified:
+    type: boolean
     description: |
-      Current verification challenge for this address, or `null` if the
-      address was created server-side already verified (e.g. via BAPI
-      with `verified: true`).
+      `true` once a verification challenge against this address has
+      reached `status: verified` (or the address was minted verified
+      via BAPI with `verified: true`).
+  current_challenge_id:
+    description: |
+      Pointer to the live `Challenge` if one's in flight against this
+      address. `null` when no challenge has been issued yet, the
+      previous one was answered to a terminal status, or the address
+      was created already verified.
     oneOf:
-      - $ref: "./Verification.yaml"
+      - $ref: "./Id.yaml"
       - type: "null"
   linked_to:
     type: array
