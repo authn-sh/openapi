@@ -6,10 +6,10 @@ description: |
   (banned, locked), the lifecycle timestamps, and the three flavours of
   metadata.
 
-  Phone numbers, external accounts, enterprise accounts, and passkeys
-  are present in the shape today (as empty arrays in v0.1) so SDKs can
-  generate stable types up front; the corresponding endpoints land in
-  later milestones (v0.4 / v0.5 / v0.6).
+  External accounts, enterprise accounts, and passkeys are present in
+  the shape today (as empty arrays before their respective milestones
+  ship) so SDKs can generate stable types up front; the corresponding
+  endpoints land in later milestones (v0.5 / v0.6).
 required:
   - id
   - object
@@ -73,19 +73,16 @@ properties:
   primary_phone_number_id:
     type: [string, "null"]
     description: |
-      Pointer into `phone_numbers[]`. v0.1 always returns `null` (phone
-      identifiers ship in v0.4).
+      Pointer into `phone_numbers[]`. `null` for users with no verified
+      phone (e.g. email-only accounts).
   email_addresses:
     type: array
     items:
       $ref: "./EmailAddress.yaml"
   phone_numbers:
     type: array
-    description: |
-      Reserved for v0.4. Always returned as `[]` in v0.1.
     items:
-      type: object
-      additionalProperties: true
+      $ref: "./PhoneNumber.yaml"
   external_accounts:
     type: array
     description: |

@@ -205,6 +205,7 @@ components:
     Error:                                     { $ref: ./components/schemas/Error.yaml }
     ErrorResponse:                             { $ref: ./components/schemas/ErrorResponse.yaml }
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
+    PhoneNumber:                               { $ref: ./components/schemas/PhoneNumber.yaml }
     User:                                      { $ref: ./components/schemas/User.yaml }
     Client:                                    { $ref: ./components/schemas/Client.yaml }
     ClientResponseEnvelope:                    { $ref: ./components/schemas/ClientResponseEnvelope.yaml }
