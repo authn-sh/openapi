@@ -1,0 +1,25 @@
+get:
+  operationId: listMyExternalAccounts
+  summary: List my connected accounts
+  description: |
+    Every `ExternalAccount` row attached to the current user — i.e.
+    each social-IdP connection driven by an `OauthProvider` row.
+    Powers the `<ConnectedAccountsPanel />` UI in `<UserProfile />`.
+
+    `ExternalAccount` rows are created exclusively by the OAuth
+    sign-in flow (`/v1/oauth-callback/{provider_key}`); there is no
+    `POST` here. To add a new connection, drive a sign-in / sign-up
+    Challenge with `strategy: "oauth_<provider_key>"`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: My connected accounts.
+      content:
+        application/json:
+          schema:
+            type: array
+            items: { $ref: ../../components/schemas/ExternalAccount.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }

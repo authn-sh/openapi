@@ -1,0 +1,96 @@
+parameters:
+  - name: phone_number_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getMyPhoneNumber
+  summary: Get one of my phone numbers
+  description: Fetch a single phone number attached to the current user, by ID.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The phone number.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/PhoneNumber.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateMyPhoneNumber
+  summary: Update one of my phone numbers
+  description: |
+    Toggle `is_primary`, `reserved_for_second_factor`, or
+    `default_second_factor`. Flag interactions:
+
+    - `is_primary: true` requires the row to be `verified: true` and
+      flips every other row's `is_primary` to `false`.
+    - `reserved_for_second_factor: true` requires `verified: true` and
+      requires `multi_factor.phone_code.enabled` on the environment.
+    - `default_second_factor: true` requires
+      `reserved_for_second_factor: true` (either already set or
+      flipping in the same patch). At most one row per user can carry
+      this flag.
+
+    The phone-number value itself is **not** patchable — to change a
+    number, add a new row and remove the old one.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/PhoneNumberUpdateRequest.yaml }
+        examples:
+          make_primary:
+            summary: Promote to primary phone
+            value: { is_primary: true }
+          enroll_for_mfa:
+            summary: Reserve for SMS-MFA
+            value: { reserved_for_second_factor: true }
+          set_default_mfa:
+            summary: Pick this phone as the default second factor
+            value: { reserved_for_second_factor: true, default_second_factor: true }
+  responses:
+    "200":
+      description: The updated phone, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteMyPhoneNumber
+  summary: Remove one of my phone numbers
+  description: |
+    Detach the phone from the current user. Refuses (`409
+    phone_reserved_for_second_factor`) when the row has
+    `reserved_for_second_factor: true` — clear that flag first via
+    `PATCH`, or use the operator-driven `DELETE /v1/users/{id}/mfa`
+    BAPI route to nuke MFA wholesale.
+
+    The user must keep at least one identifier; deleting the last
+    identifier (email or phone) returns `422`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The deleted phone, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
