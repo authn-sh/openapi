@@ -68,6 +68,11 @@ properties:
             type: integer
             minimum: 4
             maximum: 24
+      phone_code:
+        type: object
+        additionalProperties: false
+        properties:
+          enabled: { type: boolean }
   audit_log_retention_days:
     type: integer
     minimum: 1

@@ -222,14 +222,17 @@ properties:
     type: object
     description: |
       Per-environment MFA strategy gating. The FAPI consults these
-      flags before issuing a `totp` / `backup_code` Challenge or
-      accepting `POST /v1/me/totp` / `POST /v1/me/backup-codes`. A
-      strategy that's `enabled: false` is omitted from
+      flags before issuing a `totp` / `backup_code` / `phone_code`
+      Challenge or accepting the corresponding enrollment endpoint
+      (`POST /v1/me/totp`, `POST /v1/me/backup-codes`,
+      `PATCH /v1/me/phone-numbers/{id}` with
+      `reserved_for_second_factor: true`). A strategy that's
+      `enabled: false` is omitted from
       `SignIn.supported_strategies` even if a user has stale
       enrollment rows for it (the rows survive the toggle but can't
       be used to complete sign-in).
     additionalProperties: false
-    required: [totp, backup_codes]
+    required: [totp, backup_codes, phone_code]
     properties:
       totp:
         type: object
@@ -263,6 +266,24 @@ properties:
               regeneration request. Bounds chosen so the typical
               printable card stays readable; raise for environments
               that want more headroom.
+      phone_code:
+        type: object
+        additionalProperties: false
+        required: [enabled]
+        properties:
+          enabled:
+            type: boolean
+            default: false
+            description: |
+              When `false` (the default), refuses flipping
+              `PhoneNumber.reserved_for_second_factor` to `true` and
+              excludes `phone_code` from second-factor
+              `supported_strategies`. Existing
+              `reserved_for_second_factor` rows survive the toggle but
+              cannot complete sign-in until the env re-enables phone
+              MFA. Defaults to `false` because SMS MFA carries real
+              cost (carrier fees) and SIM-swap risk — operators opt
+              in explicitly.
   audit_log_retention_days:
     type: integer
     minimum: 1

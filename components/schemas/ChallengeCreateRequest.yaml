@@ -17,15 +17,24 @@ description: |
   Per-parent legal strategies:
 
   - `SignIn` (first factor) — `password`, `email_code`, `email_link`,
+    `phone_code`, `oauth_<provider_key>`,
     `reset_password_email_code`, `ticket`, `transfer`.
-  - `SignIn` (second factor) — `totp`, `backup_code`. Only legal when
-    the parent SignIn is in `needs_second_factor`; the server narrows
-    `SignIn.supported_strategies` to the second-factor methods the
-    resolved user has enrolled. `step` on the resulting Challenge is
-    set to `"second"`.
-  - `SignUp` — `email_code`, `email_link`, `ticket`, `transfer`.
-    Sign-up never gains a second factor.
+  - `SignIn` (second factor) — `totp`, `backup_code`, `phone_code`.
+    Only legal when the parent SignIn is in `needs_second_factor`; the
+    server narrows `SignIn.supported_strategies` to the second-factor
+    methods the resolved user has enrolled. `step` on the resulting
+    Challenge is set to `"second"`. `phone_code` here defaults to the
+    user's `default_second_factor` phone, falling back to
+    `User.primary_phone_number_id`; supply `phone_number_id`
+    explicitly to target a different reserved-for-MFA row.
+  - `SignUp` — `email_code`, `email_link`, `phone_code`,
+    `oauth_<provider_key>`, `ticket`, `transfer`. Sign-up never gains
+    a second factor — the `phone_code` here is the first-factor phone-
+    attribute path.
   - `EmailAddress` — `email_code`, `email_link`.
+  - `PhoneNumber` — `phone_code`. Used by FAPI
+    `/v1/me/phone-numbers/{id}/challenges` to verify additional phone
+    numbers on an already-signed-in user.
   - `OrganizationDomain` — `domain_dns_txt`, `email_code`.
 required: [strategy]
 additionalProperties: false
@@ -33,15 +42,17 @@ properties:
   strategy:
     type: string
     description: |
-      v0.3 surface across all parents:
-      `password`, `email_code`, `email_link`, `reset_password_email_code`,
-      `ticket`, `transfer`, `domain_dns_txt`, `totp`, `backup_code`.
-      Future strategies (SMS, OAuth, passkey) plug in here without spec
-      changes.
+      Strategy across all parents:
+      `password`, `email_code`, `email_link`, `phone_code`,
+      `oauth_<provider_key>`, `reset_password_email_code`, `ticket`,
+      `transfer`, `domain_dns_txt`, `totp`, `backup_code`. Future
+      strategies (passkey) plug in here without spec changes.
     examples:
       - password
       - email_code
       - email_link
+      - phone_code
+      - oauth_google
       - reset_password_email_code
       - ticket
       - transfer
@@ -59,14 +70,28 @@ properties:
       strategies are scoped to the resolved user, not an identifier.
   phone_number_id:
     type: string
-    description: Reserved for `phone_code` (v0.4+).
+    description: |
+      For `phone_code`, the `PhoneNumber` to send the SMS to.
+      Required when verifying a specific row in
+      `/v1/me/phone-numbers/{id}/challenges`'s context (the parent
+      `PhoneNumber.id` is implicit in the URL but supplying it
+      again here makes the body symmetric with `email_address_id`).
+      Optional on `SignIn` / `SignUp` parents — the server defaults
+      to:
+        - first-factor sign-up — the phone supplied in the
+          `SignUp` attempt;
+        - second-factor sign-in — the user's `default_second_factor`
+          phone, falling back to `User.primary_phone_number_id`.
+      Supply explicitly to target a non-default reserved-for-MFA row.
   redirect_url:
     type: string
     format: uri
     description: |
       For `email_link`, the URL the magic link bounces back to after
       `clientHandshake` consumes the ticket. Must be on the redirect-URL
-      allowlist. Also used by OAuth strategies (v0.4+).
+      allowlist. Also used by `oauth_<provider_key>` strategies as the
+      `redirectUrlComplete` the SDK is bounced to once the parent
+      flow finishes.
 examples:
   - { strategy: password }
   - { strategy: email_code, email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE }
@@ -76,6 +101,11 @@ examples:
   - strategy: reset_password_email_code
     email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
   - { strategy: email_code }
+  - { strategy: phone_code }
+  - strategy: phone_code
+    phone_number_id: phn_01HKX9SY9V7H7TF8C8K7J9X4ZA
+  - strategy: oauth_google
+    redirect_url: https://app.acme.com/dashboard
   - { strategy: domain_dns_txt }
   - { strategy: totp }
   - { strategy: backup_code }
