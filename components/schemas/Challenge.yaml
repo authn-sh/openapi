@@ -16,9 +16,15 @@ description: |
   challenge is verifying. The set of legal `strategy` values is
   parent-specific:
 
-  - `SignIn` — `password`, `email_code`, `email_link`,
+  - `SignIn` (first factor) — `password`, `email_code`, `email_link`,
     `reset_password_email_code`, `ticket`, `transfer`.
-  - `SignUp` — `email_code`, `email_link`, `ticket`, `transfer`.
+  - `SignIn` (second factor) — `totp`, `backup_code`. Issued only when
+    the parent SignIn is in `needs_second_factor`, scoped to whichever
+    methods the resolved user has enrolled (`SignIn.supported_strategies`
+    narrows to that set).
+  - `SignUp` — `email_code`, `email_link`, `ticket`, `transfer`. Sign-up
+    never gains a second factor — MFA enrollment happens after the
+    sign-up completes, on the resulting User.
   - `EmailAddress` — `email_code`, `email_link`. Used by FAPI
     `/v1/me/email-addresses/{id}/challenges` to verify additional
     addresses on an already-signed-in user.
@@ -152,26 +158,34 @@ properties:
       - `first` — first authentication factor on a `SignIn` (typical
         password / email_code / oauth / magic-link).
       - `second` — second factor for MFA on a `SignIn` (TOTP,
-        backup_code, sms_code, …). v0.3+.
+        backup_code, sms_code, …). Issued only when the parent SignIn
+        is in `needs_second_factor`. v0.3+.
       - `single` — every other case: sign-up email/phone verification,
         ticket-bound flows, magic-link sign-up, email-address
         verification, and organization-domain verification. There's no
-        MFA layered on top.
+        MFA layered on top. **Note:** TOTP enrollment verification on
+        `/v1/me/totp/verify` is not modelled as a Challenge at all —
+        it's a direct verify call against the enrolling user, not a
+        sub-resource on a parent flow.
   strategy:
     type: string
     description: |
-      How this challenge is being completed. v0.2 surface:
+      How this challenge is being completed. v0.3 surface:
 
       - `password`, `email_code`, `email_link`,
         `reset_password_email_code`, `ticket`, `transfer` — sign-in /
-        sign-up.
+        sign-up first factor.
+      - `totp`, `backup_code` — sign-in second factor (`step: "second"`
+        only). Answer with `{ code: "123456" }` for `totp` (numeric,
+        6 digits, `±1 step` tolerance) or `{ code: "abcd-efgh" }` for
+        `backup_code` (single-use, hashed at rest).
       - `email_code`, `email_link` — email-address verification on a
         signed-in user.
       - `domain_dns_txt`, `email_code` — organization-domain
         verification.
 
-      Future strategies (TOTP, backup_code, SMS, OAuth, passkey) plug
-      in here without spec changes.
+      Future strategies (SMS, OAuth, passkey) plug in here without
+      spec changes.
     examples:
       - password
       - email_code
@@ -180,11 +194,11 @@ properties:
       - ticket
       - transfer
       - domain_dns_txt
+      - totp
+      - backup_code
       - oauth_google
       - phone_code
       - passkey
-      - totp
-      - backup_code
   status:
     type: string
     enum: [pending, verified, transferable, failed, expired]
@@ -287,3 +301,35 @@ examples:
     error: null
     created_at: 1714896900000
     updated_at: 1714896900000
+  - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZT
+    object: challenge
+    sign_in_id: sia_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    sign_up_id: null
+    email_address_id: null
+    organization_domain_id: null
+    step: second
+    strategy: totp
+    status: pending
+    attempts: 0
+    expire_at: 1714724000000
+    nonce: null
+    external_verification_redirect_url: null
+    error: null
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZU
+    object: challenge
+    sign_in_id: sia_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    sign_up_id: null
+    email_address_id: null
+    organization_domain_id: null
+    step: second
+    strategy: backup_code
+    status: verified
+    attempts: 1
+    expire_at: 1714724000000
+    nonce: null
+    external_verification_redirect_url: null
+    error: null
+    created_at: 1714723000000
+    updated_at: 1714723500000

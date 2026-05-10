@@ -88,6 +88,10 @@ paths:
     $ref: ./paths/bapi/user-metadata.yaml
   /v1/users/{user_id}/verify-password:
     $ref: ./paths/bapi/user-verify-password.yaml
+  /v1/users/{user_id}/verify-totp:
+    $ref: ./paths/bapi/user-verify-totp.yaml
+  /v1/users/{user_id}/mfa:
+    $ref: ./paths/bapi/user-mfa.yaml
   /v1/email-addresses:
     $ref: ./paths/bapi/email-addresses.yaml
   /v1/email-addresses/{email_address_id}:
@@ -192,6 +196,9 @@ components:
     Challenge:                                 { $ref: ./components/schemas/Challenge.yaml }
     ChallengeCreateRequest:                    { $ref: ./components/schemas/ChallengeCreateRequest.yaml }
     ChallengeAnswerRequest:                    { $ref: ./components/schemas/ChallengeAnswerRequest.yaml }
+    TotpSecret:                                { $ref: ./components/schemas/TotpSecret.yaml }
+    BackupCode:                                { $ref: ./components/schemas/BackupCode.yaml }
+    BackupCodeBatch:                           { $ref: ./components/schemas/BackupCodeBatch.yaml }
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
     User:                                      { $ref: ./components/schemas/User.yaml }
     UserCreateRequest:                         { $ref: ./components/schemas/UserCreateRequest.yaml }

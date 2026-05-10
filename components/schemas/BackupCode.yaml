@@ -1,0 +1,76 @@
+type: object
+description: |
+  A single-use recovery code paired with a `User`'s second factor.
+  Backup codes let a user complete sign-in if they've lost access to
+  their TOTP authenticator. The plaintext code is **only ever returned
+  in the generation response** — at rest the code is hashed (Argon2id),
+  matched against the user's hash list at sign-in time, and marked
+  consumed on first successful answer.
+
+  ### Lifecycle
+
+  1. `POST /v1/me/backup-codes` (re)generates `default_count` plaintext
+     codes (instance-configurable; default 10) and returns the full
+     batch as `codes[]`. The batch supersedes any prior backup-code
+     rows — every old row is deleted server-side before the new batch
+     is stored, so previously-shown codes stop working immediately.
+  2. The user copies the codes to a safe place. Subsequent reads
+     never re-surface them.
+  3. At sign-in, the user answers a `step: "second"` Challenge with
+     `strategy: backup_code` and `{ code: "abcd-efgh" }`. The matching
+     row's `consumed_at` is stamped and the code can never be reused.
+  4. `DELETE /v1/me/backup-codes` removes every unused code on the
+     user. Combined with `DELETE /v1/me/totp` this is how a user
+     fully disables MFA from the Account Portal.
+  5. BAPI `DELETE /v1/users/{user_id}/mfa` is the operator override —
+     clears every TotpSecret + BackupCode and flips
+     `User.mfa_disabled_at`.
+
+  ### Surface representation
+
+  Backup-code rows themselves are not separately enumerated through a
+  list endpoint; the user-facing surface is exactly the one-time
+  `BackupCodeBatch` reveal. The `BackupCode` schema is documented for
+  completeness — it shows up in audit-log payloads, the BAPI admin
+  view of MFA state, and the SDK type hierarchy.
+required:
+  - id
+  - object
+  - user_id
+  - consumed_at
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+    description: ULID with prefix `bcc_`.
+  object:
+    type: string
+    const: backup_code
+  user_id:
+    $ref: ./Id.yaml
+  consumed_at:
+    type: [integer, "null"]
+    format: int64
+    minimum: 0
+    description: |
+      Unix-ms timestamp of the sign-in answer that consumed this code.
+      `null` while the code is still spendable.
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - id: bcc_01HKX9SY9V7H7TF8C8K7J9X4ZS
+    object: backup_code
+    user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    consumed_at: null
+    created_at: 1714896900000
+    updated_at: 1714896900000
+  - id: bcc_01HKX9SY9V7H7TF8C8K7J9X4ZS
+    object: backup_code
+    user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    consumed_at: 1714983300000
+    created_at: 1714896900000
+    updated_at: 1714983300000

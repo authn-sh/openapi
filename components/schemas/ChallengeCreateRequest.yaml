@@ -9,16 +9,22 @@ description: |
   The answer to the challenge is submitted separately via
   `POST .../challenges/{cid}/answer` with `ChallengeAnswerRequest`.
   Strategies that have nothing to issue (e.g. `password`,
-  `domain_dns_txt`) return a `pending` challenge straight away — for
-  `domain_dns_txt` the proof token is surfaced in `nonce`; for
-  `password` `nonce` stays `null` and the caller proceeds straight
-  to `answer`.
+  `domain_dns_txt`, `totp`, `backup_code`) return a `pending` challenge
+  straight away — for `domain_dns_txt` the proof token is surfaced in
+  `nonce`; for `password`, `totp`, and `backup_code` `nonce` stays
+  `null` and the caller proceeds straight to `answer`.
 
   Per-parent legal strategies:
 
-  - `SignIn` — `password`, `email_code`, `email_link`,
+  - `SignIn` (first factor) — `password`, `email_code`, `email_link`,
     `reset_password_email_code`, `ticket`, `transfer`.
+  - `SignIn` (second factor) — `totp`, `backup_code`. Only legal when
+    the parent SignIn is in `needs_second_factor`; the server narrows
+    `SignIn.supported_strategies` to the second-factor methods the
+    resolved user has enrolled. `step` on the resulting Challenge is
+    set to `"second"`.
   - `SignUp` — `email_code`, `email_link`, `ticket`, `transfer`.
+    Sign-up never gains a second factor.
   - `EmailAddress` — `email_code`, `email_link`.
   - `OrganizationDomain` — `domain_dns_txt`, `email_code`.
 required: [strategy]
@@ -27,10 +33,10 @@ properties:
   strategy:
     type: string
     description: |
-      v0.2 surface across all parents:
+      v0.3 surface across all parents:
       `password`, `email_code`, `email_link`, `reset_password_email_code`,
-      `ticket`, `transfer`, `domain_dns_txt`. Future strategies (TOTP,
-      backup_code, SMS, OAuth, passkey) plug in here without spec
+      `ticket`, `transfer`, `domain_dns_txt`, `totp`, `backup_code`.
+      Future strategies (SMS, OAuth, passkey) plug in here without spec
       changes.
     examples:
       - password
@@ -40,6 +46,8 @@ properties:
       - ticket
       - transfer
       - domain_dns_txt
+      - totp
+      - backup_code
   email_address_id:
     type: string
     description: |
@@ -47,10 +55,11 @@ properties:
       challenge. Must be one of `SignIn.supported_strategies`'s implied
       identifiers. Ignored for sign-up (the address comes from the
       attempt itself) and for the `EmailAddress` parent (the address is
-      the parent itself).
+      the parent itself). Not used by `totp` / `backup_code` — those
+      strategies are scoped to the resolved user, not an identifier.
   phone_number_id:
     type: string
-    description: Reserved for `phone_code` (v0.3+).
+    description: Reserved for `phone_code` (v0.4+).
   redirect_url:
     type: string
     format: uri
@@ -68,3 +77,5 @@ examples:
     email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
   - { strategy: email_code }
   - { strategy: domain_dns_txt }
+  - { strategy: totp }
+  - { strategy: backup_code }

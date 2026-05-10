@@ -17,6 +17,13 @@ description: |
     result — `verified` if the TXT record was visible, `pending` if
     the lookup was queued. The server keeps polling DNS in the
     background regardless.
+  - `totp` — `{ code: "123456" }`. 6-digit numeric TOTP. Server checks
+    against the user's stored secret with a `±1 step` (30s) window.
+    Only legal on a `step: "second"` Challenge bound to a SignIn.
+  - `backup_code` — `{ code: "abcd-efgh" }`. Single-use recovery code
+    in `xxxx-xxxx` format. The matching row is marked consumed on
+    success and can never be reused. Only legal on a `step: "second"`
+    Challenge bound to a SignIn.
   - `signature` is reserved for v0.5 (passkey).
 
   On a `reset_password_email_code` answer the parent SignIn transitions
@@ -34,4 +41,5 @@ properties:
 examples:
   - { password: "correct horse battery staple" }
   - { code: "542178" }
+  - { code: "abcd-efgh" }
   - {}

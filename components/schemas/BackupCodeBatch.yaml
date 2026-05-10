@@ -1,0 +1,58 @@
+type: object
+description: |
+  One-time payload returned by `POST /v1/me/backup-codes`. Carries the
+  freshly-minted plaintext `codes[]` exactly once — they're hashed at
+  rest and never re-surfaced. The SDK is expected to render the codes
+  immediately for the user to copy / download / print and to clear the
+  array from memory once the user dismisses the reveal modal.
+
+  Re-issuing this endpoint replaces every prior code on the user, so the
+  matching `count` reflects the new batch size — there's no merge with
+  previous batches.
+required:
+  - object
+  - user_id
+  - count
+  - codes
+  - generated_at
+additionalProperties: false
+properties:
+  object:
+    type: string
+    const: backup_code_batch
+  user_id:
+    $ref: ./Id.yaml
+  count:
+    type: integer
+    minimum: 1
+    description: Number of codes in `codes[]`. Defaults to `multi_factor.backup_codes.default_count` from `InstanceSettings`.
+  codes:
+    type: array
+    description: |
+      Plaintext recovery codes — formatted `xxxx-xxxx` (8 lowercase
+      Crockford-base32 chars with a hyphen at the midpoint). Single-use;
+      the server hashes each one before storage and discards the
+      plaintext when the response is sent.
+    items:
+      type: string
+      pattern: "^[a-z0-9]{4}-[a-z0-9]{4}$"
+    examples:
+      - ["abcd-efgh", "ijkl-mnop", "qrst-uvwx"]
+  generated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - object: backup_code_batch
+    user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    count: 10
+    codes:
+      - "abcd-efgh"
+      - "ijkl-mnop"
+      - "qrst-uvwx"
+      - "yzab-cdef"
+      - "ghij-klmn"
+      - "opqr-stuv"
+      - "wxyz-1234"
+      - "5678-90ab"
+      - "cdef-ghij"
+      - "klmn-opqr"
+    generated_at: 1714896900000
