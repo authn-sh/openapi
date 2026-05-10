@@ -1,0 +1,64 @@
+post:
+  operationId: createMyBackupCodes
+  summary: (Re)generate backup codes
+  description: |
+    Mint a fresh batch of single-use recovery codes for the calling
+    user. Returns the full plaintext `codes[]` exactly once — the
+    server hashes each code (Argon2id) before storage and discards the
+    plaintext when the response is sent. The default batch size comes
+    from `InstanceSettings.multi_factor.backup_codes.default_count`
+    (defaults to `10`).
+
+    Re-issuing this endpoint **replaces** every prior code on the
+    user — old codes are deleted server-side before the new batch is
+    stored, so previously-shown codes stop working immediately. Flips
+    `User.backup_code_enabled` to `true` if it wasn't already; if
+    this is the user's first second factor,
+    `User.two_factor_enabled` and `User.mfa_enabled_at` are also set.
+
+    Refused with `422` (`error_code: mfa_not_enabled`) when the
+    instance has `multi_factor.backup_codes.enabled: false`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: |
+        The freshly-minted `BackupCodeBatch` with plaintext codes,
+        wrapped in the standard FAPI envelope. The codes are returned
+        only here — subsequent reads of the user's MFA state never
+        re-surface them.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }
+
+delete:
+  operationId: deleteMyBackupCodes
+  summary: Remove backup codes from my account
+  description: |
+    Delete every unused `BackupCode` on the calling user and flip
+    `User.backup_code_enabled` to `false`. Already-consumed codes
+    are left intact for audit-log purposes. If no other second factor
+    remains, also flips `User.two_factor_enabled` to `false` and
+    stamps `User.mfa_disabled_at`.
+
+    Returns `200` with an empty deleted batch even if the user had no
+    unused codes — the call is idempotent.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: |
+        Confirmation envelope; the embedded `client.user.backup_code_enabled`
+        is now `false`. The body's `response` is a `BackupCodeBatch`
+        with `count: 0` and `codes: []` for shape consistency.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }

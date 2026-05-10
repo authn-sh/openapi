@@ -80,6 +80,12 @@ get:
                   retire_window_seconds: 604800
                 organizations:
                   enabled: false
+                multi_factor:
+                  totp:
+                    enabled: true
+                  backup_codes:
+                    enabled: true
+                    default_count: 10
                 audit_log_retention_days: 365
     "401": { $ref: ../../components/responses/Unauthorized.yaml }
 

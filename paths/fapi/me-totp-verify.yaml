@@ -1,0 +1,52 @@
+post:
+  operationId: verifyMyTotp
+  summary: Verify TOTP enrollment with the first code
+  description: |
+    Confirm the calling user can produce a valid TOTP from the
+    plaintext secret returned by `POST /v1/me/totp`. Server checks
+    `code` against the stored secret with a `±1 step` (30s) tolerance
+    window. On success:
+
+    - `TotpSecret.verified_at` is stamped.
+    - `User.totp_enabled` flips to `true`.
+    - If this is the user's first second factor,
+      `User.two_factor_enabled` flips to `true` and
+      `User.mfa_enabled_at` is stamped.
+
+    Returns `422` with `error_code: incorrect_code` if the code
+    doesn't validate. Excessive failures roll into the standard
+    brute-force lockout. Returns `404` if the user hasn't started
+    enrollment via `POST /v1/me/totp`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [code]
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              minLength: 6
+              maxLength: 8
+              description: 6-digit numeric TOTP from the user's authenticator app.
+        examples:
+          basic: { value: { code: "542178" } }
+  responses:
+    "200":
+      description: |
+        The now-verified `TotpSecret` (with `verified_at` set, `secret`
+        / `otpauth_uri` / `qr_code_data_url` cleared), wrapped — the
+        embedded `client.user.totp_enabled` is now `true`.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

@@ -1,0 +1,62 @@
+parameters:
+  - name: user_id
+    in: path
+    required: true
+    schema: { $ref: "../../components/schemas/Id.yaml" }
+
+post:
+  operationId: verifyTotp
+  summary: Verify a user's TOTP code (operator override)
+  description: |
+    Server-side TOTP check against the user's enrolled `TotpSecret`.
+    Returns `200 { verified: true }` on a valid code (within the
+    `±1 step` window), `200 { verified: false }` otherwise. Subject to
+    the standard rate-limit bucket; repeated mismatches eventually
+    return `429`.
+
+    Used by support tooling and SDK callers that need to gate
+    sensitive server-side actions on a fresh second-factor proof
+    without forcing the user back through the FAPI sign-in flow.
+    Returns `404` if the user has no enrolled `TotpSecret` and `422`
+    (`error_code: mfa_not_enabled`) when the instance has
+    `multi_factor.totp.enabled: false`.
+
+    This call does **not** stamp `TotpSecret.verified_at` on its own —
+    it's a verification check, not an enrollment confirmation. The
+    enrollment confirmation path is the FAPI
+    `POST /v1/me/totp/verify` endpoint.
+  tags: [Users]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [code]
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              minLength: 6
+              maxLength: 8
+              description: 6-digit numeric TOTP from the user's authenticator app.
+        examples:
+          basic: { value: { code: "542178" } }
+  responses:
+    "200":
+      description: Verification result.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [verified]
+            additionalProperties: false
+            properties:
+              verified: { type: boolean }
+          examples:
+            ok:    { value: { verified: true } }
+            wrong: { value: { verified: false } }
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../../components/responses/NotFound.yaml" }
+    "422": { $ref: "../../components/responses/UnprocessableEntity.yaml" }
+    "429": { $ref: "../../components/responses/TooManyRequests.yaml" }

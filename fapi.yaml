@@ -134,6 +134,12 @@ paths:
     $ref: ./paths/fapi/me-password.yaml
   /v1/me/delete-self:
     $ref: ./paths/fapi/me-delete-self.yaml
+  /v1/me/totp:
+    $ref: ./paths/fapi/me-totp.yaml
+  /v1/me/totp/verify:
+    $ref: ./paths/fapi/me-totp-verify.yaml
+  /v1/me/backup-codes:
+    $ref: ./paths/fapi/me-backup-codes.yaml
   /v1/organizations:
     $ref: ./paths/fapi/organizations.yaml
   /v1/organizations/{organization_id}:
@@ -210,6 +216,9 @@ components:
     Challenge:                                 { $ref: ./components/schemas/Challenge.yaml }
     ChallengeCreateRequest:                    { $ref: ./components/schemas/ChallengeCreateRequest.yaml }
     ChallengeAnswerRequest:                    { $ref: ./components/schemas/ChallengeAnswerRequest.yaml }
+    TotpSecret:                                { $ref: ./components/schemas/TotpSecret.yaml }
+    BackupCode:                                { $ref: ./components/schemas/BackupCode.yaml }
+    BackupCodeBatch:                           { $ref: ./components/schemas/BackupCodeBatch.yaml }
     AttributeSetting:                          { $ref: ./components/schemas/AttributeSetting.yaml }
     PublicUserData:                            { $ref: ./components/schemas/PublicUserData.yaml }
     Organization:                              { $ref: ./components/schemas/Organization.yaml }

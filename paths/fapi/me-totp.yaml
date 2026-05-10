@@ -1,0 +1,65 @@
+post:
+  operationId: createMyTotp
+  summary: Start TOTP enrollment
+  description: |
+    Mint a fresh `TotpSecret` for the calling user and return the
+    plaintext shared secret + `otpauth://` URI + a server-rendered
+    QR-code data URL. The row starts with `verified_at: null` — the
+    user must answer with the first generated code via
+    `POST /v1/me/totp/verify` before the secret becomes a usable
+    second factor.
+
+    Idempotent re-enrollment: calling this endpoint while an
+    unverified `TotpSecret` already exists overwrites the row
+    (regenerates `secret`, `otpauth_uri`, `qr_code_data_url`). Calling
+    it while a verified `TotpSecret` exists returns `409` — disable the
+    existing secret with `DELETE /v1/me/totp` first, or re-enroll
+    through the dashboard's reset MFA flow.
+
+    The plaintext `secret` is **only** returned by this endpoint;
+    subsequent reads of the user's MFA state never re-surface it.
+    Refused with `422` (`error_code: mfa_not_enabled`) when the
+    instance has `multi_factor.totp.enabled: false`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: |
+        The freshly-minted `TotpSecret` with `secret`, `otpauth_uri`,
+        and `qr_code_data_url` populated, wrapped in the standard FAPI
+        envelope (the embedded `client.user.totp_enabled` is still
+        `false` until verify lands).
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }
+
+delete:
+  operationId: deleteMyTotp
+  summary: Remove TOTP from my account
+  description: |
+    Delete the calling user's `TotpSecret` and flip
+    `User.totp_enabled` back to `false`. If no other second factor
+    remains, also flips `User.two_factor_enabled` to `false` and
+    stamps `User.mfa_disabled_at`. Existing `BackupCode` rows are
+    left untouched — call `DELETE /v1/me/backup-codes` separately to
+    fully disable MFA from the Account Portal.
+
+    Returns `404` if the user has no enrolled `TotpSecret`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The deleted `TotpSecret`, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

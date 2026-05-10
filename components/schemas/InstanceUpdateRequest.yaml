@@ -44,6 +44,30 @@ properties:
   signing_keys:
     type: object
     additionalProperties: true
+  multi_factor:
+    type: object
+    description: |
+      Patch any subset of the per-env MFA toggles. Same shape as
+      `InstanceSettings.multi_factor` — supply the strategy block(s)
+      you want to update; omitted blocks are left untouched. Setting
+      a strategy to `enabled: false` keeps existing enrollment rows
+      but stops them from completing sign-in.
+    additionalProperties: false
+    properties:
+      totp:
+        type: object
+        additionalProperties: false
+        properties:
+          enabled: { type: boolean }
+      backup_codes:
+        type: object
+        additionalProperties: false
+        properties:
+          enabled: { type: boolean }
+          default_count:
+            type: integer
+            minimum: 4
+            maximum: 24
   audit_log_retention_days:
     type: integer
     minimum: 1

@@ -19,6 +19,7 @@ required:
   - test_mode
   - signing_keys
   - organizations
+  - multi_factor
   - audit_log_retention_days
 additionalProperties: false
 properties:
@@ -217,6 +218,51 @@ properties:
       enabled:
         type: boolean
         default: false
+  multi_factor:
+    type: object
+    description: |
+      Per-environment MFA strategy gating. The FAPI consults these
+      flags before issuing a `totp` / `backup_code` Challenge or
+      accepting `POST /v1/me/totp` / `POST /v1/me/backup-codes`. A
+      strategy that's `enabled: false` is omitted from
+      `SignIn.supported_strategies` even if a user has stale
+      enrollment rows for it (the rows survive the toggle but can't
+      be used to complete sign-in).
+    additionalProperties: false
+    required: [totp, backup_codes]
+    properties:
+      totp:
+        type: object
+        additionalProperties: false
+        required: [enabled]
+        properties:
+          enabled:
+            type: boolean
+            default: true
+            description: |
+              When `false`, refuses new TOTP enrollments and excludes
+              `totp` from second-factor `supported_strategies`.
+      backup_codes:
+        type: object
+        additionalProperties: false
+        required: [enabled, default_count]
+        properties:
+          enabled:
+            type: boolean
+            default: true
+            description: |
+              When `false`, refuses backup-code generation and excludes
+              `backup_code` from second-factor `supported_strategies`.
+          default_count:
+            type: integer
+            minimum: 4
+            maximum: 24
+            default: 10
+            description: |
+              How many codes `POST /v1/me/backup-codes` mints per
+              regeneration request. Bounds chosen so the typical
+              printable card stays readable; raise for environments
+              that want more headroom.
   audit_log_retention_days:
     type: integer
     minimum: 1

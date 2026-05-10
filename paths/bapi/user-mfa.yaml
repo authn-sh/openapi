@@ -1,0 +1,31 @@
+parameters:
+  - name: user_id
+    in: path
+    required: true
+    schema: { $ref: "../../components/schemas/Id.yaml" }
+
+delete:
+  operationId: deleteUserMfa
+  summary: Reset a user's MFA (operator override)
+  description: |
+    Operator-driven MFA reset. Deletes the user's `TotpSecret` (if any)
+    plus every unconsumed `BackupCode`, flips
+    `User.totp_enabled` / `User.backup_code_enabled` /
+    `User.two_factor_enabled` to `false`, and stamps
+    `User.mfa_disabled_at`.
+
+    Used by support to recover a user who's lost access to their
+    authenticator and exhausted their backup codes. Idempotent —
+    calling on a user with no MFA enrolled returns the user unchanged.
+
+    Emits `auth.mfa.totp_removed` and `auth.mfa.backup_codes_removed`
+    audit-log events as appropriate, attributed to the operator.
+  tags: [Users]
+  responses:
+    "200":
+      description: The updated `User` after the reset.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/User.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
