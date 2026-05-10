@@ -1,0 +1,54 @@
+type: object
+description: |
+  Body for `POST /sign-ins/{sid}/challenges` and
+  `POST /sign-ups/{sid}/challenges`. Picks a strategy and supplies any
+  fields the strategy needs to *issue* the challenge (e.g. which
+  identifier to send the code to, which redirect URL to bounce back to).
+
+  The answer to the challenge is submitted separately via
+  `POST .../challenges/{cid}/answer` with `ChallengeAnswerRequest`.
+  Strategies that have nothing to issue (e.g. `password`) return a
+  `pending` challenge with `nonce: null` and the caller proceeds
+  straight to `answer`.
+required: [strategy]
+additionalProperties: false
+properties:
+  strategy:
+    type: string
+    description: |
+      v0.2 surface:
+      `password`, `email_code`, `email_link`, `reset_password_email_code`,
+      `ticket`, `transfer`. Future strategies (TOTP, backup_code, SMS,
+      OAuth, passkey) plug in here without spec changes.
+    examples:
+      - password
+      - email_code
+      - email_link
+      - reset_password_email_code
+      - ticket
+      - transfer
+  email_address_id:
+    type: string
+    description: |
+      For `email_code` / `email_link` first-factor sign-in, the address to
+      challenge. Must be one of `SignIn.supported_strategies`'s implied
+      identifiers. Ignored for sign-up (the address comes from the
+      attempt itself).
+  phone_number_id:
+    type: string
+    description: Reserved for `phone_code` (v0.3+).
+  redirect_url:
+    type: string
+    format: uri
+    description: |
+      For `email_link`, the URL the magic link bounces back to after
+      `clientHandshake` consumes the ticket. Must be on the redirect-URL
+      allowlist. Also used by OAuth strategies (v0.4+).
+examples:
+  - { strategy: password }
+  - { strategy: email_code, email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE }
+  - strategy: email_link
+    email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
+    redirect_url: https://app.acme.com/dashboard
+  - strategy: reset_password_email_code
+    email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
