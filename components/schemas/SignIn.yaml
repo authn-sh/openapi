@@ -12,8 +12,42 @@ description: |
 
   v0.1 ships `password` + `email_code` + `reset_password_email_code`
   + `ticket`. v0.2 adds `email_link` (magic link). v0.3 layers MFA on
-  top via the `needs_second_factor` step. OAuth/SAML/passkey land in
-  later milestones.
+  top via the `needs_second_factor` step. v0.4 adds
+  `oauth_<provider_key>` for first-factor social sign-in (see below).
+  SAML / passkey land in later milestones.
+
+  ### OAuth first-factor flow (v0.4, PLAN §9.3 + §9.4)
+
+  `oauth_<provider_key>` is identifier-less — the SDK skips
+  `needs_identifier` and goes straight to issuing a Challenge:
+
+  1. Client `POST .../challenges { strategy: "oauth_<provider_key>",
+     redirect_url, redirect_url_complete }`. The server mints a
+     Challenge with `external_verification_redirect_url` set to the
+     IdP's `/authorize` URL (with a server-signed `state` baked in)
+     and `current_challenge_id` repointed.
+  2. SDK performs a top-level browser navigation to that URL. The
+     server-side handshake of the IdP redirect lands at
+     `/v1/oauth-callback/{provider_key}` — the URL operators register
+     with the IdP. That endpoint flips the Challenge to `verified`
+     (or `transferable`) and 302s the browser back to
+     `redirect_url_complete`.
+  3. SDK reads the parent SignIn from the returning URL and either
+     completes (`status: "complete"`, `created_session_id` set) or
+     follows the cross-flow bounce on `transferable`.
+
+  ### Cross-flow `transferable` (PLAN §9.4)
+
+  - **OAuth sign-in for an unknown identifier** — IdP returned an
+    identity that has no matching `User` and the parent
+    `OauthProvider.allow_sign_up` is `true`. Challenge flips to
+    `transferable`; SDK posts
+    `POST /v1/client/sign-ups { transfer: true }` to mint a SignUp
+    that completes synchronously off the same external account. With
+    `allow_sign_up: false`, the Challenge instead lands `failed` with
+    `oauth_account_does_not_exist`.
+  - **Magic-link sign-in for an unknown identifier** (v0.2) — same
+    `transferable` cross-flow as before.
 
   ### Magic-link cross-device polling (PLAN §9.10)
 
@@ -116,7 +150,12 @@ properties:
 
       - `needs_first_factor` — first-factor strategies the environment
         + identifier support: `password`, `email_code`, `email_link`,
-        `reset_password_email_code`, `ticket`.
+        `reset_password_email_code`, `ticket`, plus an
+        `oauth_<provider_key>` entry for every enabled `OauthProvider`
+        row with `allow_sign_in: true` (e.g. `oauth_google`,
+        `oauth_acme_corp_sso`). The OAuth entries surface
+        independently of the supplied `identifier` — they're
+        identifier-less.
       - `needs_second_factor` — narrowed to second-factor strategies
         the resolved user has enrolled. v0.3 surface: `totp`,
         `backup_code`. Each entry maps to whichever of
@@ -131,6 +170,7 @@ properties:
       currently-listed value on the next `POST .../challenges`.
     examples:
       - [password, email_code, email_link, reset_password_email_code]
+      - [password, email_code, oauth_google, oauth_github]
       - [totp, backup_code]
       - [totp]
       - [backup_code]
