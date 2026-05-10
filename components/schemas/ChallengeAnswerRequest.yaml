@@ -1,0 +1,31 @@
+type: object
+description: |
+  Body for `POST /sign-ins/{sid}/challenges/{cid}/answer` and
+  `POST /sign-ups/{sid}/challenges/{cid}/answer`. The challenge already
+  knows its strategy; the body carries the strategy-specific answer.
+
+  - `password` — `{ password: "…" }`.
+  - `email_code` / `reset_password_email_code` — `{ code: "123456" }`.
+  - `ticket` — `{ ticket: "…" }`.
+  - `email_link` — `{ }` (empty body). This commits the SDK to polling
+    `GET .../challenges/{cid}`; the verification happens out-of-band when
+    the user clicks the magic link. The response is the polled state,
+    not a synchronous success.
+  - `signature` is reserved for v0.5 (passkey).
+
+  On a `reset_password_email_code` answer the parent SignIn transitions
+  to `needs_new_password`; the caller then creates a fresh `password`
+  challenge and answers it with the new password, which advances the
+  sign-in to `complete`.
+additionalProperties: false
+properties:
+  password:  { type: string }
+  code:      { type: string }
+  ticket:    { type: string }
+  signature:
+    type: string
+    description: Reserved for v0.5 (passkey).
+examples:
+  - { password: "correct horse battery staple" }
+  - { code: "542178" }
+  - {}

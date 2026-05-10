@@ -1,8 +1,15 @@
 type: object
 description: |
   In-progress sign-up attempt. Tracks which fields the environment
-  requires, which the caller has already supplied, which still need
-  verification, and the per-attribute verification challenges.
+  requires, which the caller has already supplied, and which still need
+  verification via a `Challenge`.
+
+  The per-attribute `verifications.{email_address,phone_number,…}` map
+  was replaced with a single `current_challenge_id` pointer plus
+  `supported_strategies[]`. Callers create a `Challenge` against the
+  sign-up via `POST /v1/client/sign-ups/{sid}/challenges` and answer it
+  via `POST /v1/client/sign-ups/{sid}/challenges/{cid}/answer`. Sign-ups
+  only have `step: single` challenges — no MFA layered on top.
 
   v0.1 supports email + password sign-ups via `email_code`. v0.2 adds
   `email_link` (magic link). Phone, OAuth, SAML, and passkey sign-ups
@@ -10,41 +17,14 @@ description: |
 
   ### Magic-link cross-device polling (PLAN §9.10)
 
-  Sign-up `email_link` works the same way as sign-in `email_link`
-  — the click can happen on a different device while the originating
-  device polls the FAPI for completion. The full handshake is:
+  Same as sign-in `email_link` — the click can land on a different
+  device. The originating device polls the focused
+  `GET /v1/client/sign-ups/{sid}/challenges/{cid}` resource. See the
+  cross-device polling note on `Challenge`.
 
-  1. Caller calls `prepareVerification` with `strategy: email_link`.
-     The server emails a click-through URL of shape:
-
-     `https://{env_slug}.authn.sh/v1/client/handshake?__authn_ticket=<jwt>&__authn_status=complete`
-
-     The JWT carries `purpose=email_link`, the `sign_up_id`, and the
-     attribute being verified (always `email_address` in v0.2). The
-     URL is mirrored into the matching
-     `verifications.email_address.external_verification_redirect_url`
-     so the SDK can render a "Open the email" UI.
-
-  2. Caller calls `attemptVerification` with
-     `strategy: email_link` and **no payload** — body is just
-     `{strategy: "email_link"}`. This commits the SDK to polling.
-
-  3. Caller polls `getClient` (recommended cadence: **every 2
-     seconds for the first 60 seconds, then 5 seconds for the next
-     5 minutes**) until the matching
-     `verifications.email_address.status` flips to `verified` or
-     `transferable`.
-
-  4. The click on any device hits `clientHandshake`
-     (`GET /v1/client/handshake?__authn_ticket=…`), which marks the
-     verification on the originating attempt and lets the polling
-     device complete.
-
-  If the address being signed up already has a `User`, the
-  verification flips to `transferable` instead of `verified` and the
-  SDK should bounce to sign-in via
-  `POST /v1/client/sign_ins { transfer: true }` — see the
-  `Verification` schema for the full transferable rules.
+  If the address being signed up already has a `User`, the challenge
+  flips to `transferable` instead of `verified` and the SDK should
+  bounce to sign-in via `POST /v1/client/sign-ins { transfer: true }`.
 required:
   - id
   - object
@@ -53,7 +33,8 @@ required:
   - optional_fields
   - missing_fields
   - unverified_fields
-  - verifications
+  - supported_strategies
+  - current_challenge_id
   - password_enabled
   - unsafe_metadata
   - public_metadata
@@ -76,14 +57,14 @@ properties:
       - abandoned
     description: |
       - `missing_requirements` — `missing_fields` or `unverified_fields`
-        is non-empty; caller must `PATCH` to fill / `attempt_verification`
-        to verify.
+        is non-empty; caller must `PATCH` to fill, or create+answer a
+        `Challenge` to verify.
       - `complete` — `created_user_id` and `created_session_id` are set;
         SDK can stop driving.
       - `transferable` — the verified identity belongs in the opposite
         flow. v0.2: a sign-up `email_link` was clicked for an address
         that already has a `User` — the SDK should bounce to sign-in
-        with `POST /v1/client/sign_ins { transfer: true }`. v0.4
+        with `POST /v1/client/sign-ins { transfer: true }`. v0.4
         extends this to OAuth.
       - `abandoned` — `abandon_at` passed.
   required_fields:
@@ -105,24 +86,23 @@ properties:
     description: |
       Fields the caller supplied but that need a verification challenge
       (`email_address`, `phone_number`).
-  verifications:
-    type: object
+  supported_strategies:
+    type: array
+    items: { type: string }
     description: |
-      Map of attribute name → `Verification`. Populated by
-      `prepare_verification` and updated by `attempt_verification`.
-    additionalProperties:
-      oneOf:
-        - $ref: ./Verification.yaml
-        - type: "null"
+      Strategies the client may issue next given the sign-up's current
+      state. The server narrows this list as the flow progresses. v0.2
+      surface: `email_code`, `email_link`. Empty when the flow is
+      `complete` or `abandoned`.
     examples:
-      - email_address:
-          status: unverified
-          strategy: email_code
-          attempts: 0
-          expire_at: 1714724000000
-          external_verification_redirect_url: null
-          nonce: null
-          error: null
+      - [email_code, email_link]
+  current_challenge_id:
+    description: |
+      Pointer to the live `Challenge` if one's in flight. `null` when
+      the sign-up has no live challenge.
+    oneOf:
+      - $ref: ./Id.yaml
+      - type: "null"
   username:
     type: [string, "null"]
   email_address:

@@ -1,0 +1,43 @@
+parameters:
+  - name: sign_up_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: createSignUpChallenge
+  summary: Create a challenge on a sign-up
+  description: |
+    Issue a verification challenge against the parent sign-up. Replaces
+    the old `prepare-verification` endpoint. Sign-ups only ever have
+    `step: single` challenges — there's no MFA layered on top of an
+    in-progress sign-up.
+
+    The strategy in the body must be one of `SignUp.supported_strategies`.
+    The response is wrapped in the standard envelope so the SDK can
+    refresh its local Client cache atomically; the wrapped `response` is
+    the freshly-created `Challenge`.
+
+    For `email_link`, follow up with `answerSignUpChallenge` (empty
+    body) and then poll `getSignUpChallenge` until `status` flips to
+    `verified` or `transferable`. See the cross-device polling note on
+    `Challenge`.
+  tags: [Sign-Ups]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/ChallengeCreateRequest.yaml }
+  responses:
+    "200":
+      description: The freshly-created `Challenge`, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

@@ -1,0 +1,179 @@
+type: object
+description: |
+  A single verification challenge bound to a `SignIn` or `SignUp`. The
+  parent owns at most one live challenge at a time (`current_challenge_id`).
+  Challenges replace the per-factor `prepare-*` / `attempt-*` endpoint
+  pairs with a uniform sub-resource shape: create the challenge, then
+  answer it (or poll it for out-of-band strategies like `email_link`).
+
+  ### Lifecycle
+
+  - `pending` — challenge issued, no successful answer yet.
+  - `verified` — challenge succeeded; the parent advances its state machine.
+  - `transferable` — succeeded against the wrong flow type. The SDK should
+    bounce to the opposite flow with `transfer: true`. v0.2 cases:
+      1. **Magic-link sign-in for an unknown identifier** — bounce to
+         sign-up via `POST /v1/client/sign-ups { transfer: true }`.
+      2. **Magic-link sign-up for an existing identifier** — bounce to
+         sign-in via `POST /v1/client/sign-ins { transfer: true }`.
+  - `failed` — too many wrong attempts; the challenge can no longer be
+    answered. Issue a fresh one to retry.
+  - `expired` — `expire_at` is in the past; issue a fresh one.
+
+  ### Cross-device polling (PLAN §9.10 — magic link)
+
+  `email_link` is the only v0.2 strategy that completes out-of-band. The
+  click can land on a different device than the one driving the flow, so
+  the originating device polls the focused challenge resource:
+
+  1. `POST /sign-ins/{sid}/challenges { strategy: "email_link", ... }` —
+     server emails a click-through URL of shape
+     `https://{env_slug}.authn.sh/v1/client/handshake?__authn_ticket=<jwt>&__authn_status=complete`,
+     mirrors that URL into `external_verification_redirect_url`, and
+     returns a polling token in `nonce`.
+  2. `POST /sign-ins/{sid}/challenges/{cid}/answer { }` — body has no
+     strategy-specific fields; this commits the SDK to polling but does
+     not synchronously verify anything.
+  3. The originating device polls `GET /sign-ins/{sid}/challenges/{cid}`
+     (recommended cadence: every 2s for 60s, then 5s for 5min, then stop).
+     Each poll returns the same `Challenge` until the link is clicked.
+  4. The click — possibly on another device — hits `clientHandshake`
+     (`GET /v1/client/handshake?__authn_ticket=…`), which decodes the
+     ticket and flips the challenge to `verified` (or `transferable` for
+     an unknown identifier). The next poll on the originating device
+     sees the new status and completes the flow.
+
+  Polling does *not* use SSE or WebSockets — plain HTTP polling keeps the
+  FAPI infrastructure simple and works in every browser. Servers may
+  rate-limit polling above the recommended cadence (`429`).
+required:
+  - id
+  - object
+  - sign_in_id
+  - sign_up_id
+  - step
+  - strategy
+  - status
+  - attempts
+  - expire_at
+  - nonce
+  - external_verification_redirect_url
+  - error
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: challenge
+  sign_in_id:
+    description: |
+      Set when this challenge is bound to a `SignIn`. Mutually exclusive
+      with `sign_up_id` — exactly one of the two is non-null.
+    oneOf:
+      - $ref: ./Id.yaml
+      - type: "null"
+  sign_up_id:
+    description: |
+      Set when this challenge is bound to a `SignUp`. Mutually exclusive
+      with `sign_in_id` — exactly one of the two is non-null.
+    oneOf:
+      - $ref: ./Id.yaml
+      - type: "null"
+  step:
+    type: string
+    enum: [first, second, single]
+    description: |
+      Server-assigned at issue time based on the parent SignIn/SignUp state.
+
+      - `first` — first authentication factor (typical password /
+        email_code / oauth / magic-link).
+      - `second` — second factor for MFA (TOTP, backup_code, sms_code, …).
+        v0.3+.
+      - `single` — sign-up email/phone verification, ticket-bound flows,
+        magic-link sign-up. There's no MFA layered on top.
+  strategy:
+    type: string
+    description: |
+      How this challenge is being completed. v0.2 surface:
+      `password`, `email_code`, `email_link`, `reset_password_email_code`,
+      `ticket`, `transfer`. Future strategies (TOTP, backup_code, SMS,
+      OAuth, passkey) plug in here without spec changes.
+    examples:
+      - password
+      - email_code
+      - email_link
+      - reset_password_email_code
+      - ticket
+      - transfer
+      - oauth_google
+      - phone_code
+      - passkey
+      - totp
+      - backup_code
+  status:
+    type: string
+    enum: [pending, verified, transferable, failed, expired]
+  attempts:
+    type: integer
+    minimum: 0
+    description: Number of answers submitted against this challenge.
+  expire_at:
+    $ref: ./Timestamp.yaml
+  nonce:
+    type: [string, "null"]
+    description: |
+      Strategy-specific token surfaced to the client. Magic-link
+      challenges return the polling token clients use to drive
+      `GET /challenges/{id}`. Other strategies leave this null.
+  external_verification_redirect_url:
+    type: [string, "null"]
+    format: uri
+    description: |
+      For redirect-based strategies (OAuth, magic-link), the URL the
+      browser should hand off to. `null` otherwise.
+  error:
+    description: Last error returned by the strategy, if any.
+    oneOf:
+      - type: object
+        required: [code, message]
+        additionalProperties: false
+        properties:
+          code: { type: string }
+          message: { type: string }
+      - type: "null"
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZE
+    object: challenge
+    sign_in_id: sia_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    sign_up_id: null
+    step: first
+    strategy: email_link
+    status: pending
+    attempts: 0
+    expire_at: 1714724000000
+    nonce: poll_01HKX9SY9V7H7TF8C8K7J9X4ZF
+    external_verification_redirect_url: "https://acme.authn.sh/v1/client/handshake?__authn_ticket=tkt_01HKX9SY9V7H7TF8C8K7J9X4ZG&__authn_status=complete"
+    error: null
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZE
+    object: challenge
+    sign_in_id: sia_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    sign_up_id: null
+    step: first
+    strategy: email_link
+    status: verified
+    attempts: 1
+    expire_at: 1714724000000
+    nonce: null
+    external_verification_redirect_url: null
+    error: null
+    created_at: 1714723000000
+    updated_at: 1714723500000

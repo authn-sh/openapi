@@ -84,24 +84,22 @@ paths:
     $ref: ./paths/fapi/sign-ins.yaml
   /v1/client/sign-ins/{sign_in_id}:
     $ref: ./paths/fapi/sign-in.yaml
-  /v1/client/sign-ins/{sign_in_id}/prepare-first-factor:
-    $ref: ./paths/fapi/sign-in-prepare-first-factor.yaml
-  /v1/client/sign-ins/{sign_in_id}/attempt-first-factor:
-    $ref: ./paths/fapi/sign-in-attempt-first-factor.yaml
-  /v1/client/sign-ins/{sign_in_id}/prepare-second-factor:
-    $ref: ./paths/fapi/sign-in-prepare-second-factor.yaml
-  /v1/client/sign-ins/{sign_in_id}/attempt-second-factor:
-    $ref: ./paths/fapi/sign-in-attempt-second-factor.yaml
-  /v1/client/sign-ins/{sign_in_id}/reset-password:
-    $ref: ./paths/fapi/sign-in-reset-password.yaml
+  /v1/client/sign-ins/{sign_in_id}/challenges:
+    $ref: ./paths/fapi/sign-in-challenges.yaml
+  /v1/client/sign-ins/{sign_in_id}/challenges/{challenge_id}:
+    $ref: ./paths/fapi/sign-in-challenge.yaml
+  /v1/client/sign-ins/{sign_in_id}/challenges/{challenge_id}/answer:
+    $ref: ./paths/fapi/sign-in-challenge-answer.yaml
   /v1/client/sign-ups:
     $ref: ./paths/fapi/sign-ups.yaml
   /v1/client/sign-ups/{sign_up_id}:
     $ref: ./paths/fapi/sign-up.yaml
-  /v1/client/sign-ups/{sign_up_id}/prepare-verification:
-    $ref: ./paths/fapi/sign-up-prepare-verification.yaml
-  /v1/client/sign-ups/{sign_up_id}/attempt-verification:
-    $ref: ./paths/fapi/sign-up-attempt-verification.yaml
+  /v1/client/sign-ups/{sign_up_id}/challenges:
+    $ref: ./paths/fapi/sign-up-challenges.yaml
+  /v1/client/sign-ups/{sign_up_id}/challenges/{challenge_id}:
+    $ref: ./paths/fapi/sign-up-challenge.yaml
+  /v1/client/sign-ups/{sign_up_id}/challenges/{challenge_id}/answer:
+    $ref: ./paths/fapi/sign-up-challenge-answer.yaml
   /v1/client/sessions/{session_id}:
     $ref: ./paths/fapi/client-session.yaml
   /v1/client/sessions/{session_id}/end:
@@ -210,6 +208,9 @@ components:
     SessionActivity:                           { $ref: ./components/schemas/SessionActivity.yaml }
     SignIn:                                    { $ref: ./components/schemas/SignIn.yaml }
     SignUp:                                    { $ref: ./components/schemas/SignUp.yaml }
+    Challenge:                                 { $ref: ./components/schemas/Challenge.yaml }
+    ChallengeCreateRequest:                    { $ref: ./components/schemas/ChallengeCreateRequest.yaml }
+    ChallengeAnswerRequest:                    { $ref: ./components/schemas/ChallengeAnswerRequest.yaml }
     AttributeSetting:                          { $ref: ./components/schemas/AttributeSetting.yaml }
     PublicUserData:                            { $ref: ./components/schemas/PublicUserData.yaml }
     Organization:                              { $ref: ./components/schemas/Organization.yaml }

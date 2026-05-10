@@ -1,0 +1,48 @@
+parameters:
+  - name: sign_in_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: challenge_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: answerSignInChallenge
+  summary: Answer a sign-in challenge
+  description: |
+    Submit the user's answer to a live challenge. Replaces
+    `attempt-first-factor` / `attempt-second-factor`. The body shape is
+    strategy-specific — see `ChallengeAnswerRequest`.
+
+    For `email_link` the body is `{ }` and the call is non-synchronous:
+    it commits the SDK to polling `getSignInChallenge`. The actual
+    verification happens out-of-band when the user clicks the magic
+    link.
+
+    On success the challenge `status` flips to `verified` (or
+    `transferable` — bounce to sign-up via
+    `POST /v1/client/sign-ups { transfer: true }`) and the parent
+    sign-in advances its state machine: typically `needs_first_factor`
+    → `complete`, with `created_session_id` set, or
+    `reset_password_email_code` → `needs_new_password`.
+  tags: [Sign-Ins]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/ChallengeAnswerRequest.yaml }
+  responses:
+    "200":
+      description: The updated `Challenge`, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

@@ -1,0 +1,48 @@
+parameters:
+  - name: sign_up_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: challenge_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: answerSignUpChallenge
+  summary: Answer a sign-up challenge
+  description: |
+    Submit the user's answer to a live challenge. Replaces
+    `attempt-verification`. The body shape is strategy-specific — see
+    `ChallengeAnswerRequest`.
+
+    For `email_link` the body is `{ }` and the call is non-synchronous:
+    it commits the SDK to polling `getSignUpChallenge`. The actual
+    verification happens out-of-band when the user clicks the magic
+    link.
+
+    On success the challenge `status` flips to `verified` (or
+    `transferable` for an existing identifier — bounce to sign-in via
+    `POST /v1/client/sign-ins { transfer: true }`). With the verified
+    identifier in hand, if no other requirements remain the sign-up
+    transitions to `complete`, setting `created_user_id` and
+    `created_session_id`.
+  tags: [Sign-Ups]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/ChallengeAnswerRequest.yaml }
+  responses:
+    "200":
+      description: The updated `Challenge`, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

@@ -3,9 +3,10 @@ post:
   summary: Create a sign-in attempt
   description: |
     Start a sign-in flow. The caller may supply only the identifier (in
-    which case the response carries `supported_first_factors` so the
-    SDK can pick one), or supply an identifier + strategy (and password
-    when applicable) to fold the first attempt into the create call.
+    which case the response carries `supported_strategies` so the SDK
+    can pick one and create a `Challenge`), or supply an identifier +
+    strategy (and password when applicable) to fold the first challenge
+    into the create call.
   tags: [Sign-Ins]
   security:
     - client_cookie: []

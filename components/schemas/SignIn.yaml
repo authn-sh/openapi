@@ -1,8 +1,14 @@
 type: object
 description: |
-  In-progress sign-in attempt. The client drives a tiny state machine:
-  identify the user → prepare a first factor → attempt that factor →
-  (optionally) prepare/attempt a second factor → `complete`.
+  In-progress sign-in attempt. The client drives a small state machine:
+  identify the user → create a `Challenge` for a first factor → answer it
+  → (optionally) create/answer a second-factor `Challenge` → `complete`.
+
+  Per-factor `prepare-*` / `attempt-*` endpoint pairs were replaced with
+  a unified `Challenge` sub-resource — see the `Challenge` schema. The
+  state machine (`needs_identifier` → `needs_first_factor` →
+  `needs_second_factor` → `complete`) is unchanged; only the API shape
+  exposing it changed.
 
   v0.1 ships `password` + `email_code` + `reset_password_email_code`
   + `ticket`. v0.2 adds `email_link` (magic link). OAuth/SAML/passkey/TOTP
@@ -13,52 +19,16 @@ description: |
   `email_link` is the only first-factor strategy that completes
   out-of-band — the user clicks the link in their inbox, possibly on a
   different device, while the originating device polls for the result.
-
-  1. Caller calls `prepareFirstFactor` with `strategy: email_link` on
-     the originating device. The server emails a click-through URL of
-     shape:
-
-     `https://{env_slug}.authn.sh/v1/client/handshake?__authn_ticket=<jwt>&__authn_status=complete`
-
-     The JWT carries `purpose=email_link`, the originating
-     `sign_in_id`, and the verifying `email_address_id`. Its
-     `external_verification_redirect_url` is mirrored into
-     `first_factor_verification.external_verification_redirect_url`
-     so the originating device can render a "Open the email" UI.
-
-  2. The originating device calls `attemptFirstFactor` with
-     `strategy: email_link` and **no payload** — the body is just
-     `{strategy: "email_link"}`. This commits the SDK to polling but
-     does not synchronously verify anything.
-
-  3. The originating device polls `getClient` (the recommended
-     cadence is **every 2 seconds for the first 60 seconds, then 5
-     seconds for the next 5 minutes, then stop**). Each poll returns
-     the same `SignIn` with its `first_factor_verification.status`
-     unchanged until the link is clicked.
-
-  4. When the link is clicked — possibly on a different device —
-     the click hits `clientHandshake`
-     (`GET /v1/client/handshake?__authn_ticket=…`) on the FAPI host.
-     `clientHandshake` decodes the ticket, marks the originating
-     attempt's `first_factor_verification.status` as `verified` (or
-     `transferable` for an unknown identifier — see `Verification`),
-     and the next poll on the originating device sees the new
-     status, completing the sign-in.
-
-  Cross-device polling does *not* use SSE or WebSockets — plain
-  `getClient` polling keeps the FAPI infrastructure simple and works
-  across every browser. Servers may rate-limit polling above the
-  recommended cadence (`429 too_many_requests`).
+  The originating device polls the focused
+  `GET /v1/client/sign-ins/{sid}/challenges/{cid}` resource (not the
+  whole sign-in) — see the cross-device polling note on `Challenge`.
 required:
   - id
   - object
   - status
   - supported_identifiers
-  - supported_first_factors
-  - supported_second_factors
-  - first_factor_verification
-  - second_factor_verification
+  - supported_strategies
+  - current_challenge_id
   - identifier
   - user_data
   - created_session_id
@@ -82,11 +52,13 @@ properties:
       - abandoned
     description: |
       - `needs_identifier` — caller must supply email/phone/username.
-      - `needs_first_factor` — caller must call `prepare_first_factor` then
-        `attempt_first_factor`.
+      - `needs_first_factor` — caller must `POST .../challenges` then
+        `.../challenges/{cid}/answer`.
       - `needs_second_factor` — first factor passed; second pending. v0.3+.
-      - `needs_new_password` — email-code reset succeeded; caller must
-        `POST /reset_password` with the new password.
+      - `needs_new_password` — `reset_password_email_code` succeeded; caller
+        must create a fresh `Challenge` with `strategy: password` and
+        answer it with the new password, which transitions the sign-in
+        to `complete`.
       - `needs_client_trust` — environment requires the device pass an
         out-of-band trust check (geolocation/WAF/captcha).
       - `complete` — `created_session_id` is set; SDK can stop driving.
@@ -97,46 +69,27 @@ properties:
       type: string
       enum: [email_address, phone_number, username]
     description: Identifier kinds the environment accepts at this step.
-  supported_first_factors:
+  supported_strategies:
     type: array
-    items:
-      type: object
-      required: [strategy]
-      additionalProperties: true
-      properties:
-        strategy:
-          type: string
-          description: |
-            v0.1 emits `password`, `email_code`,
-            `reset_password_email_code`. v0.2 adds `email_link`.
-          examples:
-            - password
-            - email_code
-            - email_link
-            - reset_password_email_code
-        email_address_id:
-          type: string
-        phone_number_id:
-          type: string
-        safe_identifier:
-          type: string
-          description: Redacted hint shown in UI (e.g. `j***@a***`).
-    description: Concrete first factors that can be prepared.
-  supported_second_factors:
-    type: array
-    items:
-      type: object
-      additionalProperties: true
-    description: Empty in v0.1 (MFA ships in v0.3).
-  first_factor_verification:
-    description: Verification challenge for the chosen first factor, if started.
+    items: { type: string }
+    description: |
+      Strategies the client may issue next given the sign-in's current
+      state. The server narrows this list as the flow progresses — e.g.
+      after a first-factor `verified`, the list flips from first-factor
+      strategies to whatever second-factor strategies the user has
+      enrolled. v0.2 surface: `password`, `email_code`, `email_link`,
+      `reset_password_email_code`, `ticket`. Empty when the flow is
+      `complete` or `abandoned`.
+    examples:
+      - [password, email_code, email_link, reset_password_email_code]
+  current_challenge_id:
+    description: |
+      Pointer to the live `Challenge` if one's in flight. `null` when
+      the sign-in has no live challenge — either none has been created
+      yet, the previous one was answered to a terminal status, or the
+      flow itself is `complete` / `abandoned`.
     oneOf:
-      - $ref: ./Verification.yaml
-      - type: "null"
-  second_factor_verification:
-    description: Verification challenge for the second factor, if started.
-    oneOf:
-      - $ref: ./Verification.yaml
+      - $ref: ./Id.yaml
       - type: "null"
   identifier:
     type: [string, "null"]

@@ -1,0 +1,50 @@
+parameters:
+  - name: sign_in_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: createSignInChallenge
+  summary: Create a challenge on a sign-in
+  description: |
+    Issue a verification challenge against the parent sign-in. Replaces
+    the old `prepare-first-factor` / `prepare-second-factor` /
+    `reset-password` triplet — the server inspects the sign-in's current
+    state to decide whether the new challenge is `step: first`,
+    `step: second`, or (for ticket flows) `step: single`.
+
+    The strategy in the body must be one of `SignIn.supported_strategies`.
+    The response is wrapped in the standard envelope so the SDK can
+    refresh its local Client cache atomically; the wrapped `response` is
+    the freshly-created `Challenge` (the SignIn itself is reachable on
+    `client.sign_in_attempts[]`).
+
+    Issuing a new challenge supersedes any previous live challenge on
+    the same sign-in — the old `Challenge` is left at whatever terminal
+    status it had (`pending` rolls to `expired` on supersede), and
+    `SignIn.current_challenge_id` advances to the new one.
+
+    For `email_link`, follow up with `answerSignInChallenge` (empty
+    body) and then poll `getSignInChallenge` until `status` flips to
+    `verified` or `transferable`. See the cross-device polling note on
+    `Challenge`.
+  tags: [Sign-Ins]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/ChallengeCreateRequest.yaml }
+  responses:
+    "200":
+      description: The freshly-created `Challenge`, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }
