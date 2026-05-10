@@ -1,0 +1,57 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: domain_id
+    in: path
+    required: true
+    description: ID of the domain.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: challenge_id
+    in: path
+    required: true
+    description: ID of the challenge.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: answerOrganizationDomainChallenge
+  summary: Answer a verification challenge on an organization domain
+  description: |
+    Submit the operator's answer to a live domain-verification
+    challenge. The body shape is strategy-specific — see
+    `ChallengeAnswerRequest`.
+
+    For `domain_dns_txt` send `{ }` (empty body) — this hints the
+    server to attempt the DNS lookup right now. The response reflects
+    the immediate result: `status: verified` if the TXT record was
+    visible, `status: pending` if the lookup was queued. The server
+    keeps polling DNS in the background regardless, so callers can
+    poll `getOrganizationDomainChallenge` to observe the eventual
+    flip.
+
+    For `email_code` send `{ code: "…" }` with the numeric code the
+    server delivered to `affiliation_email_address`.
+
+    On success the challenge `status` flips to `verified` and the
+    parent domain flips to `verified: true` with
+    `current_challenge_id` cleared.
+  tags: [Org Domains]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/ChallengeAnswerRequest.yaml }
+  responses:
+    "200":
+      description: The updated `Challenge`.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Challenge.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

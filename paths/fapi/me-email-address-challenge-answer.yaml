@@ -1,0 +1,43 @@
+parameters:
+  - name: email_address_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: challenge_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: answerEmailAddressChallenge
+  summary: Answer an email-address challenge
+  description: |
+    Submit the user's answer to a live email-address challenge. The
+    body shape is strategy-specific — see `ChallengeAnswerRequest`.
+
+    For `email_code` send `{ code: "…" }`. For `email_link` send `{ }`
+    and poll `getEmailAddressChallenge`; the actual verification
+    happens out-of-band when the user clicks the magic link.
+
+    On success the challenge `status` flips to `verified` and the
+    parent address flips to `verified: true` with
+    `current_challenge_id` cleared.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/ChallengeAnswerRequest.yaml }
+  responses:
+    "200":
+      description: The updated `Challenge`, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }

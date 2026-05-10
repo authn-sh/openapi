@@ -14,17 +14,10 @@ properties:
       - automatic_invitation
       - automatic_suggestion
     default: manual_invitation
-  verification_strategy:
-    type: string
-    enum: [dns, email_code]
-    default: dns
-    description: |
-      Which proof channel to use. `dns` writes a TXT record check
-      to `verification`; `email_code` sends a code to
-      `affiliation_email_address`.
   affiliation_email_address:
     type: string
     format: email
     description: |
-      Required when `verification_strategy === 'email_code'`. Must
-      sit at the domain being verified.
+      Optional address to use as the `email_code` verification target
+      when an operator later issues an `email_code` challenge against
+      this domain. Must sit at the domain being verified.

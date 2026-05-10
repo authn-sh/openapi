@@ -45,7 +45,7 @@ post:
   summary: Add a domain to an organization
   description: |
     Add a new domain. Verification is issued lazily — call
-    `POST /v1/organizations/{id}/domains/{domain_id}/verify` to
+    `POST /v1/organizations/{id}/domains/{domain_id}/challenges` to
     kick off the proof flow.
   tags: [Org Domains]
   parameters:
@@ -57,11 +57,10 @@ post:
         schema: { $ref: ../../components/schemas/OrganizationDomainCreateRequest.yaml }
         examples:
           basic:
-            summary: Add acme.com with DNS verification
+            summary: Add acme.com
             value:
               name: acme.com
               enrollment_mode: automatic_invitation
-              verification_strategy: dns
   responses:
     "201":
       description: The new domain.

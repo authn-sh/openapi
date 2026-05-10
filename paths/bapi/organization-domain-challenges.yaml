@@ -1,0 +1,56 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: domain_id
+    in: path
+    required: true
+    description: ID of the domain.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: createOrganizationDomainChallenge
+  summary: Create a verification challenge on an organization domain
+  description: |
+    Issue a verification challenge against the parent domain. Replaces
+    the old one-shot `POST /v1/organizations/{org}/domains/{id}/verify`
+    action with the same uniform challenge sub-resource shape used on
+    sign-in / sign-up / email-address verification — and adds a clean
+    polling story for the asynchronous DNS lookup.
+
+    Legal strategies are `domain_dns_txt` (the server returns the TXT
+    value the operator must publish in `nonce`, then a background
+    worker polls DNS until the record appears) and `email_code` (the
+    server emails a numeric code to `affiliation_email_address`).
+
+    Issuing a new challenge supersedes any previous live challenge on
+    the same domain — the old one rolls to `expired`. Calling this on
+    an already-verified domain rotates the proof and flips
+    `verified` back to `false` until the new challenge succeeds.
+  tags: [Org Domains]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/ChallengeCreateRequest.yaml }
+        examples:
+          dns_txt:
+            summary: DNS TXT challenge
+            value: { strategy: domain_dns_txt }
+          email_code:
+            summary: Affiliation-email code
+            value: { strategy: email_code }
+  responses:
+    "201":
+      description: The freshly-created `Challenge`.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Challenge.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+    "429": { $ref: ../../components/responses/TooManyRequests.yaml }
