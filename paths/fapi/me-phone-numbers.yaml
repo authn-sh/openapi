@@ -1,0 +1,52 @@
+get:
+  operationId: listMyPhoneNumbers
+  summary: List my phone numbers
+  description: Every phone number attached to the current user, with verification state.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: My phone numbers.
+      content:
+        application/json:
+          schema:
+            type: array
+            items: { $ref: ../../components/schemas/PhoneNumber.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+
+post:
+  operationId: createMyPhoneNumber
+  summary: Add a phone number to my account
+  description: |
+    Attach a new phone to the current user. Always created unverified;
+    follow up by issuing a `phone_code` `Challenge` against the parent
+    sign-in / sign-up flow (or any future standalone phone-verification
+    sub-resource) to verify.
+
+    The submitted value is normalised server-side; the stored
+    `phone_number` is always E.164.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/PhoneNumberCreateRequest.yaml }
+        examples:
+          add:
+            value: { phone_number: "+15555550100" }
+          add_brazil:
+            value: { phone_number: "+55 11 99999-0100" }
+  responses:
+    "201":
+      description: The new phone number, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

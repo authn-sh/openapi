@@ -1,0 +1,52 @@
+parameters:
+  - name: external_account_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getMyExternalAccount
+  summary: Get one of my connected accounts
+  description: Fetch a single `ExternalAccount` row by ID.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The connected account.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ExternalAccount.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+delete:
+  operationId: deleteMyExternalAccount
+  summary: Unlink one of my connected accounts
+  description: |
+    Drop the local `ExternalAccount` row. The server makes a
+    best-effort revocation against the IdP's `revocation_endpoint`
+    (per OIDC discovery, when present) — failure to revoke does not
+    block deletion, and the local row is removed regardless.
+
+    The user must keep at least one identifier or another sign-in
+    method; deleting the last way to sign in returns `422`.
+
+    Future sign-ins via the same `OauthProvider` will create a fresh
+    `ExternalAccount` row from scratch, so unlinking is safe — it
+    forgets the IdP-issued tokens and breaks the link, but does not
+    permanently ban the user from re-connecting.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: The unlinked connected account, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

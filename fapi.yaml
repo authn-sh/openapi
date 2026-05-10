@@ -128,6 +128,14 @@ paths:
     $ref: ./paths/fapi/me-email-address-challenge.yaml
   /v1/me/email-addresses/{email_address_id}/challenges/{challenge_id}/answer:
     $ref: ./paths/fapi/me-email-address-challenge-answer.yaml
+  /v1/me/phone-numbers:
+    $ref: ./paths/fapi/me-phone-numbers.yaml
+  /v1/me/phone-numbers/{phone_number_id}:
+    $ref: ./paths/fapi/me-phone-number.yaml
+  /v1/me/external-accounts:
+    $ref: ./paths/fapi/me-external-accounts.yaml
+  /v1/me/external-accounts/{external_account_id}:
+    $ref: ./paths/fapi/me-external-account.yaml
   /v1/me/sessions:
     $ref: ./paths/fapi/me-sessions.yaml
   /v1/me/change-password:
@@ -209,6 +217,8 @@ components:
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
     ExternalAccount:                           { $ref: ./components/schemas/ExternalAccount.yaml }
     PhoneNumber:                               { $ref: ./components/schemas/PhoneNumber.yaml }
+    PhoneNumberCreateRequest:                  { $ref: ./components/schemas/PhoneNumberCreateRequest.yaml }
+    PhoneNumberUpdateRequest:                  { $ref: ./components/schemas/PhoneNumberUpdateRequest.yaml }
     User:                                      { $ref: ./components/schemas/User.yaml }
     Client:                                    { $ref: ./components/schemas/Client.yaml }
     ClientResponseEnvelope:                    { $ref: ./components/schemas/ClientResponseEnvelope.yaml }
