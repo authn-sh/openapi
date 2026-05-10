@@ -1,0 +1,62 @@
+parameters:
+  - name: sms_template_slug
+    in: path
+    required: true
+    description: |
+      The template slug. One of `verification_code`,
+      `reset_password_code`, `invitation`. Convention copied from
+      `/v1/email-templates/{email_template_slug}` (when that ships).
+    schema:
+      type: string
+      enum: [verification_code, reset_password_code, invitation]
+
+get:
+  operationId: getSmsTemplate
+  summary: Get an SMS template
+  description: Fetch a single SMS template by slug.
+  tags: [SMS Templates]
+  responses:
+    "200":
+      description: The SMS template.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/SmsTemplate.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateSmsTemplate
+  summary: Update an SMS template
+  description: |
+    Patch any of `body`, `delivered_by_us`, or `from_number_override`.
+    Omitted keys are left untouched. The slug is immutable — to "switch
+    template", use `PATCH` to overwrite the body in place. To restore
+    the seeded default, use `revertSmsTemplate`.
+  tags: [SMS Templates]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/SmsTemplateRequest.yaml }
+        examples:
+          edit_body:
+            summary: Customize the verification-code copy
+            value:
+              body: "Your {{app.name}} login code is {{otp_code}}. Valid for {{ttl_minutes}} minutes."
+          handoff:
+            summary: Stop authn.sh from sending; operator's webhook will handle it
+            value: { delivered_by_us: false }
+          set_from_number:
+            summary: Send from a branded short code
+            value: { from_number_override: "+15555550100" }
+  responses:
+    "200":
+      description: The updated SMS template.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/SmsTemplate.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

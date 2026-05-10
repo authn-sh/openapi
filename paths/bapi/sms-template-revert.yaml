@@ -1,0 +1,27 @@
+parameters:
+  - name: sms_template_slug
+    in: path
+    required: true
+    schema:
+      type: string
+      enum: [verification_code, reset_password_code, invitation]
+
+post:
+  operationId: revertSmsTemplate
+  summary: Revert an SMS template to default
+  description: |
+    Reset `body`, `delivered_by_us`, and `from_number_override` to
+    the platform-shipped defaults for this slug. Useful when an
+    operator wants to undo customization without retyping the
+    original copy.
+  tags: [SMS Templates]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  responses:
+    "200":
+      description: The reverted SMS template.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/SmsTemplate.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

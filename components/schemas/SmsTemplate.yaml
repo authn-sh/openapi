@@ -1,0 +1,121 @@
+type: object
+description: |
+  Per-environment SMS body customization for one of a fixed set of
+  outbound message slugs (verification codes, password resets,
+  invitations). Each environment is seeded with a default row per slug
+  on creation; operators edit the body or flip `delivered_by_us` to
+  hand off sending to their own webhook.
+
+  ### Slugs
+
+  - `verification_code` — first-factor sign-up phone verification
+    + standalone `PhoneNumber` verification + second-factor SMS MFA.
+    The `phone_code` strategy renders this template.
+  - `reset_password_code` — SMS variant of the password-reset flow
+    (when the env's `reset_password` strategy is configured to use
+    SMS rather than email). Reserved for v0.5; the row exists in
+    v0.4 so operators can prep their copy.
+  - `invitation` — operator-driven invitation SMS. Mirrors
+    `Invitation` (v0.1) but for phone-based invites; reserved for
+    v0.5.
+
+  ### Body templating
+
+  `body` is a Liquid-style template with `{{placeholder}}`
+  interpolation. Standard placeholders:
+
+  - `{{otp_code}}` — the 6-digit numeric code (verification +
+    reset).
+  - `{{app.name}}` — the environment's `display_config.application_name`.
+  - `{{app.url}}` — the environment's `display_config.home_url`.
+  - `{{user.first_name}}` / `{{user.last_name}}` — when the message
+    has a known recipient.
+  - `{{ttl_minutes}}` — how long the code remains valid (currently
+    fixed at 10 minutes for `verification_code`).
+
+  Unknown placeholders render as the empty string.
+
+  ### `delivered_by_us`
+
+  When `true` (default), authn.sh's SMS engine sends the message via
+  the env's `Environment.sms.driver`. When `false`, the engine emits
+  an `sms.queued` audit-log entry and a webhook event but does not
+  call any driver — the operator's webhook handler is expected to
+  take over and send the SMS through their own carrier relationship.
+
+  ### Identifier
+
+  ID prefix `tmpl_` (e.g. `tmpl_01HKX9SY9V7H7TF8C8K7J9X4ZA`). Shared
+  with future `EmailTemplate` rows.
+required:
+  - id
+  - object
+  - slug
+  - body
+  - delivered_by_us
+  - from_number_override
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: sms_template
+  slug:
+    type: string
+    enum: [verification_code, reset_password_code, invitation]
+    description: |
+      Stable identifier the SMS engine looks up at send time.
+      Immutable on the row.
+  body:
+    type: string
+    maxLength: 1600
+    description: |
+      Liquid-style template body. The 1600-char ceiling matches the
+      multi-segment SMS upper bound; messages over 160 chars
+      auto-split into multiple segments at the carrier.
+    examples:
+      - "Your {{app.name}} verification code is {{otp_code}}. It expires in {{ttl_minutes}} minutes."
+      - "{{user.first_name}}, your one-time code: {{otp_code}}"
+  delivered_by_us:
+    type: boolean
+    default: true
+    description: |
+      When `true` (the default), authn.sh sends the SMS via the env's
+      `Environment.sms.driver`. When `false`, the operator handles
+      sending via webhook — the server emits an `sms.queued` event
+      but does not call any driver.
+  from_number_override:
+    type: [string, "null"]
+    pattern: "^\\+[1-9][0-9]{1,14}$"
+    maxLength: 16
+    description: |
+      Per-template override of `Environment.sms.from_number` in E.164
+      form. Useful when `verification_code` should send from a
+      branded short code while `invitation` uses a long-form number.
+      `null` falls through to the env default.
+    examples:
+      - "+15555550100"
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - id: tmpl_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: sms_template
+    slug: verification_code
+    body: "Your {{app.name}} verification code is {{otp_code}}. It expires in {{ttl_minutes}} minutes."
+    delivered_by_us: true
+    from_number_override: null
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: tmpl_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    object: sms_template
+    slug: invitation
+    body: "{{user.first_name}}, you've been invited to {{app.name}}. Tap to join: {{app.url}}/accept-invite"
+    delivered_by_us: false
+    from_number_override: "+15555550111"
+    created_at: 1714723000000
+    updated_at: 1714896500000

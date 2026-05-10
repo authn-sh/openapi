@@ -14,6 +14,7 @@ required:
   - captcha
   - localization
   - oauth_providers
+  - sms
   - paths
   - sessions
   - created_at
@@ -209,3 +210,78 @@ properties:
     items:
       type: object
       additionalProperties: true
+  sms:
+    type: object
+    description: |
+      Per-environment outbound SMS configuration. The FAPI bootstrap
+      strips every credential field — `auth_token` and `api_secret`
+      are write-only on BAPI's `Environment` patch and never appear
+      in any GET response (BAPI or FAPI). The FAPI surface only
+      exposes `driver` + `from_number` so the SDK can render the
+      correct UI affordances (e.g. show the phone-MFA toggle only
+      when a driver is configured).
+
+      `driver: null` means SMS sends are dropped with a no-op
+      audit-log entry — useful in dev environments that don't have a
+      Twilio / Vonage account wired up.
+    additionalProperties: false
+    required: [driver, from_number]
+    properties:
+      driver:
+        type: [string, "null"]
+        enum: [twilio, vonage, null]
+        description: |
+          Which carrier driver to use. `null` disables sends.
+      from_number:
+        type: [string, "null"]
+        pattern: "^\\+[1-9][0-9]{1,14}$"
+        maxLength: 16
+        description: |
+          E.164 number / short code messages are sent from. Falls
+          through to per-template `from_number_override` when set.
+      twilio:
+        type: [object, "null"]
+        additionalProperties: false
+        description: |
+          Twilio credentials. Returned on BAPI `GET /v1/instance` with
+          `auth_token` redacted; the FAPI bootstrap omits this block
+          entirely. `null` when `driver != "twilio"`.
+        properties:
+          account_sid:
+            type: string
+            maxLength: 64
+            description: Twilio Account SID. Public — safe to read.
+          auth_token:
+            type: [string, "null"]
+            writeOnly: true
+            maxLength: 64
+            description: |
+              Twilio Auth Token. Write-only — accepted on
+              `PATCH /v1/instance`, encrypted at rest, never returned
+              by any GET. Send `null` to clear the stored token.
+          messaging_service_sid:
+            type: [string, "null"]
+            maxLength: 64
+            description: |
+              Optional Twilio Messaging Service SID. When set, Twilio
+              uses the service's pool of numbers instead of
+              `from_number`.
+      vonage:
+        type: [object, "null"]
+        additionalProperties: false
+        description: |
+          Vonage (Nexmo) credentials. Same write-only / read-stripping
+          rules as `twilio`. `null` when `driver != "vonage"`.
+        properties:
+          api_key:
+            type: string
+            maxLength: 64
+            description: Vonage API key. Public — safe to read.
+          api_secret:
+            type: [string, "null"]
+            writeOnly: true
+            maxLength: 64
+            description: |
+              Vonage API secret. Write-only — accepted on
+              `PATCH /v1/instance`, encrypted at rest, never returned
+              by any GET. Send `null` to clear the stored secret.

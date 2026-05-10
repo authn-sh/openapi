@@ -51,6 +51,13 @@
   - `GET /v1/me/phone-numbers` (`listMyPhoneNumbers`), `POST /v1/me/phone-numbers` (`createMyPhoneNumber`), `GET /v1/me/phone-numbers/{id}` (`getMyPhoneNumber`), `PATCH /v1/me/phone-numbers/{id}` (`updateMyPhoneNumber`), `DELETE /v1/me/phone-numbers/{id}` (`deleteMyPhoneNumber`). Delete refuses (`409 phone_reserved_for_second_factor`) while the row is committed to MFA — clear the flag first. Verification of an unverified row is driven by issuing a `phone_code` `Challenge` against the parent sign-in / sign-up flow.
   - `GET /v1/me/external-accounts` (`listMyExternalAccounts`), `GET /v1/me/external-accounts/{id}` (`getMyExternalAccount`), `DELETE /v1/me/external-accounts/{id}` (`deleteMyExternalAccount`). No `POST` — `ExternalAccount` rows are created exclusively by the OAuth callback flow. Delete makes a best-effort revocation against the IdP's `revocation_endpoint` (when present); failure does not block local deletion.
 
+- **SMS infrastructure + v0.4 webhook events (v0.4)**.
+  - `SmsTemplate` (`tmpl_` prefix) — per-environment SMS body customization for `verification_code` / `reset_password_code` / `invitation` slugs. Each row carries a Liquid-style `body`, a `delivered_by_us` toggle (`false` hands sending off to the operator's webhook), and a per-template `from_number_override`.
+  - `SmsTemplateRequest` — PATCH body. All keys optional.
+  - BAPI `GET /v1/sms-templates` (`listSmsTemplates`), `GET /v1/sms-templates/{slug}` (`getSmsTemplate`), `PATCH /v1/sms-templates/{slug}` (`updateSmsTemplate`), `POST /v1/sms-templates/{slug}/revert` (`revertSmsTemplate` — reset body + flags to platform defaults).
+  - `Environment.sms` block — `driver` (`twilio` / `vonage` / `null`), `from_number` (E.164), and per-driver credentials. `auth_token` (Twilio) / `api_secret` (Vonage) are write-only; encrypted at rest, never returned by any GET on either surface. The FAPI bootstrap strips the per-driver credential blocks entirely.
+  - `WebhookEvent.type` enum gains `oauthProvider.{created,updated,deleted}` (payload: `OauthProvider`, `client_secret` stripped), `externalAccount.{connected,unlinked}` (payload: `ExternalAccount`, IdP tokens stripped), `phoneNumber.{created,verified,removed}` (payload: `PhoneNumber`).
+
 - **Multi-factor authentication surface (v0.3)**.
   - `TotpSecret` (one per `User`, `totp_` prefix) and `BackupCode` (`bcc_` prefix) resource schemas, plus `BackupCodeBatch` envelope for the one-time plaintext reveal.
   - `Challenge.strategy` enum gains `totp` and `backup_code`. `ChallengeCreateRequest` documents the second-factor variants (no extra fields needed beyond `strategy`); `ChallengeAnswerRequest` documents the `{ code }` answer shape for both.

@@ -1,0 +1,18 @@
+get:
+  operationId: listSmsTemplates
+  summary: List SMS templates
+  description: |
+    All `SmsTemplate` rows for the current environment. Each
+    environment is seeded with one row per slug
+    (`verification_code`, `reset_password_code`, `invitation`) on
+    creation — list always returns exactly those rows, in slug order.
+  tags: [SMS Templates]
+  responses:
+    "200":
+      description: The environment's SMS templates.
+      content:
+        application/json:
+          schema:
+            type: array
+            items: { $ref: ../../components/schemas/SmsTemplate.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }

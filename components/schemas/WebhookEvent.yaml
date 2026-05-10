@@ -52,10 +52,11 @@ properties:
     description: |
       Stable event type identifier. v0.1 shipped the `user.*`,
       `session.*`, `email.*`, and `invitation.*` events. v0.2 adds the
-      organization, role, and permission events listed below.
+      organization, role, and permission events. v0.4 adds the
+      social-IdP, external-account, and phone-number events.
 
-      Future surfaces (OAuth, enterprise SSO, SCIM) will be added
-      additively under their own milestones.
+      Future surfaces (enterprise SSO, SCIM) will be added additively
+      under their own milestones.
     enum:
       # v0.1
       - user.created
@@ -92,6 +93,15 @@ properties:
       - permission.created
       - permission.updated
       - permission.deleted
+      # v0.4
+      - oauthProvider.created
+      - oauthProvider.updated
+      - oauthProvider.deleted
+      - externalAccount.connected
+      - externalAccount.unlinked
+      - phoneNumber.created
+      - phoneNumber.verified
+      - phoneNumber.removed
   data:
     description: |
       The resource snapshot. Concrete shape depends on `type`:
@@ -110,6 +120,12 @@ properties:
       - `role.*` → `Role`
       - `permission.*` → `Permission` (custom permissions only —
         system permissions are seeded and don't emit lifecycle events)
+      - `oauthProvider.*` → `OauthProvider` (`client_secret` is never
+        in the payload — encrypted at rest, write-only)
+      - `externalAccount.*` → `ExternalAccount` (the IdP-issued
+        `access_token` / `refresh_token` / `id_token` are never in the
+        payload either)
+      - `phoneNumber.*` → `PhoneNumber`
     oneOf:
       - $ref: ./User.yaml
       - $ref: ./Session.yaml
@@ -122,6 +138,9 @@ properties:
       - $ref: ./OrganizationMembershipRequest.yaml
       - $ref: ./Role.yaml
       - $ref: ./Permission.yaml
+      - $ref: ./OauthProvider.yaml
+      - $ref: ./ExternalAccount.yaml
+      - $ref: ./PhoneNumber.yaml
   timestamp:
     $ref: ./Timestamp.yaml
   instance_id:

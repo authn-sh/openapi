@@ -1,0 +1,34 @@
+type: object
+description: |
+  Body for `PATCH /v1/sms-templates/{slug}`. All fields optional —
+  only the supplied keys are updated. `slug` itself is immutable
+  (it's the URL parameter); `id`, `created_at`, and `updated_at` are
+  computed.
+additionalProperties: false
+properties:
+  body:
+    type: string
+    maxLength: 1600
+    description: |
+      Liquid-style template body. Multi-segment SMS upper bound;
+      messages over 160 chars auto-split into multiple segments at
+      the carrier.
+  delivered_by_us:
+    type: boolean
+    description: |
+      When `false`, the operator handles sending via webhook —
+      authn.sh emits the `sms.queued` event but does not call any
+      driver.
+  from_number_override:
+    type: [string, "null"]
+    pattern: "^\\+[1-9][0-9]{1,14}$"
+    maxLength: 16
+    description: |
+      Per-template override of `Environment.sms.from_number` in
+      E.164. `null` clears the override and falls through to the env
+      default.
+examples:
+  - body: "Your {{app.name}} code: {{otp_code}}"
+  - delivered_by_us: false
+  - body: "{{user.first_name}}, your one-time code: {{otp_code}}"
+    from_number_override: "+15555550100"
