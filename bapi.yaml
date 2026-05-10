@@ -242,6 +242,8 @@ components:
     RoleCreateRequest:                         { $ref: ./components/schemas/RoleCreateRequest.yaml }
     RoleUpdateRequest:                         { $ref: ./components/schemas/RoleUpdateRequest.yaml }
     RolePermissionsRequest:                    { $ref: ./components/schemas/RolePermissionsRequest.yaml }
+    OauthProvider:                             { $ref: ./components/schemas/OauthProvider.yaml }
+    OauthProviderRequest:                      { $ref: ./components/schemas/OauthProviderRequest.yaml }
 
   responses:
     BadRequest:           { $ref: ./components/responses/BadRequest.yaml }

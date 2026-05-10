@@ -170,11 +170,19 @@ properties:
   strategy:
     type: string
     description: |
-      How this challenge is being completed. v0.3 surface:
+      How this challenge is being completed.
 
       - `password`, `email_code`, `email_link`,
         `reset_password_email_code`, `ticket`, `transfer` — sign-in /
         sign-up first factor.
+      - `oauth_<provider_key>` — first-factor social sign-in / sign-up.
+        `<provider_key>` matches a row in the environment's
+        `OauthProvider` registry (`google`, `github`, `apple`,
+        `microsoft`, or any workspace-registered `custom_oidc` /
+        `custom_oauth2` slug). The challenge surfaces the IdP's
+        authorize URL on `external_verification_redirect_url`; the SDK
+        redirects the browser there and resumes via
+        `/v1/oauth-callback/<provider_key>`.
       - `totp`, `backup_code` — sign-in second factor (`step: "second"`
         only). Answer with `{ code: "123456" }` for `totp` (numeric,
         6 digits, `±1 step` tolerance) or `{ code: "abcd-efgh" }` for
@@ -184,8 +192,7 @@ properties:
       - `domain_dns_txt`, `email_code` — organization-domain
         verification.
 
-      Future strategies (SMS, OAuth, passkey) plug in here without
-      spec changes.
+      Future strategies (passkey) plug in here without spec changes.
     examples:
       - password
       - email_code
