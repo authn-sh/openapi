@@ -19,6 +19,11 @@ description: |
   - `SignIn` (first factor) — `password`, `email_code`, `email_link`,
     `phone_code`, `oauth_<provider_key>`,
     `reset_password_email_code`, `ticket`, `transfer`.
+    `oauth_<provider_key>` requires `redirect_url` and
+    `redirect_url_complete` — the server bakes them into the IdP
+    `state` and surfaces the IdP's authorize URL on
+    `external_verification_redirect_url`. `step` is server-assigned
+    `first`; OAuth never serves as second factor.
   - `SignIn` (second factor) — `totp`, `backup_code`, `phone_code`.
     Only legal when the parent SignIn is in `needs_second_factor`; the
     server narrows `SignIn.supported_strategies` to the second-factor
@@ -29,8 +34,9 @@ description: |
     explicitly to target a different reserved-for-MFA row.
   - `SignUp` — `email_code`, `email_link`, `phone_code`,
     `oauth_<provider_key>`, `ticket`, `transfer`. Sign-up never gains
-    a second factor — the `phone_code` here is the first-factor phone-
-    attribute path.
+    a second factor — the `phone_code` here is the first-factor
+    phone-attribute path; `oauth_<provider_key>` is the first-factor
+    social-sign-up path (subject to `OauthProvider.allow_sign_up`).
   - `EmailAddress` — `email_code`, `email_link`.
   - `PhoneNumber` — `phone_code`. Used by FAPI
     `/v1/me/phone-numbers/{id}/challenges` to verify additional phone
@@ -45,14 +51,18 @@ properties:
       Strategy across all parents:
       `password`, `email_code`, `email_link`, `phone_code`,
       `oauth_<provider_key>`, `reset_password_email_code`, `ticket`,
-      `transfer`, `domain_dns_txt`, `totp`, `backup_code`. Future
-      strategies (passkey) plug in here without spec changes.
+      `transfer`, `domain_dns_txt`, `totp`, `backup_code`.
+      `oauth_<provider_key>` resolves against the environment's
+      `OauthProvider` registry — `<provider_key>` matches
+      `^[a-z][a-z0-9_]*$`. Future strategies (passkey) plug in here
+      without spec changes.
     examples:
       - password
       - email_code
       - email_link
       - phone_code
       - oauth_google
+      - oauth_acme_corp_sso
       - reset_password_email_code
       - ticket
       - transfer
@@ -88,24 +98,38 @@ properties:
     format: uri
     description: |
       For `email_link`, the URL the magic link bounces back to after
-      `clientHandshake` consumes the ticket. Must be on the redirect-URL
-      allowlist. Also used by `oauth_<provider_key>` strategies as the
-      `redirectUrlComplete` the SDK is bounced to once the parent
-      flow finishes.
+      `clientHandshake` consumes the ticket. For
+      `oauth_<provider_key>`, the URL the SDK should land the user on
+      if the IdP redirect comes back with `error` (cancellation,
+      consent denied, scope refused). Must be on the redirect-URL
+      allowlist on both surfaces.
+  redirect_url_complete:
+    type: string
+    format: uri
+    description: |
+      For `oauth_<provider_key>`, the URL the SDK should land the
+      user on after the parent flow finishes successfully (or flips
+      to `transferable`). Must be on the redirect-URL allowlist.
+      Required when `strategy` starts with `oauth_`; ignored
+      otherwise.
 examples:
   - { strategy: password }
   - { strategy: email_code, email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE }
   - strategy: email_link
     email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
     redirect_url: https://app.acme.com/dashboard
+  - strategy: oauth_google
+    redirect_url: https://app.acme.com/sign-in
+    redirect_url_complete: https://app.acme.com/dashboard
+  - strategy: oauth_acme_corp_sso
+    redirect_url: https://app.acme.com/sign-in
+    redirect_url_complete: https://app.acme.com/dashboard
   - strategy: reset_password_email_code
     email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
   - { strategy: email_code }
   - { strategy: phone_code }
   - strategy: phone_code
     phone_number_id: phn_01HKX9SY9V7H7TF8C8K7J9X4ZA
-  - strategy: oauth_google
-    redirect_url: https://app.acme.com/dashboard
   - { strategy: domain_dns_txt }
   - { strategy: totp }
   - { strategy: backup_code }

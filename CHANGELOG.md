@@ -38,6 +38,11 @@
 - **BAPI `/v1/oauth-providers` (v0.4)**.
   - `GET /v1/oauth-providers` (`listOauthProviders`), `POST /v1/oauth-providers` (`createOauthProvider`), `GET /v1/oauth-providers/{id}` (`getOauthProvider`), `PATCH /v1/oauth-providers/{id}` (`updateOauthProvider`), `DELETE /v1/oauth-providers/{id}` (`deleteOauthProvider`), `POST /v1/oauth-providers/{id}/test` (`testOauthProvider`). Soft-delete refuses (`409 oauth_provider_in_use`) when `ExternalAccount` rows still link to the provider. `test` returns `200` with `OauthProviderTestResult { authorize_url, userinfo_status, errors }` even when probes fail.
 
+- **FAPI OAuth sign-in / sign-up flow (v0.4)**.
+  - `ChallengeCreateRequest` documents the `oauth_<provider_key>` variant — required `redirect_url` (failure landing) and `redirect_url_complete` (success landing), both validated against the redirect-URL allowlist. Server stamps `step: "first"`; OAuth never serves as second factor.
+  - New FAPI path `GET /v1/oauth-callback/{provider_key}` (`oauthCallback`). Hosted on the FAPI server but lives outside `/v1/client/...` — the IdP redirect is a top-level browser navigation. Always responds `302`; the SDK reads the result off the returning URL.
+  - `SignIn` / `SignUp` describe the OAuth flow end-to-end: identifier-less Challenge issuance, `external_verification_redirect_url` carrying the IdP authorize URL, `transferable` cross-flow (sign-in for unknown identity → bounce to sign-up; sign-up for existing identity → bounce to sign-in). `supported_strategies[]` documents the per-provider narrowing: one `oauth_<provider_key>` entry per enabled `OauthProvider`, gated by `allow_sign_in` / `allow_sign_up`.
+
 - **Multi-factor authentication surface (v0.3)**.
   - `TotpSecret` (one per `User`, `totp_` prefix) and `BackupCode` (`bcc_` prefix) resource schemas, plus `BackupCodeBatch` envelope for the one-time plaintext reveal.
   - `Challenge.strategy` enum gains `totp` and `backup_code`. `ChallengeCreateRequest` documents the second-factor variants (no extra fields needed beyond `strategy`); `ChallengeAnswerRequest` documents the `{ code }` answer shape for both.

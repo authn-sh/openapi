@@ -1,0 +1,155 @@
+parameters:
+  - name: provider_key
+    in: path
+    required: true
+    description: |
+      `OauthProvider.provider_key` for the IdP that's redirecting the
+      user back. For presets one of `google` / `github` / `apple` /
+      `microsoft`; for `custom_oidc` / `custom_oauth2` rows the
+      workspace-chosen slug.
+    schema:
+      type: string
+      pattern: "^[a-z][a-z0-9_]*$"
+      maxLength: 64
+
+get:
+  operationId: oauthCallback
+  summary: OAuth IdP redirect target
+  description: |
+    The URL operators register with the IdP — an environment-scoped
+    redirect target hosted at
+    `https://<env_slug>.authn.sh/v1/oauth-callback/<provider_key>`
+    (this exact value is surfaced as `OauthProvider.redirect_uri`).
+    Hosted on the FAPI server but lives outside `/v1/client/...` —
+    the IdP redirect is a top-level browser navigation, not an SDK
+    fetch (PLAN §8.1).
+
+    The server:
+
+    1. Decodes `state` to recover the parent `Client` + the live
+       `Challenge` it bound on
+       `POST .../challenges { strategy: "oauth_<provider_key>" }`.
+       Rejects with `__authn_error=oauth_state_invalid` on any
+       mismatch (replay, cross-environment leak, expired Challenge).
+    2. On `error` / `error_description`, marks the Challenge `failed`
+       and 302s back to the SDK-supplied `redirect_url` with
+       `__authn_error=oauth_user_cancelled` (or the IdP-specific
+       `error` token) and `__authn_error_description` URL-encoded.
+    3. On `code`, exchanges it at the IdP's `token_endpoint`, fetches
+       `userinfo_endpoint` (or reads ID-token claims when the IdP
+       ships everything in the JWT), and runs the
+       find-or-create-by-`provider_user_id` resolver:
+       - **Existing `ExternalAccount`** — flips the parent `SignIn`
+         Challenge to `verified` and advances the parent flow.
+       - **No `ExternalAccount`, but the verified email matches a
+         `User`** — creates the link, then advances the parent
+         `SignIn`.
+       - **No match, parent is `SignUp`** — creates a `User` +
+         `ExternalAccount`, advances the parent `SignUp` to
+         `complete`. Subject to `OauthProvider.allow_sign_up`.
+       - **No match, parent is `SignIn`** — flips Challenge to
+         `transferable`. The SDK reads the parent and bounces to
+         sign-up via `POST /v1/client/sign-ups { transfer: true }`
+         (PLAN §9.4). Subject to `OauthProvider.allow_sign_up`.
+       - **Match exists, parent is `SignUp`** — flips Challenge to
+         `transferable`. The SDK bounces to sign-in via
+         `POST /v1/client/sign-ins { transfer: true }`.
+    4. Always responds with a `302` redirect — to
+       `redirect_url_complete` on success / `transferable` (the SDK
+       resumes the parent flow from there) or to `redirect_url` on
+       failure (with `__authn_error` query params the SDK reads off
+       the URL).
+
+    Security notes: `state` is signed by the env's session key with a
+    60s TTL, binding `client_id` + `sign_in_id` / `sign_up_id` +
+    `verification_id` so a leaked authorize URL cannot be replayed
+    against a different flow.
+  tags: [Sign-Ins]
+  security: []
+  parameters:
+    - name: state
+      in: query
+      required: true
+      description: |
+        Server-issued nonce binding `client_id` + parent attempt id +
+        challenge id. Signed by the environment's session key with a
+        60-second TTL.
+      schema:
+        type: string
+        maxLength: 2048
+    - name: code
+      in: query
+      required: false
+      description: |
+        Authorization code returned by the IdP on success. Mutually
+        exclusive with `error` — exactly one is set per callback.
+      schema:
+        type: string
+        maxLength: 2048
+    - name: error
+      in: query
+      required: false
+      description: |
+        IdP-supplied error token (e.g. `access_denied`,
+        `unauthorized_client`). Triggers a redirect to `redirect_url`
+        with `__authn_error=oauth_user_cancelled`.
+      schema:
+        type: string
+        maxLength: 256
+    - name: error_description
+      in: query
+      required: false
+      description: Human-readable error detail; surfaced to the SDK URL-encoded.
+      schema:
+        type: string
+        maxLength: 1024
+  responses:
+    "200":
+      description: |
+        Fallback rendering when the request `Accept`s
+        `application/json` (e.g. an SSR proxy or a debugging curl).
+        The body carries the same redirect target the browser case
+        gets via `Location`. Not the typical browser path — see the
+        `302` response.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [object, redirect_url]
+            properties:
+              object:
+                type: string
+                const: oauth_callback_result
+              redirect_url:
+                type: string
+                format: uri
+                description: Where the SDK should bounce the user next.
+    "302":
+      description: |
+        Browser case — redirect to the SDK-supplied URL. `Location`
+        is the resolved `redirect_url_complete` on success /
+        `transferable`, or the `redirect_url` (carrying
+        `__authn_error` + `__authn_status` query params) on failure.
+      headers:
+        Location:
+          description: |
+            Where to bounce the browser. Always an HTTPS URL on the
+            redirect-URL allowlist; never the IdP again.
+          required: true
+          schema:
+            type: string
+            format: uri
+    "400":
+      description: Malformed callback (missing `state`, neither `code` nor `error`, …).
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }
+    "404":
+      description: |
+        The `provider_key` does not resolve to an enabled
+        `OauthProvider` row on this environment. Operators landing
+        here should re-check their IdP-side redirect-URI registration.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }

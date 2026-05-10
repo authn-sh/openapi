@@ -80,6 +80,8 @@ paths:
     $ref: ./paths/fapi/client.yaml
   /v1/client/handshake:
     $ref: ./paths/fapi/client-handshake.yaml
+  /v1/oauth-callback/{provider_key}:
+    $ref: ./paths/fapi/oauth-callback.yaml
   /v1/client/sign-ins:
     $ref: ./paths/fapi/sign-ins.yaml
   /v1/client/sign-ins/{sign_in_id}:
