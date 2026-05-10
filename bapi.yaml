@@ -208,6 +208,7 @@ components:
     BackupCode:                                { $ref: ./components/schemas/BackupCode.yaml }
     BackupCodeBatch:                           { $ref: ./components/schemas/BackupCodeBatch.yaml }
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
+    ExternalAccount:                           { $ref: ./components/schemas/ExternalAccount.yaml }
     PhoneNumber:                               { $ref: ./components/schemas/PhoneNumber.yaml }
     User:                                      { $ref: ./components/schemas/User.yaml }
     UserCreateRequest:                         { $ref: ./components/schemas/UserCreateRequest.yaml }
