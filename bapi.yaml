@@ -61,6 +61,8 @@ tags:
     description: URLs allowed as post-flow redirect targets.
   - name: Instance
     description: Per-environment settings (`InstanceSetting`).
+  - name: OAuth Providers
+    description: Per-environment social-IdP configuration (`OauthProvider`).
   - name: Webhooks
     description: Webhook endpoints, deliveries, and the event envelope.
 
@@ -162,6 +164,12 @@ paths:
     $ref: ./paths/bapi/instance-restrictions.yaml
   /v1/instance/organization-settings:
     $ref: ./paths/bapi/instance-organization-settings.yaml
+  /v1/oauth-providers:
+    $ref: ./paths/bapi/oauth-providers.yaml
+  /v1/oauth-providers/{oauth_provider_id}:
+    $ref: ./paths/bapi/oauth-provider.yaml
+  /v1/oauth-providers/{oauth_provider_id}/test:
+    $ref: ./paths/bapi/oauth-provider-test.yaml
   /v1/webhooks/endpoints:
     $ref: ./paths/bapi/webhook-endpoints.yaml
   /v1/webhooks/endpoints/{endpoint_id}:
@@ -244,6 +252,7 @@ components:
     RolePermissionsRequest:                    { $ref: ./components/schemas/RolePermissionsRequest.yaml }
     OauthProvider:                             { $ref: ./components/schemas/OauthProvider.yaml }
     OauthProviderRequest:                      { $ref: ./components/schemas/OauthProviderRequest.yaml }
+    OauthProviderTestResult:                   { $ref: ./components/schemas/OauthProviderTestResult.yaml }
 
   responses:
     BadRequest:           { $ref: ./components/responses/BadRequest.yaml }

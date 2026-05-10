@@ -1,0 +1,49 @@
+type: object
+description: |
+  Result of `POST /v1/oauth-providers/{id}/test`. The dashboard uses
+  this shape to render a per-provider health indicator on the Social
+  providers configuration page. Always returned with HTTP `200` even
+  when probes fail — inspect `errors[]` to decide pass/fail.
+required: [authorize_url, userinfo_status, errors]
+additionalProperties: false
+properties:
+  authorize_url:
+    type: string
+    description: |
+      The fully-formed `/authorize` URL the SDK would redirect a user
+      to right now (with a synthetic `state` and the registered
+      `redirect_uri`). Empty string when the server could not build
+      it (e.g. OIDC discovery refresh failed and no cached endpoint
+      exists).
+    examples:
+      - "https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=123-abc.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Facme.authn.sh%2Fv1%2Foauth-callback%2Fgoogle&scope=openid+email+profile&state=test_01HKX9SY9V7H7TF8C8K7J9X4ZA"
+  userinfo_status:
+    type: [integer, "null"]
+    minimum: 100
+    maximum: 599
+    description: |
+      HTTP status code returned by the unauthenticated probe of
+      `userinfo_endpoint` (the server sends a token-less HEAD/GET and
+      records what came back). `401` / `403` are healthy — the
+      endpoint is reachable and refused the missing token. `5xx` and
+      timeouts surface a problem on the IdP side. `null` when the
+      provider has no `userinfo_endpoint` (some OIDC IdPs ship every
+      claim in the ID token).
+  errors:
+    type: array
+    description: |
+      Collected probe errors. Empty when every check passed. Each
+      entry uses the standard `Error` shape (`code` is a stable
+      machine-readable token; SDKs match on it).
+    items:
+      $ref: ./Error.yaml
+examples:
+  - authorize_url: "https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=123-abc.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Facme.authn.sh%2Fv1%2Foauth-callback%2Fgoogle&scope=openid+email+profile&state=test_01HKX9SY9V7H7TF8C8K7J9X4ZA"
+    userinfo_status: 401
+    errors: []
+  - authorize_url: ""
+    userinfo_status: null
+    errors:
+      - code: oauth_discovery_refresh_failed
+        message: "Could not refresh /.well-known/openid-configuration"
+        long_message: "The cached OIDC discovery document is older than 24h and a refresh attempt timed out. Verify the issuer URL and that the discovery endpoint is reachable from authn.sh."
