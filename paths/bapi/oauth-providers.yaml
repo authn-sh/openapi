@@ -1,0 +1,106 @@
+get:
+  operationId: listOauthProviders
+  summary: List OAuth providers
+  description: |
+    Paginated list of every `OauthProvider` row configured on the
+    environment, regardless of `enabled` state. The dashboard renders
+    the rows in this order; reorder by re-creating with a different
+    `created_at` (no separate `position` column).
+  tags: [OAuth Providers]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+  responses:
+    "200":
+      description: A page of OAuth providers.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/OauthProvider.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+
+post:
+  operationId: createOauthProvider
+  summary: Create an OAuth provider
+  description: |
+    Register a social-IdP connection on this environment. Three kinds:
+
+    - `preset` — bundled IdP. Operator only supplies `provider_key`
+      (one of `google`, `github`, `apple`, `microsoft`), `client_id`,
+      and `client_secret`; the platform fills in OIDC discovery,
+      default scopes, and the standard `attribute_mapping`.
+    - `custom_oidc` — workspace IdP. Operator supplies `provider_key`,
+      `client_id`, `client_secret`, and `issuer`; the server fetches
+      `<issuer>/.well-known/openid-configuration` and populates the
+      endpoint fields automatically.
+    - `custom_oauth2` — plain OAuth 2.0 IdP. Operator supplies
+      `provider_key`, `client_id`, `client_secret`,
+      `authorization_endpoint`, `token_endpoint`, `userinfo_endpoint`,
+      `userinfo_method`, and `userinfo_auth`.
+
+    `client_secret` is encrypted at rest and never returned by any GET.
+    The computed `redirect_uri` (the URL the IdP must redirect to) is
+    surfaced in the response — register that exact value with the IdP.
+  tags: [OAuth Providers]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/OauthProviderRequest.yaml }
+        examples:
+          preset_google:
+            summary: Google preset (minimal POST body)
+            value:
+              provider_kind: preset
+              provider_key: google
+              name: Google
+              client_id: 123456789012-abc.apps.googleusercontent.com
+              client_secret: GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxxx
+              additional_authorization_params:
+                prompt: select_account
+          custom_oidc_acme:
+            summary: Workspace OIDC IdP
+            value:
+              provider_kind: custom_oidc
+              provider_key: acme_corp_sso
+              name: Acme Corp SSO
+              client_id: acme-authn-prod
+              client_secret: shhhh
+              issuer: https://sso.acme.example
+              scopes: [openid, email, profile, groups]
+              allow_sign_up: false
+              block_email_subaddresses: true
+          custom_oauth2_legacy:
+            summary: Plain OAuth 2.0 IdP (no OIDC discovery)
+            value:
+              provider_kind: custom_oauth2
+              provider_key: legacy_idp
+              name: Legacy IdP
+              client_id: legacy-client
+              client_secret: legacy-secret
+              authorization_endpoint: https://idp.legacy.example/oauth/authorize
+              token_endpoint: https://idp.legacy.example/oauth/token
+              userinfo_endpoint: https://idp.legacy.example/api/me
+              userinfo_method: GET
+              userinfo_auth: bearer
+              scopes: [read_profile, read_email]
+              attribute_mapping:
+                email_address: email
+                provider_user_id: id
+  responses:
+    "201":
+      description: The created OAuth provider.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/OauthProvider.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

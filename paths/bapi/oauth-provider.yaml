@@ -1,0 +1,79 @@
+parameters:
+  - name: oauth_provider_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getOauthProvider
+  summary: Get an OAuth provider
+  description: Fetch a single `OauthProvider` row. `client_secret` is never included.
+  tags: [OAuth Providers]
+  responses:
+    "200":
+      description: The OAuth provider.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/OauthProvider.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateOauthProvider
+  summary: Update an OAuth provider
+  description: |
+    Partial update. `provider_kind` and `provider_key` are immutable —
+    sending a different value returns `422`. Every other field is
+    optional; omitted keys are left untouched. Sending
+    `client_secret: null` clears the stored secret (e.g. when migrating
+    to a PKCE-only flow).
+
+    Patching `enabled` to `false` keeps existing `ExternalAccount`
+    rows but prevents new sign-ins via this provider. Patching
+    `allow_sign_in: false` and `allow_sign_up: false` together has the
+    same effect as `enabled: false`.
+  tags: [OAuth Providers]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/OauthProviderRequest.yaml }
+        examples:
+          disable:
+            summary: Pause without deleting
+            value: { enabled: false }
+          rotate_secret:
+            summary: Rotate the IdP client secret
+            value: { client_secret: GOCSPX-yyyyyyyyyyyyyyyyyyyyyyyyy }
+          tighten_signups:
+            summary: Sign-in only — refuse new accounts via this provider
+            value: { allow_sign_up: false }
+  responses:
+    "200":
+      description: The updated OAuth provider.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/OauthProvider.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteOauthProvider
+  summary: Delete an OAuth provider
+  description: |
+    Soft delete. Refuses (`409 oauth_provider_in_use`) when any
+    `ExternalAccount` rows still link to this provider — operators
+    must migrate or unlink those users first to keep the audit trail
+    of past sign-ins intact. Once deleted, the
+    `oauth_<provider_key>` strategy on `Challenge` is rejected for
+    this environment.
+  tags: [OAuth Providers]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }

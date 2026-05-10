@@ -1,0 +1,64 @@
+parameters:
+  - name: oauth_provider_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: testOauthProvider
+  summary: Dry-run an OAuth provider
+  description: |
+    Probe the provider's configuration without redirecting any user.
+    The dashboard runs this on save to surface broken endpoints up
+    front, instead of letting an operator find out at sign-in time.
+
+    The server:
+
+    - Builds the `/authorize` URL the SDK would redirect to (using a
+      synthetic `state` and `redirect_uri = OauthProvider.redirect_uri`)
+      and returns it on `authorize_url`.
+    - Optionally HEAD-probes `userinfo_endpoint` (without an access
+      token, expecting `401`/`403`) to confirm the URL is reachable
+      and surfaces any DNS / TLS / 5xx issues. The HTTP status code
+      is returned on `userinfo_status`; `null` when the provider has
+      no `userinfo_endpoint` configured (some OIDC IdPs ship every
+      claim in the ID token).
+    - Collects any errors (validation, OIDC discovery refresh, network
+      timeouts) into `errors[]`.
+
+    Always returns `200` — even when probes fail. The caller inspects
+    `errors[]` to decide whether to surface a red dot in the UI.
+  tags: [OAuth Providers]
+  responses:
+    "200":
+      description: Probe result. Inspect `errors[]` to decide pass/fail.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/OauthProviderTestResult.yaml }
+          examples:
+            healthy:
+              summary: All probes passed
+              value:
+                authorize_url: "https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=123-abc.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Facme.authn.sh%2Fv1%2Foauth-callback%2Fgoogle&scope=openid+email+profile&state=test_01HKX9SY9V7H7TF8C8K7J9X4ZA&prompt=select_account"
+                userinfo_status: 401
+                errors: []
+            misconfigured_userinfo:
+              summary: Userinfo endpoint returns 5xx
+              value:
+                authorize_url: "https://idp.legacy.example/oauth/authorize?response_type=code&client_id=legacy-client&redirect_uri=https%3A%2F%2Facme.authn.sh%2Fv1%2Foauth-callback%2Flegacy_idp&scope=read_profile+read_email&state=test_01HKX9SY9V7H7TF8C8K7J9X4ZA"
+                userinfo_status: 502
+                errors:
+                  - code: oauth_userinfo_unreachable
+                    message: "userinfo_endpoint returned 502 Bad Gateway"
+                    long_message: "The IdP's userinfo endpoint returned a 502. Check the IdP's status page or your firewall rules and re-test."
+            stale_discovery:
+              summary: OIDC discovery cache expired and refresh failed
+              value:
+                authorize_url: ""
+                userinfo_status: null
+                errors:
+                  - code: oauth_discovery_refresh_failed
+                    message: "Could not refresh /.well-known/openid-configuration"
+                    long_message: "The cached OIDC discovery document is older than 24h and a refresh attempt timed out. Verify the issuer URL and that the discovery endpoint is reachable from authn.sh."
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
