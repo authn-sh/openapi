@@ -1,0 +1,174 @@
+type: object
+description: |
+  A `User`'s persistent link to a social-IdP connection driven by an
+  `OauthProvider` row. Created by `/v1/oauth-callback/<provider_key>`
+  on the first successful authorization-code exchange and reused on
+  every subsequent sign-in via the same provider. Powers the
+  `<ConnectedAccountsPanel />` UI on `<UserProfile />`.
+
+  ### Public surface only
+
+  The IdP-issued `access_token`, `refresh_token`, and `id_token` are
+  encrypted at rest server-side and **never** appear in any payload.
+  The SDK has no way to read them — server-side resolvers fetch
+  fresh userinfo against the stored tokens internally. Sign-in
+  resumption uses the platform's own session cookie, not the IdP's
+  tokens.
+
+  ### What the IdP told us
+
+  - `provider_user_id` — the IdP's stable identifier for this user
+    (`sub` for OIDC, `id` for plain OAuth 2.0). Unique per
+    `OauthProvider` row; the resolver matches incoming callbacks
+    against this column.
+  - `email_address` — the email the IdP returned for this user.
+    Stored verbatim. May or may not match a verified
+    `EmailAddress` on the parent `User` (the resolver de-dupes
+    when the IdP confirms the address as verified — see
+    `verified` below).
+  - `scopes` — what the IdP actually granted. May be a subset of
+    `OauthProvider.scopes` (the user can decline scopes on the
+    consent screen).
+  - `public_metadata` — free-form bag of raw IdP claims that did
+    not map to any `User` / `ExternalAccount` field via
+    `OauthProvider.attribute_mapping`. Useful for IdP-specific
+    extras (e.g. `groups[]` from a workforce IdP).
+
+  ### Identifier
+
+  ID prefix `ext_` (e.g. `ext_01HKX9SY9V7H7TF8C8K7J9X4ZA`).
+required:
+  - id
+  - object
+  - provider
+  - provider_key
+  - provider_user_id
+  - email_address
+  - scopes
+  - public_metadata
+  - verified
+  - linked_at
+  - last_signed_in_at
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: external_account
+  provider:
+    type: string
+    maxLength: 100
+    description: |
+      Human-readable IdP label, copied from `OauthProvider.name` at
+      link time (e.g. `"Google"`, `"GitHub"`, `"Acme Corp SSO"`).
+      Frozen on the row — renaming the `OauthProvider` does not
+      retroactively update existing `ExternalAccount` rows so the SDK
+      can render history correctly.
+  provider_key:
+    type: string
+    pattern: "^[a-z][a-z0-9_]*$"
+    maxLength: 64
+    description: |
+      Stable slug matching `OauthProvider.provider_key`. Same shape on
+      both ends so the SDK can correlate. Survives provider deletion
+      — the row stays so audit trails remain readable, but
+      sign-in via that provider stops working.
+    examples:
+      - google
+      - github
+      - acme_corp_sso
+  provider_user_id:
+    type: string
+    maxLength: 255
+    description: |
+      The IdP's stable identifier for this user (OIDC `sub`, OAuth 2.0
+      `id`). Unique per `OauthProvider` row.
+  email_address:
+    type: [string, "null"]
+    format: email
+    maxLength: 254
+    description: |
+      Email the IdP returned for this user. `null` for IdPs that
+      don't ship an email claim (rare; some workforce IdPs).
+  scopes:
+    type: array
+    items:
+      type: string
+    description: |
+      Scopes the IdP actually granted. May be a subset of the requested
+      `OauthProvider.scopes` if the user declined some on the consent
+      screen.
+    examples:
+      - ["openid", "email", "profile"]
+  public_metadata:
+    $ref: ./Metadata.yaml
+  verified:
+    type: boolean
+    description: |
+      `true` when the IdP confirmed the email as verified — mapped
+      from the OIDC `email_verified` claim (or the equivalent
+      OAuth 2.0 userinfo field, depending on
+      `OauthProvider.attribute_mapping`). When `true`, the resolver
+      will attach the email to the parent `User`'s
+      `email_addresses[]` automatically.
+  linked_at:
+    $ref: ./Timestamp.yaml
+  last_signed_in_at:
+    description: |
+      Timestamp of the most recent sign-in via this external account.
+      `null` until the second sign-in (the first is captured by
+      `linked_at`).
+    oneOf:
+      - $ref: ./Timestamp.yaml
+      - type: "null"
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - id: ext_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: external_account
+    provider: Google
+    provider_key: google
+    provider_user_id: "112233445566778899001"
+    email_address: alice@example.com
+    scopes: [openid, email, profile]
+    public_metadata:
+      hd: example.com
+      locale: en
+    verified: true
+    linked_at: 1714723000000
+    last_signed_in_at: 1714896500000
+    created_at: 1714723000000
+    updated_at: 1714896500000
+  - id: ext_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    object: external_account
+    provider: GitHub
+    provider_key: github
+    provider_user_id: "1742554"
+    email_address: alice@example.com
+    scopes: [read:user, user:email]
+    public_metadata:
+      login: alice-github
+    verified: true
+    linked_at: 1714724000000
+    last_signed_in_at: null
+    created_at: 1714724000000
+    updated_at: 1714724000000
+  - id: ext_01HKX9SY9V7H7TF8C8K7J9X4ZC
+    object: external_account
+    provider: Acme Corp SSO
+    provider_key: acme_corp_sso
+    provider_user_id: alice@acme.example
+    email_address: alice@acme.example
+    scopes: [openid, email, profile, groups]
+    public_metadata:
+      groups: [engineering, sso-admins]
+    verified: true
+    linked_at: 1714725000000
+    last_signed_in_at: 1714900000000
+    created_at: 1714725000000
+    updated_at: 1714900000000

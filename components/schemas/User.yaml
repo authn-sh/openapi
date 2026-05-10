@@ -85,11 +85,8 @@ properties:
       $ref: "./PhoneNumber.yaml"
   external_accounts:
     type: array
-    description: |
-      Reserved for v0.4 (OAuth connections). Always `[]` in v0.1.
     items:
-      type: object
-      additionalProperties: true
+      $ref: "./ExternalAccount.yaml"
   enterprise_accounts:
     type: array
     description: |
