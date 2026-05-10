@@ -11,8 +11,9 @@ description: |
   exposing it changed.
 
   v0.1 ships `password` + `email_code` + `reset_password_email_code`
-  + `ticket`. v0.2 adds `email_link` (magic link). OAuth/SAML/passkey/TOTP
-  land in later milestones.
+  + `ticket`. v0.2 adds `email_link` (magic link). v0.3 layers MFA on
+  top via the `needs_second_factor` step. OAuth/SAML/passkey land in
+  later milestones.
 
   ### Magic-link cross-device polling (PLAN §9.10)
 
@@ -22,6 +23,39 @@ description: |
   The originating device polls the focused
   `GET /v1/client/sign-ins/{sid}/challenges/{cid}` resource (not the
   whole sign-in) — see the cross-device polling note on `Challenge`.
+
+  ### Second-factor flow (`needs_second_factor`) — v0.3
+
+  When the resolved user has at least one second factor enrolled
+  (`User.two_factor_enabled: true`), a successful first-factor
+  `Challenge` advances the SignIn to `needs_second_factor` instead of
+  `complete`. From there:
+
+  1. The server narrows `supported_strategies` to whichever of
+     `totp` / `backup_code` the user has actually enrolled
+     (`User.totp_enabled` and `User.backup_code_enabled` gate the
+     list independently). The list is empty when MFA is administratively
+     disabled mid-flow.
+  2. Client issues a second-factor `Challenge`:
+     `POST /v1/client/sign-ins/{sid}/challenges { strategy: "totp" | "backup_code" }`.
+     The server stamps `step: "second"` on the resulting Challenge.
+     Neither strategy needs an issue payload — `nonce` stays `null` and
+     the SDK proceeds straight to `answer`.
+  3. Client answers:
+     `POST /v1/client/sign-ins/{sid}/challenges/{cid}/answer { code: "…" }`.
+     `totp` accepts a 6-digit numeric code (`±1 step` window);
+     `backup_code` accepts an `xxxx-xxxx` recovery code (single-use,
+     hashed at rest). On success the Challenge flips to `verified` and
+     the SignIn advances to `complete` (or `needs_client_trust` if the
+     environment requires a device trust check).
+  4. Failed answers count against the standard brute-force bucket. The
+     SignIn stays in `needs_second_factor` until a fresh Challenge
+     succeeds or `abandon_at` passes.
+
+  Switching second-factor strategy mid-flow is allowed — issuing a
+  fresh `backup_code` Challenge after a `totp` Challenge has failed
+  expires the prior live challenge (`current_challenge_id` repoints to
+  the new one).
 required:
   - id
   - object
@@ -54,7 +88,11 @@ properties:
       - `needs_identifier` — caller must supply email/phone/username.
       - `needs_first_factor` — caller must `POST .../challenges` then
         `.../challenges/{cid}/answer`.
-      - `needs_second_factor` — first factor passed; second pending. v0.3+.
+      - `needs_second_factor` — first factor passed; second pending.
+        Caller issues a fresh Challenge with `strategy: "totp"` or
+        `"backup_code"` (the server stamps `step: "second"`) and answers
+        with `{ code: "…" }`. Reached only when the resolved user has
+        at least one second factor enrolled. v0.3+.
       - `needs_new_password` — `reset_password_email_code` succeeded; caller
         must create a fresh `Challenge` with `strategy: password` and
         answer it with the new password, which transitions the sign-in
@@ -74,14 +112,28 @@ properties:
     items: { type: string }
     description: |
       Strategies the client may issue next given the sign-in's current
-      state. The server narrows this list as the flow progresses — e.g.
-      after a first-factor `verified`, the list flips from first-factor
-      strategies to whatever second-factor strategies the user has
-      enrolled. v0.2 surface: `password`, `email_code`, `email_link`,
-      `reset_password_email_code`, `ticket`. Empty when the flow is
-      `complete` or `abandoned`.
+      state. The server narrows this list as the flow progresses:
+
+      - `needs_first_factor` — first-factor strategies the environment
+        + identifier support: `password`, `email_code`, `email_link`,
+        `reset_password_email_code`, `ticket`.
+      - `needs_second_factor` — narrowed to second-factor strategies
+        the resolved user has enrolled. v0.3 surface: `totp`,
+        `backup_code`. Each entry maps to whichever of
+        `User.totp_enabled` / `User.backup_code_enabled` is `true`.
+        Empty when the user has no second factor enrolled (the SignIn
+        wouldn't be in `needs_second_factor` in that case — see the
+        per-status notes).
+      - `needs_new_password` — `[password]`.
+      - `complete` / `abandoned` — empty.
+
+      Switching strategy mid-step is allowed — the server accepts any
+      currently-listed value on the next `POST .../challenges`.
     examples:
       - [password, email_code, email_link, reset_password_email_code]
+      - [totp, backup_code]
+      - [totp]
+      - [backup_code]
   current_challenge_id:
     description: |
       Pointer to the live `Challenge` if one's in flight. `null` when

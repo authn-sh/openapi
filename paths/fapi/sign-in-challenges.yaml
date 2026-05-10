@@ -29,6 +29,12 @@ post:
     body) and then poll `getSignInChallenge` until `status` flips to
     `verified` or `transferable`. See the cross-device polling note on
     `Challenge`.
+
+    For `totp` and `backup_code` (v0.3+), the parent must already be in
+    `needs_second_factor` and `supported_strategies` must list the
+    chosen strategy. The server stamps `step: "second"` on the
+    resulting `Challenge` and the body needs no extra fields beyond
+    `strategy`. Answer with `{ code: "…" }`.
   tags: [Sign-Ins]
   security:
     - client_cookie: []
