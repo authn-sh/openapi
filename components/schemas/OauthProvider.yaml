@@ -1,0 +1,348 @@
+type: object
+description: |
+  Per-environment social-IdP configuration. The SDK reads `OauthProvider`
+  rows to render `<SocialButtons />`; the server reads them to drive the
+  `oauth_<provider_key>` first-factor `Challenge` strategy. Three kinds
+  share a single shape:
+
+  - `preset` — bundled IdPs the platform ships with (`google`, `github`,
+    `apple`, `microsoft`). The OIDC discovery fields and default scope
+    set are filled in by the platform on create; the operator only
+    supplies `client_id`, `client_secret`, and any toggles
+    (`enabled`, `allow_sign_in`, …).
+  - `custom_oidc` — workspace-registered OpenID Connect IdP. The
+    operator supplies an `issuer` URL; the server fetches and caches
+    `<issuer>/.well-known/openid-configuration` and populates the OIDC
+    endpoint fields automatically. `discovery_endpoint`,
+    `authorization_endpoint`, `token_endpoint`, `userinfo_endpoint`,
+    `jwks_uri`, `id_token_signing_algs[]` are read-only when populated
+    by discovery, but admin-overridable for self-host edge cases where
+    discovery is unreachable.
+  - `custom_oauth2` — workspace-registered plain OAuth 2.0 IdP without
+    OIDC. The operator supplies `authorization_endpoint`,
+    `token_endpoint`, and `userinfo_endpoint` directly, plus
+    `userinfo_method` (`GET` / `POST`) and `userinfo_auth` (`bearer` /
+    `basic` / `query`) so the server knows how to call the userinfo
+    endpoint.
+
+  ### Secret handling
+
+  `client_secret` is **write-only**. It's accepted on
+  `POST /v1/oauth-providers` and `PATCH /v1/oauth-providers/{id}` (see
+  `OauthProviderRequest`), encrypted at rest, and never returned in any
+  response. The public payload exposes `client_id` only.
+
+  ### Computed redirect_uri
+
+  `redirect_uri` is computed server-side as
+  `https://<env_slug>.authn.sh/v1/oauth-callback/<provider_key>` and is
+  read-only. It's the value the operator must register with the IdP.
+
+  ### attribute_mapping
+
+  Map of authn.sh `User` / `ExternalAccount` fields to IdP claim or
+  userinfo paths. Presets ship with sensible defaults
+  (`email_address` → `email`, `first_name` → `given_name`,
+  `last_name` → `family_name`, …); operators can override per row to
+  match a non-standard IdP.
+
+  ### Identifier
+
+  ID prefix `oauthp_` (e.g. `oauthp_01HKX9SY9V7H7TF8C8K7J9X4ZA`).
+required:
+  - id
+  - object
+  - provider_kind
+  - provider_key
+  - name
+  - enabled
+  - allow_sign_in
+  - allow_sign_up
+  - block_email_subaddresses
+  - client_id
+  - scopes
+  - additional_authorization_params
+  - attribute_mapping
+  - redirect_uri
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: oauth_provider
+  provider_kind:
+    type: string
+    enum: [preset, custom_oidc, custom_oauth2]
+    description: |
+      Discriminates which subset of fields applies. Immutable after
+      create.
+  provider_key:
+    type: string
+    pattern: "^[a-z][a-z0-9_]*$"
+    maxLength: 64
+    description: |
+      Stable slug used in the `oauth_<provider_key>` `Challenge.strategy`
+      and in the computed `redirect_uri`. For `provider_kind: "preset"`
+      this is one of the bundled values (`google`, `github`, `apple`,
+      `microsoft`). For `custom_oidc` / `custom_oauth2` it's a
+      workspace-chosen slug, unique per environment.
+    examples:
+      - google
+      - github
+      - apple
+      - microsoft
+      - acme_corp_sso
+  name:
+    type: string
+    maxLength: 100
+    description: Human-readable label rendered in `<SocialButtons />`.
+  enabled:
+    type: boolean
+    description: |
+      When `false`, the provider is hidden from the SDK and the
+      `oauth_<provider_key>` strategy is rejected by the FAPI. The row
+      survives the toggle so existing `ExternalAccount` links remain
+      valid.
+  allow_sign_in:
+    type: boolean
+    description: |
+      When `true`, an unsigned-in user can authenticate with this
+      provider via the `oauth_<provider_key>` strategy on a `SignIn`.
+  allow_sign_up:
+    type: boolean
+    description: |
+      When `true`, a first-time visitor can complete a `SignUp` via
+      this provider. With `allow_sign_in: true` and `allow_sign_up: false`
+      the provider is sign-in-only — the callback rejects unknown
+      identifiers instead of creating a `User`.
+  block_email_subaddresses:
+    type: boolean
+    description: |
+      When `true`, addresses with a `+tag` segment returned by the IdP
+      are refused at sign-up under this provider. Mirrors the
+      instance-level `restrictions.block_email_subaddresses` knob but
+      scoped per-provider.
+  client_id:
+    type: string
+    maxLength: 255
+    description: |
+      OAuth 2.0 client identifier issued by the IdP. Public — sent on
+      every `/authorize` redirect.
+  scopes:
+    type: array
+    items:
+      type: string
+    description: |
+      Scope set requested on the `/authorize` redirect. Presets ship
+      with a sensible default (`openid email profile` for OIDC presets;
+      `read:user user:email` for GitHub; etc.); operators can add
+      provider-specific scopes here without spec changes.
+    examples:
+      - ["openid", "email", "profile"]
+  additional_authorization_params:
+    type: object
+    description: |
+      Free-form `key=value` pairs merged into the `/authorize` query
+      string after the standard params (`client_id`, `redirect_uri`,
+      `scope`, `state`, …). Useful for IdP-specific knobs like Google's
+      `prompt=select_account` or Microsoft's `tenant=common`.
+    additionalProperties:
+      type: string
+  attribute_mapping:
+    type: object
+    description: |
+      Map of authn.sh field names (keys) to IdP claim or userinfo paths
+      (values). Keys are the standard `User` / `ExternalAccount` field
+      names: `email_address`, `first_name`, `last_name`,
+      `profile_image_url`, `provider_user_id`. Values are dot-separated
+      JSON paths into the OIDC ID token claims (or userinfo body for
+      OAuth 2.0).
+    additionalProperties:
+      type: string
+    examples:
+      - email_address: email
+        first_name: given_name
+        last_name: family_name
+        profile_image_url: picture
+        provider_user_id: sub
+  redirect_uri:
+    type: string
+    format: uri
+    readOnly: true
+    description: |
+      Server-computed callback URL the IdP must redirect to after the
+      authorization code grant. Format:
+      `https://<env_slug>.authn.sh/v1/oauth-callback/<provider_key>`.
+      Operators register this exact value with the IdP's developer
+      console.
+    examples:
+      - https://acme.authn.sh/v1/oauth-callback/google
+  issuer:
+    type: [string, "null"]
+    format: uri
+    description: |
+      OIDC issuer URL. Required for `provider_kind: "custom_oidc"` (the
+      server fetches `<issuer>/.well-known/openid-configuration` from
+      this base). Set by the platform for `preset` rows. `null` for
+      `custom_oauth2`.
+  discovery_endpoint:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Resolved OIDC discovery document URL. Populated by the server
+      from `issuer` for `preset` and `custom_oidc` rows; admin-
+      overridable for self-host edge cases where the standard
+      `/.well-known/openid-configuration` path is wrong. `null` for
+      `custom_oauth2`.
+  authorization_endpoint:
+    type: [string, "null"]
+    format: uri
+    description: |
+      `/authorize` URL. Populated by discovery for `preset` /
+      `custom_oidc`; supplied directly by the operator for
+      `custom_oauth2`.
+  token_endpoint:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Token exchange URL. Populated by discovery for `preset` /
+      `custom_oidc`; supplied directly by the operator for
+      `custom_oauth2`.
+  userinfo_endpoint:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Userinfo URL. Populated by discovery for `preset` /
+      `custom_oidc`; supplied directly by the operator for
+      `custom_oauth2`. `null` is allowed for OIDC providers that ship
+      every required claim in the ID token (the server falls back to
+      ID-token claims when this is `null`).
+  jwks_uri:
+    type: [string, "null"]
+    format: uri
+    description: |
+      JWKS URL used to verify the OIDC ID token signature. Populated
+      by discovery for `preset` / `custom_oidc`; admin-overridable.
+      `null` for `custom_oauth2`.
+  id_token_signing_algs:
+    type: array
+    items:
+      type: string
+    description: |
+      Algorithms the IdP advertises for ID token signing (e.g. `RS256`,
+      `ES256`). Populated by discovery for `preset` / `custom_oidc`;
+      empty for `custom_oauth2`.
+    examples:
+      - ["RS256"]
+  userinfo_method:
+    type: [string, "null"]
+    enum: [GET, POST, null]
+    description: |
+      HTTP method used to call `userinfo_endpoint`. Required for
+      `provider_kind: "custom_oauth2"`; `null` for OIDC kinds (those
+      always use `GET` per the OIDC core spec).
+  userinfo_auth:
+    type: [string, "null"]
+    enum: [bearer, basic, query, null]
+    description: |
+      How the access token is presented when calling
+      `userinfo_endpoint`. `bearer` — `Authorization: Bearer <token>`
+      header. `basic` — HTTP Basic with the access token as the
+      username. `query` — `?access_token=<token>` query string.
+      Required for `provider_kind: "custom_oauth2"`; `null` for OIDC
+      kinds (those always use `bearer`).
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - id: oauthp_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: oauth_provider
+    provider_kind: preset
+    provider_key: google
+    name: Google
+    enabled: true
+    allow_sign_in: true
+    allow_sign_up: true
+    block_email_subaddresses: false
+    client_id: 123456789012-abc.apps.googleusercontent.com
+    scopes: [openid, email, profile]
+    additional_authorization_params:
+      prompt: select_account
+    attribute_mapping:
+      email_address: email
+      first_name: given_name
+      last_name: family_name
+      profile_image_url: picture
+      provider_user_id: sub
+    redirect_uri: https://acme.authn.sh/v1/oauth-callback/google
+    issuer: https://accounts.google.com
+    discovery_endpoint: https://accounts.google.com/.well-known/openid-configuration
+    authorization_endpoint: https://accounts.google.com/o/oauth2/v2/auth
+    token_endpoint: https://oauth2.googleapis.com/token
+    userinfo_endpoint: https://openidconnect.googleapis.com/v1/userinfo
+    jwks_uri: https://www.googleapis.com/oauth2/v3/certs
+    id_token_signing_algs: [RS256]
+    userinfo_method: null
+    userinfo_auth: null
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: oauthp_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    object: oauth_provider
+    provider_kind: custom_oidc
+    provider_key: acme_corp_sso
+    name: Acme Corp SSO
+    enabled: true
+    allow_sign_in: true
+    allow_sign_up: false
+    block_email_subaddresses: true
+    client_id: acme-authn-prod
+    scopes: [openid, email, profile, groups]
+    additional_authorization_params: {}
+    attribute_mapping:
+      email_address: email
+      first_name: given_name
+      last_name: family_name
+      provider_user_id: sub
+    redirect_uri: https://acme.authn.sh/v1/oauth-callback/acme_corp_sso
+    issuer: https://sso.acme.example
+    discovery_endpoint: https://sso.acme.example/.well-known/openid-configuration
+    authorization_endpoint: https://sso.acme.example/authorize
+    token_endpoint: https://sso.acme.example/token
+    userinfo_endpoint: https://sso.acme.example/userinfo
+    jwks_uri: https://sso.acme.example/jwks
+    id_token_signing_algs: [RS256, ES256]
+    userinfo_method: null
+    userinfo_auth: null
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: oauthp_01HKX9SY9V7H7TF8C8K7J9X4ZC
+    object: oauth_provider
+    provider_kind: custom_oauth2
+    provider_key: legacy_idp
+    name: Legacy IdP
+    enabled: true
+    allow_sign_in: true
+    allow_sign_up: true
+    block_email_subaddresses: false
+    client_id: legacy-client
+    scopes: [read_profile, read_email]
+    additional_authorization_params: {}
+    attribute_mapping:
+      email_address: email
+      provider_user_id: id
+    redirect_uri: https://acme.authn.sh/v1/oauth-callback/legacy_idp
+    issuer: null
+    discovery_endpoint: null
+    authorization_endpoint: https://idp.legacy.example/oauth/authorize
+    token_endpoint: https://idp.legacy.example/oauth/token
+    userinfo_endpoint: https://idp.legacy.example/api/me
+    jwks_uri: null
+    id_token_signing_algs: []
+    userinfo_method: GET
+    userinfo_auth: bearer
+    created_at: 1714723000000
+    updated_at: 1714723000000

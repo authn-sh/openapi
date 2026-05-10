@@ -1,0 +1,169 @@
+type: object
+description: |
+  Request body for `POST /v1/oauth-providers` and
+  `PATCH /v1/oauth-providers/{id}`. Mirrors `OauthProvider` minus the
+  server-computed fields (`id`, `object`, `redirect_uri`, `created_at`,
+  `updated_at`) and adds the write-only `client_secret`.
+
+  ### POST vs PATCH
+
+  - On `POST`, `provider_kind`, `provider_key`, `name`, and `client_id`
+    are required. For `provider_kind: "custom_oidc"` the operator must
+    also supply `issuer`. For `provider_kind: "custom_oauth2"` the
+    operator must supply `authorization_endpoint`, `token_endpoint`,
+    `userinfo_endpoint`, `userinfo_method`, and `userinfo_auth`.
+    `client_secret` is required on `POST` for every kind except where
+    the IdP does not issue one (rare; PKCE-only flows).
+  - On `PATCH`, every field is optional and only the keys present in
+    the body are updated. `provider_kind` and `provider_key` are
+    immutable — sending a different value returns `422`.
+
+  ### client_secret
+
+  Write-only string. Accepted on POST/PATCH, encrypted at rest, and
+  never returned in any response. Sending an empty string or omitting
+  the key on PATCH leaves the stored value unchanged. Sending `null`
+  on PATCH clears the stored secret (e.g. when migrating to a PKCE-
+  only flow).
+additionalProperties: false
+properties:
+  provider_kind:
+    type: string
+    enum: [preset, custom_oidc, custom_oauth2]
+    description: |
+      Required on `POST`; immutable on `PATCH`. Discriminates which
+      subset of fields applies on this row.
+  provider_key:
+    type: string
+    pattern: "^[a-z][a-z0-9_]*$"
+    maxLength: 64
+    description: |
+      Required on `POST`; immutable on `PATCH`. For `preset` rows must
+      be one of `google` / `github` / `apple` / `microsoft`.
+  name:
+    type: string
+    maxLength: 100
+  enabled:
+    type: boolean
+    default: true
+  allow_sign_in:
+    type: boolean
+    default: true
+  allow_sign_up:
+    type: boolean
+    default: true
+  block_email_subaddresses:
+    type: boolean
+    default: false
+  client_id:
+    type: string
+    maxLength: 255
+  client_secret:
+    type: [string, "null"]
+    writeOnly: true
+    maxLength: 1024
+    description: |
+      Write-only. Encrypted at rest; never returned by any GET.
+      Omit on PATCH to leave the stored value untouched; send `null`
+      to clear it.
+  scopes:
+    type: array
+    items:
+      type: string
+    description: |
+      Overrides the preset-default scope set when supplied. Omit on
+      `POST` for `preset` rows to use the platform-default scopes.
+  additional_authorization_params:
+    type: object
+    additionalProperties:
+      type: string
+  attribute_mapping:
+    type: object
+    additionalProperties:
+      type: string
+  issuer:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Required on `POST` for `provider_kind: "custom_oidc"`. The server
+      runs OIDC discovery from this base and populates the endpoint
+      fields. Ignored for `custom_oauth2`.
+  discovery_endpoint:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Optional override for `<issuer>/.well-known/openid-configuration`.
+      Only used by `preset` / `custom_oidc` rows that need a non-
+      standard discovery URL.
+  authorization_endpoint:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Required on `POST` for `provider_kind: "custom_oauth2"`. Admin
+      override for OIDC kinds when discovery cannot reach the IdP.
+  token_endpoint:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Required on `POST` for `provider_kind: "custom_oauth2"`. Admin
+      override for OIDC kinds.
+  userinfo_endpoint:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Required on `POST` for `provider_kind: "custom_oauth2"`. Optional
+      for OIDC kinds that ship every required claim in the ID token.
+  jwks_uri:
+    type: [string, "null"]
+    format: uri
+  id_token_signing_algs:
+    type: array
+    items:
+      type: string
+  userinfo_method:
+    type: [string, "null"]
+    enum: [GET, POST, null]
+    description: |
+      Required on `POST` for `provider_kind: "custom_oauth2"`. `null`
+      for OIDC kinds.
+  userinfo_auth:
+    type: [string, "null"]
+    enum: [bearer, basic, query, null]
+    description: |
+      Required on `POST` for `provider_kind: "custom_oauth2"`. `null`
+      for OIDC kinds.
+examples:
+  - provider_kind: preset
+    provider_key: google
+    name: Google
+    enabled: true
+    allow_sign_in: true
+    allow_sign_up: true
+    block_email_subaddresses: false
+    client_id: 123456789012-abc.apps.googleusercontent.com
+    client_secret: GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxxx
+    additional_authorization_params:
+      prompt: select_account
+  - provider_kind: custom_oidc
+    provider_key: acme_corp_sso
+    name: Acme Corp SSO
+    client_id: acme-authn-prod
+    client_secret: shhhh
+    issuer: https://sso.acme.example
+    scopes: [openid, email, profile, groups]
+    allow_sign_up: false
+    block_email_subaddresses: true
+  - provider_kind: custom_oauth2
+    provider_key: legacy_idp
+    name: Legacy IdP
+    client_id: legacy-client
+    client_secret: legacy-secret
+    authorization_endpoint: https://idp.legacy.example/oauth/authorize
+    token_endpoint: https://idp.legacy.example/oauth/token
+    userinfo_endpoint: https://idp.legacy.example/api/me
+    userinfo_method: GET
+    userinfo_auth: bearer
+    scopes: [read_profile, read_email]
+    attribute_mapping:
+      email_address: email
+      provider_user_id: id
