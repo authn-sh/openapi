@@ -1,0 +1,155 @@
+type: object
+description: |
+  A phone identifier owned by a `User`. A user may have many phone
+  numbers; exactly one is the primary (referenced by
+  `User.primary_phone_number_id`). A new number starts unverified and
+  becomes a usable identifier once `verified` flips to `true` —
+  typically by issuing and answering a `phone_code` `Challenge`
+  against `/v1/me/phone-numbers/{id}/challenges`.
+
+  ### Shape parity with `EmailAddress`
+
+  Mirrors the v0.2 `EmailAddress` resource: flat `verified: bool` plus
+  `current_challenge_id: ?Id` rather than a nested `verification`
+  blob (the standalone `Verification` schema was removed in v0.2).
+
+  ### Phone-number value
+
+  `phone_number` is stored in **E.164** form — a leading `+`, the
+  country-code digits, and the subscriber digits with no separators
+  (e.g. `+15555550100`). The server normalises submitted values; the
+  request body for `POST /v1/me/phone-numbers` accepts any input the
+  underlying parser can normalise but the stored value is always
+  E.164.
+
+  ### Second-factor flags
+
+  - `reserved_for_second_factor` — when `true`, this phone is committed
+    to MFA and cannot be unlinked without first nuking the user's MFA
+    state. The FAPI returns `409` on `DELETE /v1/me/phone-numbers/{id}`
+    while this flag is set.
+  - `default_second_factor` — when `true`, the SDK's default second-
+    factor picker prefers `phone_code` against this phone over `totp`
+    on `needs_second_factor`. At most one phone per user can carry
+    this flag (the server enforces uniqueness).
+
+  ### Identifier
+
+  ID prefix `phn_` (e.g. `phn_01HKX9SY9V7H7TF8C8K7J9X4ZA`).
+required:
+  - id
+  - object
+  - phone_number
+  - verified
+  - current_challenge_id
+  - is_primary
+  - reserved_for_second_factor
+  - default_second_factor
+  - linked_to_external_account_id
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: "./Id.yaml"
+  object:
+    type: string
+    const: phone_number
+  phone_number:
+    type: string
+    pattern: "^\\+[1-9][0-9]{1,14}$"
+    maxLength: 16
+    description: |
+      The number itself in E.164 form: leading `+`, country-code
+      digits, subscriber digits with no separators.
+    examples:
+      - "+15555550100"
+      - "+5511999990001"
+  verified:
+    type: boolean
+    description: |
+      `true` once a `phone_code` Challenge against this number has
+      reached `status: verified`, or the number was minted verified
+      via BAPI with `verified: true`.
+  current_challenge_id:
+    description: |
+      Pointer to the live `Challenge` if a `phone_code` verification
+      is in flight against this number. `null` when no challenge has
+      been issued yet, the previous one was answered to a terminal
+      status, or the number was created already verified.
+    oneOf:
+      - $ref: "./Id.yaml"
+      - type: "null"
+  is_primary:
+    type: boolean
+    description: |
+      `true` when this row is the user's primary phone — i.e.
+      `User.primary_phone_number_id == id`. Convenience flag; the
+      pointer on `User` is the source of truth.
+  reserved_for_second_factor:
+    type: boolean
+    description: |
+      `true` when this phone is committed to second-factor MFA.
+      `DELETE /v1/me/phone-numbers/{id}` is refused (`409`) while this
+      flag is set — the user must first disable phone-MFA via
+      `PATCH` (clearing `reserved_for_second_factor`) or via the
+      operator-driven `DELETE /v1/users/{id}/mfa`.
+  default_second_factor:
+    type: boolean
+    description: |
+      `true` when this phone is the user's default second factor.
+      At most one phone per user carries this flag. The SDK uses it
+      to pre-select `phone_code` over `totp` on
+      `needs_second_factor` when both are available.
+  linked_to_external_account_id:
+    description: |
+      Pointer to the `ExternalAccount` that surfaced this number, if
+      any. `null` for numbers added directly by the user via
+      `POST /v1/me/phone-numbers`.
+    oneOf:
+      - $ref: "./Id.yaml"
+      - type: "null"
+  reserved:
+    type: boolean
+    default: false
+    description: |
+      `true` when the number is held by an `AllowlistIdentifier` /
+      `Invitation` and is not yet attached to a user account.
+  created_at:
+    $ref: "./Timestamp.yaml"
+  updated_at:
+    $ref: "./Timestamp.yaml"
+examples:
+  - id: phn_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: phone_number
+    phone_number: "+15555550100"
+    verified: true
+    current_challenge_id: null
+    is_primary: true
+    reserved_for_second_factor: false
+    default_second_factor: false
+    linked_to_external_account_id: null
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: phn_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    object: phone_number
+    phone_number: "+15555550101"
+    verified: false
+    current_challenge_id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZE
+    is_primary: false
+    reserved_for_second_factor: false
+    default_second_factor: false
+    linked_to_external_account_id: null
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: phn_01HKX9SY9V7H7TF8C8K7J9X4ZC
+    object: phone_number
+    phone_number: "+15555550102"
+    verified: true
+    current_challenge_id: null
+    is_primary: false
+    reserved_for_second_factor: true
+    default_second_factor: true
+    linked_to_external_account_id: null
+    created_at: 1714723000000
+    updated_at: 1714723000000

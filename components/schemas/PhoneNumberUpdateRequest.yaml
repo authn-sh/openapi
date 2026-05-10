@@ -1,0 +1,40 @@
+type: object
+description: |
+  Body for `PATCH /v1/me/phone-numbers/{id}`. Only the supplied keys
+  are updated. The phone-number value itself is **not** patchable —
+  to change a number, add a new row and remove the old one (mirrors
+  `EmailAddress`).
+
+  ### Flag interactions
+
+  - Setting `is_primary: true` flips this row to the user's primary
+    phone (and clears `is_primary` on every other row). Setting
+    `is_primary: false` is rejected when this row is the only
+    verified primary candidate.
+  - Setting `reserved_for_second_factor: false` while
+    `default_second_factor` is `true` also clears
+    `default_second_factor` (a phone can only be the default second
+    factor while reserved for MFA).
+  - Setting `default_second_factor: true` requires
+    `reserved_for_second_factor: true` (either already set, or set in
+    the same patch); the server returns `422` otherwise. Only one
+    phone per user can carry `default_second_factor: true` — flipping
+    the flag on a new row clears it on every other row.
+additionalProperties: false
+properties:
+  is_primary:
+    type: boolean
+    description: |
+      When `true`, make this row the user's primary phone. The number
+      must be `verified: true`.
+  reserved_for_second_factor:
+    type: boolean
+    description: |
+      When `true`, commit this phone to second-factor MFA. The number
+      must be `verified: true`.
+  default_second_factor:
+    type: boolean
+    description: |
+      When `true`, prefer this phone as the user's default second
+      factor on `needs_second_factor`. Requires
+      `reserved_for_second_factor: true`.

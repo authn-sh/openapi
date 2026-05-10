@@ -1,0 +1,23 @@
+type: object
+description: |
+  Body for `POST /v1/me/phone-numbers`. Mirrors `EmailAddressCreateRequest`
+  in shape — only the raw value is supplied; the server normalises
+  to E.164, mints the row in `verified: false`, and the SDK then
+  issues a `phone_code` `Challenge` against it.
+
+  Operators can also create rows admin-side via BAPI (covered by
+  `SP-2` / a future BAPI path); that body adds `user_id`, `verified`,
+  and `primary` knobs analogous to `EmailAddressCreateRequest`.
+required: [phone_number]
+additionalProperties: false
+properties:
+  phone_number:
+    type: string
+    maxLength: 32
+    description: |
+      Submitted phone number. Accepts any input the server-side parser
+      can normalise to E.164 (leading `+`, country-code digits,
+      subscriber digits). The stored value is always E.164.
+    examples:
+      - "+15555550100"
+      - "+55 11 99999-0100"
