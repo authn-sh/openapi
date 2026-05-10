@@ -50,35 +50,51 @@ properties:
   auth_config:
     type: object
     description: |
-      Allowed authentication strategies and identifier requirements.
-      v0.1 returns the password + email-code subset; broader provider
-      lists ship in v0.4.
+      Allowed authentication strategies and identifier requirements
+      surfaced to the SDK at boot.
     additionalProperties: false
     properties:
       first_factors:
         type: array
         items:
           type: string
-        examples: [["password", "email_code", "reset_password_email_code", "ticket"]]
+        description: |
+          First-factor strategies the SDK should render. Server-narrowed
+          per-env from `InstanceSettings.attribute_settings` and the
+          enabled `OauthProvider` rows. Includes `phone_code` when
+          `attributes.phone_number != "off"` and includes
+          `oauth_<provider_key>` for each enabled `OauthProvider` row.
+        examples: [["password", "email_code", "phone_code", "oauth_google", "reset_password_email_code", "ticket"]]
       second_factors:
         type: array
         items:
           type: string
-        description: Empty in v0.1 (MFA ships v0.3).
+        description: |
+          Second-factor strategies the SDK should consider on
+          `needs_second_factor`. Server-narrowed per-env from
+          `InstanceSettings.multi_factor.*.enabled`. Includes `totp`,
+          `backup_code`, `phone_code` when their respective
+          `enabled: true`.
       identifier_requirements:
         type: object
         additionalProperties: false
         properties:
           email_address:
             type: string
-            enum: [required, used_for_first_factor, off]
+            enum: [required, optional, off]
           phone_number:
             type: string
-            enum: [required, used_for_first_factor, off]
+            enum: [required, optional, off]
             default: off
+            description: |
+              Mirrors `InstanceSettings.attribute_settings.phone_number`.
+              `optional` means the SDK renders the phone field as
+              optional at sign-up; `required` means sign-up cannot
+              complete without a verified phone; `off` hides the field
+              entirely.
           username:
             type: string
-            enum: [required, used_for_first_factor, off]
+            enum: [required, optional, off]
             default: off
       sign_up_modes:
         type: array

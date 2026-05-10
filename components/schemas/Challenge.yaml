@@ -183,6 +183,19 @@ properties:
         authorize URL on `external_verification_redirect_url`; the SDK
         redirects the browser there and resumes via
         `/v1/oauth-callback/<provider_key>`.
+      - `phone_code` — SMS code, served two ways:
+          - **First factor on sign-up** (`step: "single"`) when the
+            env's `attributes.phone_number != "off"` and the user
+            supplied a phone in the `SignUp` attempt.
+          - **Second factor on sign-in** (`step: "second"`) when the
+            user has at least one `PhoneNumber` row with
+            `reserved_for_second_factor: true` and the env has
+            `multi_factor.phone_code.enabled: true`.
+          - **Phone-number verification on a signed-in user**
+            (`step: "single"`) issued against a parent
+            `phone_number_id`, mirroring `email_code` against an
+            `EmailAddress`.
+        Answer with `{ code: "123456" }` (numeric, 6 digits).
       - `totp`, `backup_code` — sign-in second factor (`step: "second"`
         only). Answer with `{ code: "123456" }` for `totp` (numeric,
         6 digits, `±1 step` tolerance) or `{ code: "abcd-efgh" }` for

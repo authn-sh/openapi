@@ -18,6 +18,11 @@
 
 ### Added
 
+- **`phone_code` strategy + phone-MFA settings (v0.4)**.
+  - `Challenge.strategy` documents `phone_code` for sign-up first-factor (env's `attributes.phone_number != "off"`), sign-in second-factor (`step: "second"` SMS MFA), and `PhoneNumber` verification on a signed-in user. `ChallengeCreateRequest.phone_number_id` is a documented field (was reserved); `ChallengeCreateRequest.strategy` lists `phone_code` and `oauth_<provider_key>`.
+  - `InstanceSettings.multi_factor` gains a required `phone_code: { enabled }` block (default `false` — opt-in due to SMS cost + SIM-swap risk). `InstanceUpdateRequest.multi_factor` accepts the matching patch.
+  - `Environment.auth_config.identifier_requirements.{email_address, phone_number, username}` enums shift from `[required, used_for_first_factor, off]` to `[required, optional, off]` for the v0.4 SDK vocabulary. `first_factors[]` / `second_factors[]` descriptions document the per-env narrowing rules.
+
 - **Social sign-in surface (v0.4) — schemas**.
   - `OauthProvider` (`oauthp_` prefix) — per-environment social-IdP configuration with three kinds in a single shape: `preset` (bundled `google` / `github` / `apple` / `microsoft`), `custom_oidc` (workspace-registered OIDC IdP, populated by `/.well-known/openid-configuration` discovery), `custom_oauth2` (plain OAuth 2.0 IdP, operator supplies authorize / token / userinfo URLs and `userinfo_method` + `userinfo_auth`). Computed read-only `redirect_uri = https://<env_slug>.authn.sh/v1/oauth-callback/<provider_key>`. Per-provider `attribute_mapping` (`User` / `ExternalAccount` field → IdP claim or userinfo path). Per-provider `block_email_subaddresses` and `allow_sign_in` / `allow_sign_up` toggles.
   - `OauthProviderRequest` — POST/PATCH body. `client_secret` is write-only (encrypted at rest, never returned). `provider_kind` and `provider_key` are immutable on PATCH.
