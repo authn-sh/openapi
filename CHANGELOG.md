@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0] — 2026-05-10
+
+### Added
+
+- **Multi-factor authentication** — `TotpSecret`, `BackupCode`, `BackupCodeBatch` schemas. `Challenge.strategy` enum extended with `totp` and `backup_code`. `Challenge.step` enum includes `"second"`. `ChallengeCreateRequest` second-factor variants.
+- **FAPI MFA endpoints** — `POST /v1/me/totp` (start enrollment, returns one-time secret + otpauth URI + QR data URL), `POST /v1/me/totp/verify`, `GET /v1/me/totp`, `DELETE /v1/me/totp`. `POST /v1/me/backup-codes` (regenerate, returns plaintext once), `GET /v1/me/backup-codes` (status), `DELETE /v1/me/backup-codes`.
+- **BAPI MFA admin overrides** — `POST /v1/users/{user_id}/verify-totp` (operator-driven check; does not stamp `verified_at`), `DELETE /v1/users/{user_id}/mfa` (operator nuke; clears TotpSecret + BackupCode + flips flags).
+- **SignIn second-factor flow** — `needs_second_factor` status path documented; `SignIn.supported_strategies[]` narrows to per-user enrollment when applicable.
+- **`InstanceSettings.multi_factor`** — required block: `totp.enabled` (default `true`), `backup_codes.enabled` (default `true`), `backup_codes.default_count` (default `10`, bounds 4..24). `Environment.auth_config.second_factors[]` mirrors per-env state for the public surface.
+
+### Changed
+
+- TOTP enrollment-verify is documented as a dedicated endpoint (`POST /v1/me/totp/verify`), distinct from the Challenge sub-resource (which is reserved for parent-bound flows: SignIn / SignUp / EmailAddress / OrganizationDomain).
+
 ## [Unreleased]
 
 ### Added
