@@ -15,7 +15,50 @@ description: |
   top via the `needs_second_factor` step. v0.4 adds
   `oauth_<provider_key>` for first-factor social sign-in (see below).
   v0.5 adds `passkey` (WebAuthn) as an identifier-less first-factor
-  strategy alongside OAuth. SAML lands in a later milestone.
+  strategy alongside OAuth. v0.6 adds enterprise SSO via
+  `enterprise_sso` (generic, domain-routed) and `saml` (caller picks
+  the connection — see below).
+
+  ### Enterprise-SSO first-factor flow (v0.6)
+
+  Two first-factor strategies surface enterprise IdPs:
+
+  - `enterprise_sso` — generic; the server resolves the right
+    `EnterpriseConnection` from the identifier-domain →
+    `EnterpriseConnection.domains[]` lookup. When the identifier
+    domain matches exactly one enterprise connection,
+    `SignIn.supported_strategies` narrows to `["enterprise_sso"]` and
+    `SignIn.enterprise_connection_id` is populated; the SDK issues a
+    Challenge with `strategy: "enterprise_sso"` and follows the IdP
+    redirect.
+  - `saml` — caller picks the connection explicitly via
+    `ChallengeCreateRequest.enterprise_connection_id`. Used by the
+    multi-connection org picker on `<SignIn />` and by the
+    `EnterpriseConnection.test` dry-run preview.
+
+  Both strategies surface the IdP's authorize URL on the Challenge's
+  `external_verification_redirect_url`. The SDK redirects the browser
+  there; the server resumes at `/v1/saml/{id}/acs` (SAML) or
+  `/v1/enterprise-sso-callback` (OIDC), creates / matches the
+  `EnterpriseAccount`, flips the Challenge to `verified`, and advances
+  the SignIn to `complete` (or `transferable` if the resolved identity
+  has no matching `User`).
+
+  ### Enterprise-SSO error codes
+
+  - `enterprise_sso_no_connection` — `enterprise_sso` was requested
+    but the identifier domain matches no `EnterpriseConnection`.
+  - `enterprise_sso_multiple_connections` — `enterprise_sso` was
+    requested and the identifier domain matches more than one
+    `EnterpriseConnection`. The SDK should fall back to listing the
+    matching connections (server returns them in `meta.connections[]`)
+    and re-issuing the Challenge with `strategy: "saml"` plus an
+    explicit `enterprise_connection_id`.
+  - `enterprise_sso_assertion_invalid` — surfaced on the resumption
+    endpoint when the SAML assertion fails signature verification,
+    audience check, or NotBefore/NotOnOrAfter window, or when the
+    OIDC id_token fails JWKS verification or `nonce` mismatch. The
+    Challenge lands `failed`; the SDK creates a fresh one to retry.
 
   ### OAuth first-factor flow (v0.4, PLAN §9.3 + §9.4)
 
@@ -159,7 +202,13 @@ properties:
         the sign-in was started in username-less mode and the
         environment has WebAuthn enabled). The OAuth entries
         surface independently of the supplied `identifier` —
-        they're identifier-less.
+        they're identifier-less. v0.6 adds `enterprise_sso` (when the
+        identifier domain resolves to ≥1 `EnterpriseConnection`) and
+        `saml` (when at least one `protocol: "saml"` connection is
+        reachable from the identifier or via the org picker). When
+        domain routing resolves exactly one enterprise connection,
+        the server narrows the list to `["enterprise_sso"]` and
+        populates `SignIn.enterprise_connection_id`.
       - `needs_second_factor` — narrowed to second-factor strategies
         the resolved user has enrolled. v0.3 surface: `totp`,
         `backup_code`. Each entry maps to whichever of
@@ -175,9 +224,22 @@ properties:
     examples:
       - [password, email_code, email_link, reset_password_email_code]
       - [password, email_code, oauth_google, oauth_github, passkey]
+      - [enterprise_sso]
+      - [enterprise_sso, saml]
       - [totp, backup_code]
       - [totp]
       - [backup_code]
+  enterprise_connection_id:
+    description: |
+      Populated when verified-domain routing resolved exactly one
+      `EnterpriseConnection` for the identifier. `null` when no
+      domain match was found, when the identifier hasn't been
+      resolved yet (`needs_identifier`), or when multiple
+      connections match (the SDK picks one and supplies it on the
+      `saml` `Challenge` body). v0.6+.
+    oneOf:
+      - $ref: ./Id.yaml
+      - type: "null"
   current_challenge_id:
     description: |
       Pointer to the live `Challenge` if one's in flight. `null` when

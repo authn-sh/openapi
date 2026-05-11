@@ -16,8 +16,12 @@ description: |
   identifier-less social sign-up that mints a `User` +
   `ExternalAccount` together. v0.5 adds `passkey` as a documented
   strategy on completed sign-ups so SDKs can prompt the new user to
-  enroll a passkey immediately. SAML sign-ups land in a later
-  milestone.
+  enroll a passkey immediately. v0.6 adds `enterprise_sso` and `saml`
+  — identifier-less enterprise sign-up that mints a `User` +
+  `EnterpriseAccount` together. When the IdP returns an identity that
+  already has a `User`, the Challenge flips to `transferable` and the
+  SDK bounces to sign-in via
+  `POST /v1/client/sign-ins { transfer: true }`.
 
   ### OAuth sign-up flow (v0.4, PLAN §9.3 + §9.4)
 
@@ -120,10 +124,14 @@ properties:
       social sign-up; one entry per enabled `OauthProvider` row with
       `allow_sign_up: true`. `passkey` — surfaced post-completion so
       SDKs can chain a passkey enrollment ceremony on the freshly
-      minted `User`. Empty when the flow is `abandoned`.
+      minted `User`. `enterprise_sso` / `saml` (v0.6) —
+      identifier-less enterprise sign-up; surfaces when the
+      environment has ≥1 `EnterpriseConnection` reachable. Empty
+      when the flow is `abandoned`.
     examples:
       - [email_code, email_link]
       - [email_code, oauth_google, oauth_github]
+      - [email_code, enterprise_sso]
   current_challenge_id:
     description: |
       Pointer to the live `Challenge` if one's in flight. `null` when
