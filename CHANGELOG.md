@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0] — 2026-05-11
+
+### Added
+
+- **Passkey (WebAuthn) surface (v0.5)**.
+  - `Passkey` (`pkey_` prefix) — `nickname`, `transports[]` (`usb` / `nfc` / `ble` / `internal` / `hybrid`), `aaguid`, `verified`, `last_used_at`. Raw `credential_id` bytes and `public_key` are server-side encrypted and never appear in payloads.
+  - `User.passkeys[]` + `User.passkey_count` snapshot fields.
+  - `Verification.strategy` enum extended with `passkey`.
+  - **FAPI `/v1/me/passkeys`** — `GET` (list), `POST /begin-registration` (issues a `Challenge` carrying WebAuthn `creationOptions`), `POST /complete-registration/{challenge_id}` (consumes the attestation), `PATCH /{id}` (rename), `DELETE /{id}`. `PasskeyCreationOptions`, `PasskeyAttestation` reusable schemas.
+  - **FAPI passkey sign-in** — `Challenge.strategy = "passkey"` issues a Challenge carrying `requestOptions`; answer consumes the assertion. Mirrors on `SignUp` for cross-flow `transferable`. `PasskeyRequestOptions`, `PasskeyAssertion` reusable schemas.
+  - New error codes: `passkey_not_supported`, `passkey_origin_mismatch`, `passkey_replayed`, `passkey_attestation_invalid`, `passkey_assertion_invalid`, `passkey_user_handle_mismatch`, `passkey_no_credentials`.
+- **Appearance engine (v0.5)**.
+  - `Environment.appearance` — `variables` (color/font/spacing tokens), `elements` (className override map), `layout` (`socialButtonsPlacement`, `logoImageUrl`, etc.). Surfaced on `GET /v1/environment` with an `etag` for SDK cache-keying.
+  - BAPI `GET|PUT|PATCH /v1/instance/appearance` — full replace + deep-merge `variables` / `elements` / `layout`.
+- **Localization engine (v0.5)**.
+  - `Environment.localization` — `default_locale`, `fallback_locale`, `supported_locales[]`, sparse `overrides[<locale>] = { "dot.keyed.path": "value" }`. Surfaced on `GET /v1/environment` with `override_etag`.
+  - BAPI `GET|PUT|PATCH /v1/instance/localization` — sparse per-key override merge; `null` removes an override.
+  - Public `GET /v1/localization/{locale}` — returns merged catalog (default ⊕ overrides) with `Cache-Control: public, max-age=300, stale-while-revalidate=3600` + `ETag: "<override_etag>"`. CORS-open, no auth.
+  - New error codes: `unknown_localization_key`, `unsupported_locale`, `invalid_locale_code`.
+- **Six new preset OAuth providers (v0.5)** — Discord, Facebook, LinkedIn (OIDC), X, GitLab, Slack. Added to `OauthProvider.provider_key` preset enum and `Verification.strategy` / `Challenge.strategy` enums as `oauth_<provider_key>`. Uses the v0.4 OAuth CRUD surface — no new endpoints.
+- **Webhook events (v0.5)** — `WebhookEvent.type` enum gains `passkey.added` / `passkey.removed` (`event.data: Passkey`), `instance.config.appearance_updated` (`event.data: { previous, current, diff }`), `localization.updated` (`event.data: { previous, current, diff, override_etag }`).
+
 ## [0.3.0] — 2026-05-10
 
 ### Added
