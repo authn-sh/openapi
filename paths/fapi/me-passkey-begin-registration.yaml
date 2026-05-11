@@ -1,0 +1,56 @@
+post:
+  operationId: beginMyPasskeyRegistration
+  summary: Begin a passkey registration ceremony
+  description: |
+    Mints a `Passkey` row in the unverified state and a parent
+    `Challenge` with `strategy: "passkey"`, `step: "first"`,
+    `mode: "registration"`. The response carries the
+    server-built `PublicKeyCredentialCreationOptions` on
+    `challenge.creation_options`; the SDK hands that to
+    `navigator.credentials.create({ publicKey })`, then posts the
+    attestation response to
+    `POST /v1/me/passkeys/complete-registration/{challenge_id}`.
+
+    Multi-tab clients can resume the ceremony by re-fetching the
+    parent challenge — the `creation_options` block is stable for
+    the challenge's lifetime.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/PasskeyBeginRegistrationRequest.yaml }
+        examples:
+          named:
+            value: { nickname: YubiKey 5C }
+          unnamed:
+            value: {}
+  responses:
+    "201":
+      description: |
+        Registration challenge. `Challenge.nonce` is the base64url
+        WebAuthn challenge nonce; the matching ceremony parameters
+        live in `creation_options`.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/Challenge.yaml
+              - type: object
+                required: [creation_options]
+                properties:
+                  creation_options:
+                    $ref: ../../components/schemas/PasskeyCreationOptions.yaml
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422":
+      description: |
+        Validation failure. Possible `code` values:
+
+        - `passkey_not_supported` — the environment has WebAuthn
+          disabled, so registration is refused outright.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }

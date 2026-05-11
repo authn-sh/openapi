@@ -1,0 +1,19 @@
+type: object
+description: |
+  Body for `POST /v1/me/passkeys/complete-registration/{challenge_id}`.
+  Carries the authenticator's attestation response plus an optional
+  nickname override (in case the user named the passkey on the
+  client side, after the ceremony started).
+required: [attestation]
+additionalProperties: false
+properties:
+  attestation:
+    $ref: ./PasskeyAttestation.yaml
+  nickname:
+    type: string
+    maxLength: 100
+    description: |
+      Overrides the `nickname` supplied at begin-registration. The
+      stored `Passkey.nickname` defaults to this value when set,
+      else to the begin-registration value, else to a
+      server-generated string.

@@ -1,0 +1,50 @@
+parameters:
+  - name: challenge_id
+    in: path
+    required: true
+    description: |
+      The `Challenge.id` returned by `begin-registration`. Must be
+      in `status: pending` and bound to the calling user.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: completeMyPasskeyRegistration
+  summary: Complete a passkey registration ceremony
+  description: |
+    Verifies the WebAuthn attestation response, flips the parent
+    `Challenge` to `verified`, and finalises the `Passkey` row
+    (`verified: true`, transports captured from the attestation).
+
+    Common failure codes (HTTP 422):
+
+    - `passkey_origin_mismatch` — the `clientDataJSON.origin` is not
+      on the environment's allowlist.
+    - `passkey_attestation_invalid` — the attestation statement
+      failed signature verification or used an unsupported
+      attestation format.
+    - `passkey_replayed` — the credential id is already enrolled on
+      another row (should be impossible because
+      `exclude_credentials[]` was sent on begin-registration, but
+      the server defends against tampered ceremonies).
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/PasskeyCompleteRegistrationRequest.yaml }
+  responses:
+    "201":
+      description: The newly-verified passkey, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422":
+      description: Attestation rejected.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }

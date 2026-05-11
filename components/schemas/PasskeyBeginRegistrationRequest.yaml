@@ -1,0 +1,14 @@
+type: object
+description: |
+  Body for `POST /v1/me/passkeys/begin-registration`. Both fields
+  are optional — the server picks a default `nickname` if the
+  caller doesn't supply one.
+additionalProperties: false
+properties:
+  nickname:
+    type: string
+    maxLength: 100
+    description: |
+      User-supplied label baked onto the resulting `Passkey.nickname`
+      when the ceremony completes. Defaults to a server-generated
+      string when omitted.
