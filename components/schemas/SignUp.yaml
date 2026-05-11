@@ -61,6 +61,8 @@ required:
   - unverified_fields
   - supported_strategies
   - current_challenge_id
+  - transferable_to_signin
+  - target_flow
   - password_enabled
   - unsafe_metadata
   - public_metadata
@@ -92,7 +94,12 @@ properties:
         that already has a `User` — the SDK should bounce to sign-in
         with `POST /v1/client/sign-ins { transfer: true }`. v0.4: a
         sign-up via `oauth_<provider_key>` returned an IdP identity
-        that already has an `ExternalAccount` — same bounce.
+        that already has an `ExternalAccount` — same bounce. v0.6: a
+        sign-up via `enterprise_sso` / `saml` returned an IdP-asserted
+        identity that already has a `User` — same bounce. In every
+        case, `target_flow` is set to `sign_in` and
+        `transferable_to_signin` is `true` so consumers can branch
+        without re-parsing the cause.
       - `abandoned` — `abandon_at` passed.
   required_fields:
     type: array
@@ -139,6 +146,30 @@ properties:
     oneOf:
       - $ref: ./Id.yaml
       - type: "null"
+  transferable_to_signin:
+    type: boolean
+    default: false
+    description: |
+      `true` when `status == "transferable"` and `target_flow ==
+      "sign_in"` — the SDK should bounce to sign-in via
+      `POST /v1/client/sign-ins { transfer: true }`. Convenience
+      flag so consumers don't have to string-compare `target_flow`.
+      `false` otherwise.
+  target_flow:
+    type: [string, "null"]
+    enum: [sign_in, sign_up, null]
+    description: |
+      Populated when `status == "transferable"`. Indicates which flow
+      the SDK should hand the upstream identity off to:
+
+      - `sign_in` — the resolved identity already has a `User`; SDK
+        posts `POST /v1/client/sign-ins { transfer: true }`. This is
+        the only direction v0.6 emits on a SignUp.
+      - `sign_up` — reserved for the mirror direction (kept in the
+        enum so consumers handle both `SignIn` and `SignUp` snapshots
+        uniformly).
+
+      `null` for every other `status` value.
   username:
     type: [string, "null"]
   email_address:
@@ -163,3 +194,26 @@ properties:
     type: [string, "null"]
   abandon_at:
     $ref: ./Timestamp.yaml
+examples:
+  - id: sua_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: sign_up_attempt
+    status: transferable
+    required_fields: []
+    optional_fields: []
+    missing_fields: []
+    unverified_fields: []
+    supported_strategies: []
+    current_challenge_id: null
+    transferable_to_signin: true
+    target_flow: sign_in
+    username: null
+    email_address: alice@acme.example
+    phone_number: null
+    first_name: Alice
+    last_name: Anderson
+    password_enabled: false
+    unsafe_metadata: {}
+    public_metadata: {}
+    created_session_id: null
+    created_user_id: null
+    abandon_at: 1714724000000
