@@ -5,11 +5,44 @@ description: |
   `oauth_<provider_key>` first-factor `Challenge` strategy. Three kinds
   share a single shape:
 
-  - `preset` — bundled IdPs the platform ships with (`google`, `github`,
-    `apple`, `microsoft`). The OIDC discovery fields and default scope
-    set are filled in by the platform on create; the operator only
-    supplies `client_id`, `client_secret`, and any toggles
-    (`enabled`, `allow_sign_in`, …).
+  - `preset` — bundled IdPs the platform ships with. v0.4 ships
+    `google`, `github`, `apple`, `microsoft`; v0.5 adds `discord`,
+    `facebook`, `linkedin`, `x`, `gitlab`, `slack`. The OIDC
+    discovery fields and default scope set are filled in by the
+    platform on create; the operator only supplies `client_id`,
+    `client_secret`, and any toggles (`enabled`, `allow_sign_in`,
+    …).
+
+    Per-preset defaults:
+
+    - **Google** — OIDC discovery at
+      `https://accounts.google.com/.well-known/openid-configuration`.
+      Default scopes `[openid, email, profile]`.
+    - **GitHub** — Plain OAuth 2.0 (GitHub doesn't expose OIDC
+      discovery). Default scopes `[read:user, user:email]`.
+    - **Apple** — OIDC discovery at
+      `https://appleid.apple.com/.well-known/openid-configuration`.
+      Default scopes `[name, email]`.
+    - **Microsoft** — OIDC discovery at
+      `https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration`.
+      Default scopes `[openid, email, profile]`.
+    - **Discord** — Plain OAuth 2.0 (Discord doesn't expose OIDC
+      discovery). Default scopes `[identify, email]`.
+    - **Facebook** — Plain OAuth 2.0 with custom userinfo semantics
+      (the userinfo endpoint requires the `fields` query param to
+      surface email + name). Default scopes
+      `[public_profile, email]`.
+    - **LinkedIn** — OIDC discovery at
+      `https://www.linkedin.com/oauth/.well-known/openid-configuration`.
+      Default scopes `[openid, profile, email]`.
+    - **X** (formerly Twitter) — OAuth 2.0 with PKCE required.
+      Default scopes `[tweet.read, users.read]`.
+    - **GitLab** — OIDC discovery at
+      `https://gitlab.com/.well-known/openid-configuration`. Default
+      scopes `[openid, profile, email]`.
+    - **Slack** — "Sign in with Slack" OIDC discovery at
+      `https://slack.com/.well-known/openid-configuration`. Default
+      scopes `[openid, profile, email]`.
   - `custom_oidc` — workspace-registered OpenID Connect IdP. The
     operator supplies an `issuer` URL; the server fetches and caches
     `<issuer>/.well-known/openid-configuration` and populates the OIDC
@@ -87,13 +120,20 @@ properties:
       Stable slug used in the `oauth_<provider_key>` `Challenge.strategy`
       and in the computed `redirect_uri`. For `provider_kind: "preset"`
       this is one of the bundled values (`google`, `github`, `apple`,
-      `microsoft`). For `custom_oidc` / `custom_oauth2` it's a
+      `microsoft`, `discord`, `facebook`, `linkedin`, `x`, `gitlab`,
+      `slack`). For `custom_oidc` / `custom_oauth2` it's a
       workspace-chosen slug, unique per environment.
     examples:
       - google
       - github
       - apple
       - microsoft
+      - discord
+      - facebook
+      - linkedin
+      - x
+      - gitlab
+      - slack
       - acme_corp_sso
   name:
     type: string
