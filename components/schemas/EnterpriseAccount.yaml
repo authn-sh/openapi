@@ -1,0 +1,140 @@
+type: object
+description: |
+  A `User`'s persistent link to an `EnterpriseConnection`. Replaces the
+  legacy `SamlAccount` shape with one resource covering both SAML and
+  OIDC enterprise-IdP links — the parent `EnterpriseConnection.protocol`
+  field discriminates.
+
+  Created by `/v1/saml/{id}/acs` (SAML) or `/v1/enterprise-sso-callback`
+  (OIDC) on the first successful enterprise-SSO sign-in and reused on
+  every subsequent sign-in via the same connection. Surfaced in
+  `User.enterprise_accounts[]`.
+
+  ### Public surface only
+
+  The IdP-issued OIDC `id_token` is encrypted at rest and **never**
+  appears in any payload. The SAML assertion XML is discarded after
+  signature verification (only the parsed attributes survive on
+  `public_metadata`). The SDK has no way to read either; sign-in
+  resumption uses the platform's own session cookie, not the IdP's
+  tokens.
+
+  ### What the IdP told us
+
+  - `provider_user_id` — the IdP's stable subject:
+    - SAML — the `NameID` of the assertion's `Subject` (typically
+      `urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress` or
+      `urn:oasis:names:tc:SAML:2.0:nameid-format:persistent`).
+    - OIDC — the `sub` claim of the ID token.
+  - `email_address` — email returned by the IdP. Stored verbatim. May
+    or may not match a verified `EmailAddress` on the parent `User`;
+    the resolver de-dupes when `verified` is `true`.
+  - `verified` — `true` when the IdP confirmed the email:
+    - OIDC — mapped from the `email_verified` claim (or the
+      `EnterpriseConnection.attribute_mapping` override).
+    - SAML — `true` when the IdP asserted an email-verified attribute
+      (or one mapped via `attribute_mapping`); otherwise defaults to
+      `true` for first-party enterprise IdPs and `false` for federated
+      ones, per workspace policy.
+  - `public_metadata` — raw IdP attributes / claims that didn't map to
+    a `User` field. Useful for IdP-specific extras (e.g. `groups[]`,
+    `department`, `cost_center`).
+
+  ### Identifier
+
+  ID prefix `entacc_` (e.g. `entacc_01HKX9SY9V7H7TF8C8K7J9X4ZA`).
+required:
+  - id
+  - object
+  - enterprise_connection_id
+  - provider_user_id
+  - email_address
+  - verified
+  - public_metadata
+  - linked_at
+  - last_signed_in_at
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: enterprise_account
+  enterprise_connection_id:
+    description: |
+      `EnterpriseConnection.id` this row links to. Survives connection
+      deletion (the row stays so audit trails remain readable, but
+      sign-in via that connection stops working).
+    $ref: ./Id.yaml
+  provider_user_id:
+    type: string
+    maxLength: 255
+    description: |
+      SAML `NameID` or OIDC `sub` — the IdP's stable subject identifier
+      for this user. Unique per `EnterpriseConnection`.
+  email_address:
+    type: [string, "null"]
+    format: email
+    maxLength: 254
+    description: |
+      Email the IdP returned. `null` for IdPs that omit the email
+      attribute (rare in enterprise settings; the resolver typically
+      rejects the assertion when this is missing).
+  verified:
+    type: boolean
+    description: |
+      `true` when the IdP confirmed the email as verified. For OIDC,
+      mapped from `email_verified` (or the `attribute_mapping`
+      override). For SAML, mapped from the connection's verified-flag
+      attribute when present; defaults per workspace policy otherwise.
+      When `true`, the resolver attaches the email to the parent
+      `User`'s `email_addresses[]` automatically.
+  public_metadata:
+    $ref: ./Metadata.yaml
+    description: |
+      Raw IdP attributes / claims that did not map to any `User` /
+      `EnterpriseAccount` field via
+      `EnterpriseConnection.attribute_mapping`. Free-form bag (e.g.
+      `groups`, `department`, `cost_center`).
+  linked_at:
+    $ref: ./Timestamp.yaml
+  last_signed_in_at:
+    description: |
+      Timestamp of the most recent sign-in via this enterprise
+      connection. `null` until the second sign-in (the first is
+      captured by `linked_at`).
+    oneOf:
+      - $ref: ./Timestamp.yaml
+      - type: "null"
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - id: entacc_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: enterprise_account
+    enterprise_connection_id: entcon_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    provider_user_id: alice@acme.example
+    email_address: alice@acme.example
+    verified: true
+    public_metadata:
+      groups: [engineering, sso-admins]
+      department: Platform
+    linked_at: 1714723000000
+    last_signed_in_at: 1714896500000
+    created_at: 1714723000000
+    updated_at: 1714896500000
+  - id: entacc_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    object: enterprise_account
+    enterprise_connection_id: entcon_01HKX9SY9V7H7TF8C8K7J9X4ZC
+    provider_user_id: "00uabcdEFGHIJKLM2x7"
+    email_address: bob@acme.example
+    verified: true
+    public_metadata:
+      groups: ["Domain Users"]
+    linked_at: 1714724000000
+    last_signed_in_at: null
+    created_at: 1714724000000
+    updated_at: 1714724000000

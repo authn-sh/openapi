@@ -226,6 +226,7 @@ components:
     ErrorResponse:                             { $ref: ./components/schemas/ErrorResponse.yaml }
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
     ExternalAccount:                           { $ref: ./components/schemas/ExternalAccount.yaml }
+    EnterpriseAccount:                         { $ref: ./components/schemas/EnterpriseAccount.yaml }
     Passkey:                                   { $ref: ./components/schemas/Passkey.yaml }
     PasskeyCreationOptions:                    { $ref: ./components/schemas/PasskeyCreationOptions.yaml }
     PasskeyAttestation:                        { $ref: ./components/schemas/PasskeyAttestation.yaml }

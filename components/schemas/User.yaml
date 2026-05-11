@@ -8,8 +8,8 @@ description: |
 
   External accounts and passkeys are populated by their respective
   endpoints (`/v1/me/external-accounts`, `/v1/me/passkeys`). Enterprise
-  accounts is reserved for v0.6 and stays an empty array until that
-  milestone ships.
+  accounts are populated by `/v1/saml/{id}/acs` and
+  `/v1/enterprise-sso-callback` on enterprise-SSO sign-in (v0.6+).
 required:
   - id
   - object
@@ -91,10 +91,12 @@ properties:
   enterprise_accounts:
     type: array
     description: |
-      Reserved for v0.6 (enterprise SSO). Always `[]` in v0.1.
+      Enterprise SSO links — one row per `EnterpriseConnection` the user
+      has signed in through. Populated by `/v1/saml/{id}/acs` (SAML) and
+      `/v1/enterprise-sso-callback` (OIDC). Empty until the user
+      completes their first enterprise-SSO sign-in.
     items:
-      type: object
-      additionalProperties: true
+      $ref: "./EnterpriseAccount.yaml"
   passkeys:
     type: array
     description: |

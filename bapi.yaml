@@ -285,6 +285,7 @@ components:
     OauthProviderTestResult:                   { $ref: ./components/schemas/OauthProviderTestResult.yaml }
     EnterpriseConnection:                      { $ref: ./components/schemas/EnterpriseConnection.yaml }
     EnterpriseConnectionRequest:               { $ref: ./components/schemas/EnterpriseConnectionRequest.yaml }
+    EnterpriseAccount:                         { $ref: ./components/schemas/EnterpriseAccount.yaml }
     SmsTemplate:                               { $ref: ./components/schemas/SmsTemplate.yaml }
     SmsTemplateRequest:                        { $ref: ./components/schemas/SmsTemplateRequest.yaml }
 
