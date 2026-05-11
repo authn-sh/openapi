@@ -14,7 +14,7 @@
 
 - TOTP enrollment-verify is documented as a dedicated endpoint (`POST /v1/me/totp/verify`), distinct from the Challenge sub-resource (which is reserved for parent-bound flows: SignIn / SignUp / EmailAddress / OrganizationDomain).
 
-## [Unreleased]
+## [0.4.0] — 2026-05-11
 
 ### Added
 
