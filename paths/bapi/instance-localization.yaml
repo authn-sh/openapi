@@ -1,0 +1,127 @@
+get:
+  operationId: getInstanceLocalization
+  summary: Get the localization configuration
+  description: |
+    Returns the per-environment localization config — the locale
+    set the SDK is allowed to surface, plus the operator's
+    overrides. The canonical default catalogs are not returned
+    here; they ship with `@authn-sh/sdk-react`.
+  tags: [Instance]
+  responses:
+    "200":
+      description: Localization configuration.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Localization.yaml }
+          examples:
+            defaults_only:
+              summary: Defaults — no operator overrides
+              value:
+                default_locale: en-US
+                fallback_locale: en-US
+                supported_locales: [en-US, pt-BR, es-ES, fr-FR, de-DE]
+                overrides: {}
+            en_US_override:
+              summary: Single en-US override
+              value:
+                default_locale: en-US
+                fallback_locale: en-US
+                supported_locales: [en-US, pt-BR, es-ES, fr-FR, de-DE]
+                overrides:
+                  en-US:
+                    signIn.start.title: "Welcome to Acme"
+                    signIn.start.subtitle: "Sign in to continue to your dashboard."
+            sparse_pt_BR:
+              summary: Sparse pt-BR override (other keys fall back to canonical)
+              value:
+                default_locale: pt-BR
+                fallback_locale: en-US
+                supported_locales: [en-US, pt-BR]
+                overrides:
+                  pt-BR:
+                    signIn.start.title: "Bem-vindo de volta"
+                    signIn.start.actionText: "Não tem uma conta?"
+                    signIn.start.actionLink: "Criar conta"
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+
+put:
+  operationId: replaceInstanceLocalization
+  summary: Replace the localization configuration
+  description: |
+    Full replacement. Any locale / key not present in the body is
+    cleared. Emits `localization.updated`.
+
+    The validator may reject the request with:
+
+    - `422 invalid_locale_code` — `default_locale`, `fallback_locale`,
+      or an entry of `supported_locales[]` is not a valid BCP-47 tag.
+    - `422 unsupported_locale` — `supported_locales[]` entry has no
+      bundled default catalog and no matching `overrides` entry.
+    - `422 unknown_localization_key` — an override references a
+      dot-keyed path the canonical schema doesn't know about.
+  tags: [Instance]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/Localization.yaml }
+  responses:
+    "200":
+      description: The replaced localization configuration.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Localization.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+patch:
+  operationId: updateInstanceLocalization
+  summary: Patch the localization configuration
+  description: |
+    Sparse partial update. Merge semantics:
+
+    - `default_locale` / `fallback_locale` — scalar replace.
+    - `supported_locales[]` — full-array replace when supplied.
+    - `overrides[locale]` — per-key merge. Sending
+      `{"overrides":{"pt-BR":{"signIn.start.title":"X"}}}` updates
+      only that one key on `pt-BR` and leaves every other `pt-BR`
+      key in place. Send a key with an explicit `null` to remove
+      that single override (the SDK falls back to the canonical
+      default).
+
+    Same validators as `PUT`. Emits `localization.updated`.
+  tags: [Instance]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/LocalizationUpdateRequest.yaml }
+        examples:
+          add_override:
+            summary: Add a single pt-BR override
+            value:
+              overrides:
+                pt-BR:
+                  signIn.start.title: "Bem-vindo de volta"
+          remove_override:
+            summary: Clear an existing override key (falls back to canonical)
+            value:
+              overrides:
+                pt-BR:
+                  signIn.start.title: null
+          rename_default:
+            summary: Promote pt-BR to the default locale
+            value:
+              default_locale: pt-BR
+  responses:
+    "200":
+      description: The updated localization configuration.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Localization.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

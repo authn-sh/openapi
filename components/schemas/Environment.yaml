@@ -193,16 +193,37 @@ properties:
         type: [string, "null"]
   localization:
     type: object
+    description: |
+      Locale set the SDK is allowed to surface. The actual catalog
+      lives behind `GET /v1/localization/{locale}` (public, cacheable)
+      — this block only surfaces what's needed to pick a locale and
+      key the cache.
+    required: [default_locale, fallback_locale, supported_locales, override_etag]
     additionalProperties: false
     properties:
       default_locale:
         type: string
+        description: BCP-47 tag the SDK falls back to before reading a user preference.
+        examples: ["en-US"]
+      fallback_locale:
+        type: string
+        description: |
+          BCP-47 tag the SDK falls back to per-key when the active
+          locale has no translation for a given key. Typically `en-US`.
         examples: ["en-US"]
       supported_locales:
         type: array
         items:
           type: string
-        examples: [["en-US", "pt-BR", "fr-FR"]]
+        examples: [["en-US", "pt-BR", "es-ES", "fr-FR", "de-DE"]]
+      override_etag:
+        type: string
+        description: |
+          `sha256(canonical-JSON(overrides))`. Mirrors the `ETag`
+          header on `GET /v1/localization/{locale}` so the SDK can
+          treat the env bootstrap as the cache key for every locale
+          fetch.
+        examples: ["sha256:9c1185a5c5e9fc54612808977ee8f548b2258d31"]
   oauth_providers:
     type: array
     description: |

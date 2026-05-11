@@ -1,0 +1,86 @@
+type: object
+description: |
+  Per-environment localization configuration. Stores **overrides
+  only** — the canonical default catalog ships with `@authn-sh/sdk-react`
+  and is merged in at render time. The render-time merge resolves
+  each key as:
+
+  ```
+  default_catalog[locale]
+    ⊕ overrides[locale]                  # operator's per-locale tweak
+    ⊕ default_catalog[fallback_locale]   # used for keys the active locale didn't translate
+    ⊕ overrides[fallback_locale]
+    ⊕ (per-key hard fallback, baked into the SDK)
+  ```
+
+  v0.5 ships canonical catalogs for `en-US`, `pt-BR`, `es-ES`,
+  `fr-FR`, `de-DE`. Operators add new locales by listing them in
+  `supported_locales[]` and providing the catalog under
+  `overrides[locale]` — the SDK refuses to surface a locale that
+  isn't in `supported_locales[]`, even if a partial override exists.
+required:
+  - default_locale
+  - fallback_locale
+  - supported_locales
+  - overrides
+additionalProperties: false
+properties:
+  default_locale:
+    type: string
+    description: |
+      BCP-47 tag. Used when the SDK can't read a user preference (e.g.
+      first paint, unauthenticated pages).
+    examples: ["en-US", "pt-BR"]
+  fallback_locale:
+    type: string
+    description: |
+      BCP-47 tag the SDK falls back to per-key when the active locale
+      doesn't have a translation for a given key. Typically `en-US`.
+    examples: ["en-US"]
+  supported_locales:
+    type: array
+    items:
+      type: string
+    description: |
+      Locales the SDK is allowed to surface in the language picker
+      and to auto-detect from `Accept-Language`. Must include
+      `default_locale` and `fallback_locale`. Locales not present in
+      the bundled default catalog must have a full override blob —
+      the BAPI `PATCH` validator returns `unsupported_locale` if a
+      caller adds an entry here without a matching default or
+      override.
+    examples: [["en-US", "pt-BR", "es-ES"]]
+  overrides:
+    type: object
+    description: |
+      Per-locale operator overrides. Outer key is a BCP-47 locale
+      tag; inner map is dot-keyed canonical keys to translated
+      strings. Unknown keys are rejected by the BAPI validator with
+      `unknown_localization_key`. Setting a key to `null` via
+      `PATCH /v1/instance/localization` removes that single override
+      without affecting the rest of the locale.
+    additionalProperties:
+      type: object
+      additionalProperties:
+        type: string
+      description: Dot-keyed catalog. Keys mirror `sdk-react`'s canonical schema.
+examples:
+  - default_locale: en-US
+    fallback_locale: en-US
+    supported_locales: [en-US, pt-BR, es-ES, fr-FR, de-DE]
+    overrides: {}
+  - default_locale: en-US
+    fallback_locale: en-US
+    supported_locales: [en-US, pt-BR]
+    overrides:
+      en-US:
+        signIn.start.title: "Welcome to Acme"
+        signIn.start.subtitle: "Sign in to continue to your dashboard."
+  - default_locale: pt-BR
+    fallback_locale: en-US
+    supported_locales: [en-US, pt-BR]
+    overrides:
+      pt-BR:
+        signIn.start.title: "Bem-vindo de volta"
+        signIn.start.actionText: "Não tem uma conta?"
+        signIn.start.actionLink: "Criar conta"
