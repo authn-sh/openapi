@@ -64,6 +64,8 @@ tags:
     description: Pending invitations to join an organization.
   - name: Org Domains
     description: Verified domains attached to an organization.
+  - name: Org Enterprise Connections
+    description: Per-organization enterprise-IdP configuration (`EnterpriseConnection`).
   - name: Org Membership Requests
     description: Pending join requests created by domain auto-suggestion.
   - name: JWKS / OIDC
@@ -186,6 +188,12 @@ paths:
     $ref: ./paths/fapi/organization-membership-request-accept.yaml
   /v1/organizations/{organization_id}/membership-requests/{request_id}/reject:
     $ref: ./paths/fapi/organization-membership-request-reject.yaml
+  /v1/organizations/{organization_id}/enterprise-connections:
+    $ref: ./paths/fapi/organization-enterprise-connections.yaml
+  /v1/organizations/{organization_id}/enterprise-connections/{enterprise_connection_id}:
+    $ref: ./paths/fapi/organization-enterprise-connection.yaml
+  /v1/organizations/{organization_id}/enterprise-connections/{enterprise_connection_id}/test:
+    $ref: ./paths/fapi/organization-enterprise-connection-test.yaml
   /v1/me/organization-memberships:
     $ref: ./paths/fapi/me-organization-memberships.yaml
   /v1/me/organization-invitations:
@@ -227,6 +235,9 @@ components:
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
     ExternalAccount:                           { $ref: ./components/schemas/ExternalAccount.yaml }
     EnterpriseAccount:                         { $ref: ./components/schemas/EnterpriseAccount.yaml }
+    EnterpriseConnection:                      { $ref: ./components/schemas/EnterpriseConnection.yaml }
+    EnterpriseConnectionRequest:               { $ref: ./components/schemas/EnterpriseConnectionRequest.yaml }
+    EnterpriseConnectionTestResult:            { $ref: ./components/schemas/EnterpriseConnectionTestResult.yaml }
     Passkey:                                   { $ref: ./components/schemas/Passkey.yaml }
     PasskeyCreationOptions:                    { $ref: ./components/schemas/PasskeyCreationOptions.yaml }
     PasskeyAttestation:                        { $ref: ./components/schemas/PasskeyAttestation.yaml }

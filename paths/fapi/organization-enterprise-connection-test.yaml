@@ -1,0 +1,58 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: enterprise_connection_id
+    in: path
+    required: true
+    description: ID of the enterprise connection.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: testOrganizationEnterpriseConnection
+  summary: Dry-run an enterprise connection
+  description: |
+    Probe the connection without redirecting any user — same dry-run
+    semantics as the BAPI surface
+    `POST /v1/enterprise-connections/{id}/test`. The
+    `<OrganizationProfile />` SSO setup wizard calls this on save to
+    surface broken IdPs up front.
+
+    Always returns `200` even when probes fail; inspect `errors[]` to
+    decide pass/fail.
+
+    **Access**: requires `org:sys_sso:manage`.
+  tags: [Org Enterprise Connections]
+  responses:
+    "200":
+      description: Probe result. Inspect `errors[]` to decide pass/fail.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/EnterpriseConnectionTestResult.yaml }
+          examples:
+            healthy_saml:
+              summary: SAML — all probes passed
+              value:
+                authorize_url: "https://idp.acme.example/saml/sso?SAMLRequest=fVJBb%2FIwDP0r..."
+                discovery_status: 200
+                errors: []
+            healthy_oidc:
+              summary: OIDC — all probes passed
+              value:
+                authorize_url: "https://login.microsoftonline.com/acme-tenant/v2.0/authorize?response_type=code&client_id=11111111-2222-3333-4444-555555555555&redirect_uri=https%3A%2F%2Facme.authn.sh%2Fv1%2Fenterprise-sso-callback&scope=openid+profile+email&state=test_01HKX9SY9V7H7TF8C8K7J9X4ZA"
+                discovery_status: 200
+                errors: []
+            misconfigured:
+              summary: OIDC — discovery endpoint returns 5xx
+              value:
+                authorize_url: ""
+                discovery_status: 502
+                errors:
+                  - code: enterprise_connection_discovery_unreachable
+                    message: "Could not reach the OIDC discovery endpoint"
+                    long_message: "The IdP's /.well-known/openid-configuration endpoint returned 502. Verify the issuer URL and that authn.sh can reach the IdP."
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

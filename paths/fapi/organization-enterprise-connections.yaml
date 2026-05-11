@@ -1,0 +1,94 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: listOrganizationEnterpriseConnections
+  summary: List enterprise connections for an organization
+  description: |
+    Paginated list of `EnterpriseConnection` rows scoped to this
+    organization (`organization_id` on each row equals the path id).
+    Instance-wide rows are not surfaced here — for those, list via
+    the BAPI `/v1/enterprise-connections`.
+
+    **Access**: requires `org:sys_sso:read` on the calling user's
+    membership.
+  tags: [Org Enterprise Connections]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+  responses:
+    "200":
+      description: A page of enterprise connections.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/EnterpriseConnection.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+post:
+  operationId: createOrganizationEnterpriseConnection
+  summary: Create an enterprise connection for an organization
+  description: |
+    Register an `EnterpriseConnection` scoped to this organization.
+    `organization_id` on the body is ignored — the server takes it
+    from the path parameter, so the SDK can omit it.
+
+    Drives the Enterprise SSO setup wizard on `<OrganizationProfile />`:
+    customers' own org admins configure their IdP without involving
+    the SaaS operator.
+
+    **Access**: requires `org:sys_sso:manage` on the calling user's
+    membership. Lacking the permission returns
+    `403 forbidden` with `meta.permission: "org:sys_sso:manage"` on
+    the error body.
+  tags: [Org Enterprise Connections]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/EnterpriseConnectionRequest.yaml }
+        examples:
+          saml_org:
+            summary: SAML connection for this org
+            value:
+              protocol: saml
+              name: Acme Okta
+              domains: ["acme.example"]
+              saml_idp_entity_id: https://idp.acme.example/saml/metadata
+              saml_sso_url: https://idp.acme.example/saml/sso
+              saml_idp_certificate: "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----"
+              default_role: org:member
+          oidc_org:
+            summary: OIDC connection for this org
+            value:
+              protocol: oidc
+              name: Acme Azure AD
+              domains: ["acme.example", "acme-corp.example"]
+              oidc_issuer: https://login.microsoftonline.com/acme-tenant/v2.0
+              oidc_client_id: 11111111-2222-3333-4444-555555555555
+              oidc_client_secret: shhhh
+              oidc_scopes: [openid, profile, email]
+              default_role: org:member
+  responses:
+    "201":
+      description: The created enterprise connection.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/EnterpriseConnection.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
