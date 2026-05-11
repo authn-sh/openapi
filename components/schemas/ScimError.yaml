@@ -1,0 +1,51 @@
+type: object
+description: |
+  SCIM 2.0 error envelope (RFC 7644 §3.12). Returned by every
+  `/scim/v2/*` endpoint on a 4xx/5xx response instead of the standard
+  authn.sh `ErrorResponse` shape.
+required: [schemas, status]
+additionalProperties: false
+properties:
+  schemas:
+    type: array
+    items: { type: string }
+    description: |
+      Always `["urn:ietf:params:scim:api:messages:2.0:Error"]`.
+    examples:
+      - ["urn:ietf:params:scim:api:messages:2.0:Error"]
+  status:
+    type: string
+    description: |
+      HTTP status code as a string per the SCIM RFC (`"400"`,
+      `"401"`, …).
+    examples:
+      - "400"
+      - "404"
+      - "409"
+  scimType:
+    type: string
+    enum:
+      - invalidFilter
+      - tooMany
+      - uniqueness
+      - mutability
+      - invalidSyntax
+      - invalidPath
+      - noTarget
+      - invalidValue
+      - invalidVers
+      - sensitive
+    description: |
+      Standard SCIM error subtype (RFC 7644 §3.12 table). Present for
+      4xx responses; absent for 5xx.
+  detail:
+    type: string
+    description: Human-readable error message.
+examples:
+  - schemas: ["urn:ietf:params:scim:api:messages:2.0:Error"]
+    status: "409"
+    scimType: uniqueness
+    detail: "A user with that userName already exists."
+  - schemas: ["urn:ietf:params:scim:api:messages:2.0:Error"]
+    status: "404"
+    detail: "Resource not found."

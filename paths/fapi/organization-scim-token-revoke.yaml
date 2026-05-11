@@ -1,0 +1,29 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: scim_token_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: revokeOrganizationScimToken
+  summary: Revoke a SCIM token
+  description: |
+    Stamp `revoked_at` on the row. Every subsequent `/scim/v2/*`
+    request authenticated with this token returns `401 invalidVers`.
+    Revocation is irreversible — issue a fresh token to replace it.
+
+    **Access**: requires `org:sys_provisioning:manage`.
+  tags: [Org SCIM]
+  responses:
+    "200":
+      description: The revoked token (no plaintext).
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ScimToken.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

@@ -1,0 +1,129 @@
+parameters:
+  - name: scim_user_id
+    in: path
+    required: true
+    description: SCIM resource id (the underlying `User.id`).
+    schema: { type: string }
+
+get:
+  operationId: scimGetUser
+  summary: Get a SCIM user
+  description: Fetch a single SCIM `User` resource by its server-assigned id.
+  tags: [SCIM]
+  security:
+    - bearer_scim_token: []
+  responses:
+    "200":
+      description: The SCIM user.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimUser.yaml }
+    "401":
+      description: SCIM-format unauthorized.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+    "404":
+      description: SCIM-format not found.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+
+put:
+  operationId: scimReplaceUser
+  summary: Replace a SCIM user
+  description: |
+    SCIM 2.0 PUT (RFC 7644 §3.5.1) — full-resource replace. Server
+    applies the body verbatim; any field omitted from the body
+    reverts to default. IdPs that drive provisioning via PUT (some
+    Okta + Azure AD variants) hit this; the more common pattern is
+    `PATCH`.
+  tags: [SCIM]
+  security:
+    - bearer_scim_token: []
+  requestBody:
+    required: true
+    content:
+      application/scim+json:
+        schema: { $ref: ../../components/schemas/ScimUser.yaml }
+  responses:
+    "200":
+      description: The replaced SCIM user.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimUser.yaml }
+    "401":
+      description: SCIM-format unauthorized.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+    "404":
+      description: SCIM-format not found.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+
+patch:
+  operationId: scimPatchUser
+  summary: Patch a SCIM user
+  description: |
+    SCIM 2.0 PATCH (RFC 7644 §3.5.2). Body is a `ScimPatchOp`. The
+    canonical deprovisioning flow is `replace active: false`.
+  tags: [SCIM]
+  security:
+    - bearer_scim_token: []
+  requestBody:
+    required: true
+    content:
+      application/scim+json:
+        schema: { $ref: ../../components/schemas/ScimPatchOp.yaml }
+        examples:
+          deactivate:
+            summary: SCIM-idiomatic deprovision
+            value:
+              schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]
+              Operations:
+                - op: replace
+                  path: active
+                  value: false
+  responses:
+    "200":
+      description: The patched SCIM user.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimUser.yaml }
+    "401":
+      description: SCIM-format unauthorized.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+    "404":
+      description: SCIM-format not found.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+
+delete:
+  operationId: scimDeleteUser
+  summary: Delete a SCIM user
+  description: |
+    Hard-delete via SCIM (RFC 7644 §3.6). Removes the underlying
+    `User` row and any `OrganizationMembership` provisioned by this
+    SCIM token. The SCIM-idiomatic alternative is to PATCH `active:
+    false`, which preserves the audit trail.
+  tags: [SCIM]
+  security:
+    - bearer_scim_token: []
+  responses:
+    "204":
+      description: Deleted.
+    "401":
+      description: SCIM-format unauthorized.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+    "404":
+      description: SCIM-format not found.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }

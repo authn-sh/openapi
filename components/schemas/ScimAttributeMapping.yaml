@@ -1,0 +1,45 @@
+type: object
+description: |
+  Override map from SCIM attribute paths to authn.sh `User` /
+  `OrganizationMembership` fields, scoped per organization. The server
+  ships with a sensible default mapping (`userName` →
+  `email_address`, `name.givenName` → `first_name`, …); this resource
+  lets org admins override it for IdPs that ship non-standard
+  attribute names.
+
+  One row per org — replace it via `PUT
+  /v1/organizations/{org_id}/scim/attribute-mappings`.
+required: [organization_id, mapping]
+additionalProperties: false
+properties:
+  organization_id:
+    $ref: ./Id.yaml
+  mapping:
+    type: object
+    description: |
+      Map from SCIM attribute path (key) to authn.sh field name
+      (value). Standard keys:
+
+      - `userName` — usually `email_address`
+      - `name.givenName` — usually `first_name`
+      - `name.familyName` — usually `last_name`
+      - `emails[primary eq true].value` — usually `email_address`
+      - `externalId` — usually `external_id`
+      - `urn:…:enterprise:2.0:User.department` — free-form into
+        `public_metadata.department` (or wherever the operator
+        wants).
+    additionalProperties:
+      type: string
+    examples:
+      - userName: email_address
+        name.givenName: first_name
+        name.familyName: last_name
+        externalId: external_id
+examples:
+  - organization_id: org_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    mapping:
+      userName: email_address
+      name.givenName: first_name
+      name.familyName: last_name
+      externalId: external_id
+      "emails[primary eq true].value": email_address

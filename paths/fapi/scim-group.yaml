@@ -1,0 +1,124 @@
+parameters:
+  - name: scim_group_id
+    in: path
+    required: true
+    schema: { type: string }
+
+get:
+  operationId: scimGetGroup
+  summary: Get a SCIM group
+  description: Fetch a single SCIM `Group` resource by id.
+  tags: [SCIM]
+  security:
+    - bearer_scim_token: []
+  responses:
+    "200":
+      description: The SCIM group.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimGroup.yaml }
+    "401":
+      description: SCIM-format unauthorized.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+    "404":
+      description: SCIM-format not found.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+
+put:
+  operationId: scimReplaceGroup
+  summary: Replace a SCIM group
+  description: |
+    SCIM 2.0 PUT (RFC 7644 §3.5.1) — full-resource replace.
+  tags: [SCIM]
+  security:
+    - bearer_scim_token: []
+  requestBody:
+    required: true
+    content:
+      application/scim+json:
+        schema: { $ref: ../../components/schemas/ScimGroup.yaml }
+  responses:
+    "200":
+      description: The replaced SCIM group.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimGroup.yaml }
+    "401":
+      description: SCIM-format unauthorized.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+    "404":
+      description: SCIM-format not found.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+
+patch:
+  operationId: scimPatchGroup
+  summary: Patch a SCIM group
+  description: |
+    SCIM 2.0 PATCH. The canonical group-membership-update flow is a
+    pair of `add` / `remove` ops against `members`.
+  tags: [SCIM]
+  security:
+    - bearer_scim_token: []
+  requestBody:
+    required: true
+    content:
+      application/scim+json:
+        schema: { $ref: ../../components/schemas/ScimPatchOp.yaml }
+        examples:
+          add_member:
+            summary: Add a user to the group
+            value:
+              schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]
+              Operations:
+                - op: add
+                  path: members
+                  value:
+                    - value: user_01HKX9SY9V7H7TF8C8K7J9X4ZA
+                      display: alice@acme.example
+  responses:
+    "200":
+      description: The patched SCIM group.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimGroup.yaml }
+    "401":
+      description: SCIM-format unauthorized.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+    "404":
+      description: SCIM-format not found.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+
+delete:
+  operationId: scimDeleteGroup
+  summary: Delete a SCIM group
+  description: |
+    Hard-delete the group and detach all `OrganizationMembership` rows
+    provisioned through it.
+  tags: [SCIM]
+  security:
+    - bearer_scim_token: []
+  responses:
+    "204":
+      description: Deleted.
+    "401":
+      description: SCIM-format unauthorized.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }
+    "404":
+      description: SCIM-format not found.
+      content:
+        application/scim+json:
+          schema: { $ref: ../../components/schemas/ScimError.yaml }

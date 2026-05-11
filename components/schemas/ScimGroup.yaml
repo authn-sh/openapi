@@ -1,0 +1,57 @@
+type: object
+description: |
+  SCIM 2.0 `Group` resource (RFC 7643). Used to model
+  `OrganizationMembership` cohorts the IdP wants to sync. The server
+  maps each SCIM `Group` to an authn.sh `Role` (or the
+  `OrganizationMembership.role` field) per the connection's mapping.
+required: [schemas, displayName]
+additionalProperties: true
+properties:
+  schemas:
+    type: array
+    items: { type: string }
+    examples:
+      - ["urn:ietf:params:scim:schemas:core:2.0:Group"]
+  id:
+    type: string
+    examples:
+      - scimgrp_01HKX9SY9V7H7TF8C8K7J9X4ZB
+  externalId:
+    type: [string, "null"]
+  displayName:
+    type: string
+    description: Human-readable label (e.g. "Engineering").
+  members:
+    type: array
+    description: |
+      `ScimUser` ids that belong to the group. PATCH operations on
+      this list translate to `OrganizationMembership` add / remove
+      side-effects.
+    items:
+      type: object
+      properties:
+        value:   { type: string }
+        display: { type: string }
+        $ref:    { type: string, format: uri }
+        type:    { type: string }
+  meta:
+    type: object
+    properties:
+      resourceType: { type: string }
+      created:      { type: string, format: date-time }
+      lastModified: { type: string, format: date-time }
+      location:     { type: string, format: uri }
+examples:
+  - schemas: ["urn:ietf:params:scim:schemas:core:2.0:Group"]
+    id: scimgrp_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    externalId: "okta-group-eng"
+    displayName: Engineering
+    members:
+      - value: user_01HKX9SY9V7H7TF8C8K7J9X4ZA
+        display: alice@acme.example
+        type: User
+    meta:
+      resourceType: Group
+      created: "2026-05-11T19:00:00Z"
+      lastModified: "2026-05-11T19:00:00Z"
+      location: https://acme.authn.sh/scim/v2/Groups/scimgrp_01HKX9SY9V7H7TF8C8K7J9X4ZB

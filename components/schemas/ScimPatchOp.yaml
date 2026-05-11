@@ -1,0 +1,59 @@
+type: object
+description: |
+  SCIM 2.0 `PatchOp` envelope (RFC 7644 §3.5.2). Body of `PATCH
+  /scim/v2/Users/{id}` and `PATCH /scim/v2/Groups/{id}`.
+
+  Carries an ordered list of operations (`add` / `remove` / `replace`)
+  against a resource. The server applies them atomically — partial
+  application failures surface as `400 invalidPath` /
+  `400 invalidValue` per RFC 7644 §3.12.
+required: [schemas, Operations]
+additionalProperties: false
+properties:
+  schemas:
+    type: array
+    items: { type: string }
+    description: |
+      Always `["urn:ietf:params:scim:api:messages:2.0:PatchOp"]`.
+    examples:
+      - ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]
+  Operations:
+    type: array
+    items:
+      type: object
+      required: [op]
+      additionalProperties: false
+      properties:
+        op:
+          type: string
+          enum: [add, remove, replace, Add, Remove, Replace]
+          description: |
+            Operation kind. SCIM is case-insensitive on the verb;
+            both lowercase and PascalCase are accepted.
+        path:
+          type: string
+          description: |
+            SCIM attribute path (e.g. `active`, `emails[type eq
+            "work"].value`, `members`). Required for `remove`,
+            optional for `add` / `replace` (when omitted, `value`
+            must be a complete resource patch).
+        value:
+          description: |
+            Replacement / additional value. Type depends on `path` —
+            scalar for primitive attributes, object / array for
+            structured ones.
+examples:
+  - schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]
+    Operations:
+      - op: replace
+        path: active
+        value: false
+  - schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]
+    Operations:
+      - op: add
+        path: members
+        value:
+          - value: user_01HKX9SY9V7H7TF8C8K7J9X4ZA
+            display: alice@acme.example
+      - op: remove
+        path: 'members[value eq "user_01HKX9SY9V7H7TF8C8K7J9X4ZC"]'
