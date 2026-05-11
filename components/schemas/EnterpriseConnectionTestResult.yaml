@@ -1,0 +1,70 @@
+type: object
+description: |
+  Result of `POST /v1/enterprise-connections/{id}/test`. The dashboard
+  uses this shape to render a per-connection health indicator on the
+  Enterprise SSO configuration page. Always returned with HTTP `200`
+  even when probes fail — inspect `errors[]` to decide pass/fail.
+
+  For `protocol: "oidc"` connections, the server probes
+  `oidc_discovery_endpoint` (resolved from `oidc_issuer`) and surfaces
+  the HTTP status code on `discovery_status`. For `protocol: "saml"`
+  connections, the server fetches the IdP metadata XML from
+  `saml_idp_entity_id` (when the URL form is supplied), parses it, and
+  signature-verifies it; `discovery_status` carries the HTTP status of
+  the metadata fetch.
+required: [authorize_url, discovery_status, errors]
+additionalProperties: false
+properties:
+  authorize_url:
+    type: string
+    description: |
+      The fully-formed IdP authorize URL the SDK would redirect a user
+      to right now (with a synthetic `state` and the per-connection
+      ACS / redirect URI baked in). For SAML connections, the
+      `<AuthnRequest>` deflated + base64-encoded + appended to
+      `saml_sso_url` as `SAMLRequest=…`. For OIDC, the standard
+      `/authorize?response_type=code&…` URL.
+
+      Empty string when the server could not build the URL (e.g. OIDC
+      discovery refresh failed and no cached endpoint exists, or SAML
+      metadata parsing failed).
+    examples:
+      - "https://idp.acme.example/saml/sso?SAMLRequest=fVJBb%2FIwDP0r..."
+      - "https://login.microsoftonline.com/acme-tenant/v2.0/authorize?response_type=code&client_id=11111111-2222-3333-4444-555555555555&redirect_uri=https%3A%2F%2Facme.authn.sh%2Fv1%2Fenterprise-sso-callback&scope=openid+profile+email&state=test_01HKX9SY9V7H7TF8C8K7J9X4ZA"
+  discovery_status:
+    type: [integer, "null"]
+    minimum: 100
+    maximum: 599
+    description: |
+      HTTP status code returned by the discovery probe. For OIDC, the
+      `GET <oidc_discovery_endpoint>` response code (`200` = healthy).
+      For SAML, the `GET <saml_idp_entity_id>` metadata fetch (when
+      the URL form is supplied). `null` when no discovery URL is
+      configured for the connection.
+  errors:
+    type: array
+    description: |
+      Collected probe errors. Empty when every check passed. Each
+      entry uses the standard `Error` shape (`code` is a stable
+      machine-readable token; SDKs match on it).
+    items:
+      $ref: ./Error.yaml
+examples:
+  - authorize_url: "https://idp.acme.example/saml/sso?SAMLRequest=fVJBb%2FIwDP0r..."
+    discovery_status: 200
+    errors: []
+  - authorize_url: "https://login.microsoftonline.com/acme-tenant/v2.0/authorize?response_type=code&client_id=11111111-2222-3333-4444-555555555555&redirect_uri=https%3A%2F%2Facme.authn.sh%2Fv1%2Fenterprise-sso-callback&scope=openid+profile+email&state=test_01HKX9SY9V7H7TF8C8K7J9X4ZA"
+    discovery_status: 200
+    errors: []
+  - authorize_url: ""
+    discovery_status: 502
+    errors:
+      - code: enterprise_connection_discovery_unreachable
+        message: "Could not reach the OIDC discovery endpoint"
+        long_message: "The IdP's /.well-known/openid-configuration endpoint returned 502. Verify the issuer URL and that authn.sh can reach the IdP."
+  - authorize_url: ""
+    discovery_status: null
+    errors:
+      - code: enterprise_connection_saml_metadata_invalid
+        message: "SAML metadata did not parse"
+        long_message: "Fetched the IdP metadata XML but signature verification failed. Verify saml_idp_certificate matches the IdP's signing key."

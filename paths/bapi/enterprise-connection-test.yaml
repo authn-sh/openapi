@@ -1,0 +1,73 @@
+parameters:
+  - name: enterprise_connection_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+post:
+  operationId: testEnterpriseConnection
+  summary: Dry-run an enterprise connection
+  description: |
+    Probe the connection's configuration without redirecting any user.
+    The dashboard runs this on save to surface broken IdPs up front,
+    instead of letting an operator find out at sign-in time.
+
+    The server:
+
+    - Builds the IdP authorize URL the SDK would redirect to (using a
+      synthetic `state` and the per-connection ACS / redirect URI) and
+      returns it on `authorize_url`.
+    - For OIDC connections, `GET`s the `oidc_discovery_endpoint`
+      (resolved from `oidc_issuer`) and records the HTTP status on
+      `discovery_status`. `200` is healthy; other codes surface a
+      problem on the IdP side.
+    - For SAML connections, fetches the IdP metadata XML from
+      `saml_idp_entity_id` (when the URL form is supplied), parses it,
+      and verifies the signature against `saml_idp_certificate`. The
+      HTTP status of the metadata fetch is reflected on
+      `discovery_status`.
+    - Collects any errors (validation, OIDC discovery refresh, SAML
+      metadata signature failures, network timeouts) into `errors[]`.
+
+    Always returns `200` — even when probes fail. The caller inspects
+    `errors[]` to decide whether to surface a red dot in the UI.
+  tags: [Enterprise Connections]
+  responses:
+    "200":
+      description: Probe result. Inspect `errors[]` to decide pass/fail.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/EnterpriseConnectionTestResult.yaml }
+          examples:
+            healthy_saml:
+              summary: SAML — all probes passed
+              value:
+                authorize_url: "https://idp.acme.example/saml/sso?SAMLRequest=fVJBb%2FIwDP0r..."
+                discovery_status: 200
+                errors: []
+            healthy_oidc:
+              summary: OIDC — all probes passed
+              value:
+                authorize_url: "https://login.microsoftonline.com/acme-tenant/v2.0/authorize?response_type=code&client_id=11111111-2222-3333-4444-555555555555&redirect_uri=https%3A%2F%2Facme.authn.sh%2Fv1%2Fenterprise-sso-callback&scope=openid+profile+email&state=test_01HKX9SY9V7H7TF8C8K7J9X4ZA"
+                discovery_status: 200
+                errors: []
+            misconfigured_discovery:
+              summary: OIDC — discovery endpoint returns 5xx
+              value:
+                authorize_url: ""
+                discovery_status: 502
+                errors:
+                  - code: enterprise_connection_discovery_unreachable
+                    message: "Could not reach the OIDC discovery endpoint"
+                    long_message: "The IdP's /.well-known/openid-configuration endpoint returned 502. Verify the issuer URL and that authn.sh can reach the IdP."
+            saml_metadata_invalid:
+              summary: SAML — metadata signature verification failed
+              value:
+                authorize_url: ""
+                discovery_status: null
+                errors:
+                  - code: enterprise_connection_saml_metadata_invalid
+                    message: "SAML metadata did not parse"
+                    long_message: "Fetched the IdP metadata XML but signature verification failed. Verify saml_idp_certificate matches the IdP's signing key."
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

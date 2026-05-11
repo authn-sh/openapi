@@ -1,0 +1,87 @@
+parameters:
+  - name: enterprise_connection_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getEnterpriseConnection
+  summary: Get an enterprise connection
+  description: |
+    Fetch a single `EnterpriseConnection` row. Write-only secrets
+    (`oidc_client_secret`, `saml_signing_key`) are never included.
+  tags: [Enterprise Connections]
+  responses:
+    "200":
+      description: The enterprise connection.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/EnterpriseConnection.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateEnterpriseConnection
+  summary: Update an enterprise connection
+  description: |
+    Partial update. `protocol` and `organization_id` are immutable —
+    sending a different value returns `422`. Every other field is
+    optional; omitted keys are left untouched.
+
+    Sending `oidc_client_secret: null` clears the stored secret (e.g.
+    when migrating to PKCE). Sending `saml_signing_key: null` clears
+    the stored SP signing key (the platform will regenerate on the
+    next request signing).
+
+    Patching `enabled` to `false` keeps existing `EnterpriseAccount`
+    rows but prevents new sign-ins via this connection.
+  tags: [Enterprise Connections]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/EnterpriseConnectionRequest.yaml }
+        examples:
+          disable:
+            summary: Pause without deleting
+            value: { enabled: false }
+          rotate_oidc_secret:
+            summary: Rotate the OIDC client secret
+            value: { oidc_client_secret: new-shhhh }
+          rotate_saml_cert:
+            summary: Rotate the IdP signing certificate
+            value:
+              saml_idp_certificate: "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----"
+          extend_domains:
+            summary: Add a verified domain to the routing list
+            value:
+              domains: ["acme.example", "acme-corp.example"]
+  responses:
+    "200":
+      description: The updated enterprise connection.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/EnterpriseConnection.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteEnterpriseConnection
+  summary: Delete an enterprise connection
+  description: |
+    Soft delete. Refuses (`409 enterprise_connection_in_use`) when any
+    `EnterpriseAccount` rows still link to this connection — operators
+    must migrate or unlink those users first to keep the audit trail
+    of past sign-ins intact. Once deleted, the `enterprise_sso` and
+    `saml` strategies pinned to this connection are rejected for this
+    environment.
+  tags: [Enterprise Connections]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }

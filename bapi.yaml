@@ -67,6 +67,8 @@ tags:
     description: Per-environment settings (`InstanceSetting`).
   - name: OAuth Providers
     description: Per-environment social-IdP configuration (`OauthProvider`).
+  - name: Enterprise Connections
+    description: Per-environment enterprise-IdP configuration (`EnterpriseConnection`).
   - name: SMS Templates
     description: Per-environment outbound SMS body customization (`SmsTemplate`).
   - name: Webhooks
@@ -188,6 +190,12 @@ paths:
     $ref: ./paths/bapi/oauth-provider.yaml
   /v1/oauth-providers/{oauth_provider_id}/test:
     $ref: ./paths/bapi/oauth-provider-test.yaml
+  /v1/enterprise-connections:
+    $ref: ./paths/bapi/enterprise-connections.yaml
+  /v1/enterprise-connections/{enterprise_connection_id}:
+    $ref: ./paths/bapi/enterprise-connection.yaml
+  /v1/enterprise-connections/{enterprise_connection_id}/test:
+    $ref: ./paths/bapi/enterprise-connection-test.yaml
   /v1/sms-templates:
     $ref: ./paths/bapi/sms-templates.yaml
   /v1/sms-templates/{sms_template_slug}:
@@ -285,6 +293,7 @@ components:
     OauthProviderTestResult:                   { $ref: ./components/schemas/OauthProviderTestResult.yaml }
     EnterpriseConnection:                      { $ref: ./components/schemas/EnterpriseConnection.yaml }
     EnterpriseConnectionRequest:               { $ref: ./components/schemas/EnterpriseConnectionRequest.yaml }
+    EnterpriseConnectionTestResult:            { $ref: ./components/schemas/EnterpriseConnectionTestResult.yaml }
     EnterpriseAccount:                         { $ref: ./components/schemas/EnterpriseAccount.yaml }
     SmsTemplate:                               { $ref: ./components/schemas/SmsTemplate.yaml }
     SmsTemplateRequest:                        { $ref: ./components/schemas/SmsTemplateRequest.yaml }
