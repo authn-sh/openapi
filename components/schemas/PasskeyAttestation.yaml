@@ -1,0 +1,54 @@
+type: object
+description: |
+  WebAuthn `AuthenticatorAttestationResponse` envelope posted back
+  to the server after `navigator.credentials.create(...)` completes.
+  Binary fields are base64url-encoded.
+required:
+  - id
+  - raw_id
+  - response
+  - type
+additionalProperties: false
+properties:
+  id:
+    type: string
+    description: |
+      Credential id as base64url. Same value the authenticator will
+      send on future assertions; the server stores its raw bytes on
+      the `Passkey` row.
+  raw_id:
+    type: string
+    description: |
+      base64url-encoded credential id. Matches `id`; the WebAuthn
+      spec carries it twice (decoded vs raw) so we surface both for
+      strict relaying.
+  response:
+    type: object
+    required: [client_data_json, attestation_object]
+    additionalProperties: false
+    properties:
+      client_data_json:
+        type: string
+        description: |
+          base64url of the `clientDataJSON` blob the browser
+          produced. The server decodes it, checks `type ==
+          "webauthn.create"`, the embedded `challenge` matches the
+          ceremony, and the `origin` is on the allowlist.
+      attestation_object:
+        type: string
+        description: |
+          base64url of the CBOR-encoded `attestationObject`. The
+          server parses it to extract the authenticator data, the
+          new credential's public key, the AAGUID, and (when
+          `attestation != "none"`) the attestation statement.
+  type:
+    type: string
+    const: public-key
+  transports:
+    type: array
+    description: |
+      Transports the authenticator advertised. Carried into the new
+      `Passkey.transports[]`.
+    items:
+      type: string
+      enum: [usb, nfc, ble, internal, hybrid]

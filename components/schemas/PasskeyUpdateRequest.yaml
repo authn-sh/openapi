@@ -1,0 +1,11 @@
+type: object
+description: |
+  Body for `PATCH /v1/me/passkeys/{id}`. Only `nickname` is mutable
+  from the user-facing surface — every other field is set by the
+  ceremony or by assertion bookkeeping.
+required: [nickname]
+additionalProperties: false
+properties:
+  nickname:
+    type: string
+    maxLength: 100

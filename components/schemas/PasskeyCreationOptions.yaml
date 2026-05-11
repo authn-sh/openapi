@@ -1,0 +1,154 @@
+type: object
+description: |
+  Server-built `PublicKeyCredentialCreationOptions` envelope for a
+  WebAuthn registration ceremony. Mirrors the WebAuthn L3 spec
+  shape, base64url-encoded where the spec uses `BufferSource`. The
+  SDK passes this verbatim to
+  `navigator.credentials.create({ publicKey })` after URL-safe
+  base64 decoding `challenge`, `user.id`, and every
+  `exclude_credentials[].id`.
+
+  Carried on a `Challenge` body (the registration challenge created
+  by `POST /v1/me/passkeys/begin-registration`) so multi-tab clients
+  can resume the ceremony by re-reading the parent challenge.
+required:
+  - rp
+  - user
+  - challenge
+  - pub_key_cred_params
+  - timeout
+  - attestation
+  - authenticator_selection
+  - exclude_credentials
+additionalProperties: false
+properties:
+  rp:
+    type: object
+    required: [id, name]
+    additionalProperties: false
+    properties:
+      id:
+        type: string
+        description: |
+          RP ID — the effective domain the credential is scoped to
+          (e.g. `acme.com`). Matches `Environment.host` minus the
+          `<env_slug>.` subdomain unless the operator overrode it.
+      name:
+        type: string
+        description: Human-readable RP name displayed by the authenticator UI.
+  user:
+    type: object
+    required: [id, name, display_name]
+    additionalProperties: false
+    properties:
+      id:
+        type: string
+        description: |
+          Opaque, per-environment, per-user handle. base64url-encoded
+          bytes — not the `User.id` ULID directly; surfacing the
+          ULID would leak it to the authenticator.
+      name:
+        type: string
+        description: |
+          Username the authenticator may display alongside the RP
+          name (typically the user's primary email).
+      display_name:
+        type: string
+        description: |
+          Human-readable name the authenticator may show
+          (typically `first_name + last_name`).
+  challenge:
+    type: string
+    description: |
+      base64url-encoded server nonce. The browser includes it in
+      the attestation response; the server checks it on
+      `complete-registration` to bind the response to this exact
+      ceremony.
+  pub_key_cred_params:
+    type: array
+    description: |
+      Algorithms the server will accept, in operator-preference
+      order. Mirrors WebAuthn `PublicKeyCredentialParameters`.
+    items:
+      type: object
+      required: [type, alg]
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          const: public-key
+        alg:
+          type: integer
+          description: |
+            COSE algorithm identifier. Common values: `-7` (ES256),
+            `-257` (RS256), `-8` (EdDSA).
+          examples: [-7, -257]
+  timeout:
+    type: integer
+    minimum: 1
+    description: Ceremony timeout in milliseconds. Hint to the browser; not enforced server-side.
+    examples: [60000]
+  attestation:
+    type: string
+    enum: [none, indirect, direct, enterprise]
+    default: none
+    description: |
+      Attestation conveyance preference. Defaults to `none` because
+      the server doesn't validate authenticator provenance in v0.5.
+  authenticator_selection:
+    type: object
+    additionalProperties: false
+    required: [resident_key, user_verification]
+    properties:
+      authenticator_attachment:
+        type: [string, "null"]
+        enum: [platform, cross-platform, null]
+        description: |
+          When set, restricts registration to platform (Touch ID,
+          Windows Hello) or cross-platform (roaming security key)
+          authenticators. `null` allows both.
+      resident_key:
+        type: string
+        enum: [discouraged, preferred, required]
+        default: preferred
+        description: |
+          How strongly the server wants a client-side discoverable
+          credential. `preferred` is the v0.5 default — enables
+          username-less sign-in when the authenticator supports it
+          while falling back gracefully when it doesn't.
+      user_verification:
+        type: string
+        enum: [discouraged, preferred, required]
+        default: preferred
+        description: |
+          Whether the authenticator must do user-presence checking
+          (PIN, biometric, …). `preferred` accepts UV when available;
+          `required` refuses authenticators that can't UV.
+  exclude_credentials:
+    type: array
+    description: |
+      Credentials already registered against this user. The
+      authenticator refuses to enroll if any match, so the user
+      doesn't accidentally register the same authenticator twice.
+    items:
+      type: object
+      required: [id, type]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          description: base64url credential id of an existing `Passkey` row.
+        type:
+          type: string
+          const: public-key
+        transports:
+          type: array
+          items:
+            type: string
+            enum: [usb, nfc, ble, internal, hybrid]
+  extensions:
+    type: object
+    description: |
+      WebAuthn extension inputs (e.g. `credProps`). Free-form — the
+      server passes the operator-configured set through verbatim.
+    additionalProperties: true

@@ -1,0 +1,54 @@
+parameters:
+  - name: passkey_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+patch:
+  operationId: updateMyPasskey
+  summary: Rename one of my passkeys
+  description: |
+    Only `nickname` is mutable. Everything else (transports,
+    aaguid, verified state, sign-count) is set by the ceremony or
+    by assertion bookkeeping and can't be changed from the FAPI.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/PasskeyUpdateRequest.yaml }
+        examples:
+          rename:
+            value: { nickname: Work YubiKey }
+  responses:
+    "200":
+      description: The renamed passkey, wrapped.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ClientResponseEnvelope.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteMyPasskey
+  summary: Remove one of my passkeys
+  description: |
+    Soft-removes the passkey — sets `removed_at`, so the row stays
+    in place for audit-log correlation, but the credential can no
+    longer be used to authenticate. The user must keep at least one
+    way to sign in (password, OAuth, or another passkey);
+    removing the last sign-in method returns `422`.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "204":
+      description: Removed.
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

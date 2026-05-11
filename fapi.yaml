@@ -140,6 +140,12 @@ paths:
     $ref: ./paths/fapi/me-external-account.yaml
   /v1/me/passkeys:
     $ref: ./paths/fapi/me-passkeys.yaml
+  /v1/me/passkeys/begin-registration:
+    $ref: ./paths/fapi/me-passkey-begin-registration.yaml
+  /v1/me/passkeys/complete-registration/{challenge_id}:
+    $ref: ./paths/fapi/me-passkey-complete-registration.yaml
+  /v1/me/passkeys/{passkey_id}:
+    $ref: ./paths/fapi/me-passkey.yaml
   /v1/me/sessions:
     $ref: ./paths/fapi/me-sessions.yaml
   /v1/me/change-password:
@@ -221,6 +227,11 @@ components:
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
     ExternalAccount:                           { $ref: ./components/schemas/ExternalAccount.yaml }
     Passkey:                                   { $ref: ./components/schemas/Passkey.yaml }
+    PasskeyCreationOptions:                    { $ref: ./components/schemas/PasskeyCreationOptions.yaml }
+    PasskeyAttestation:                        { $ref: ./components/schemas/PasskeyAttestation.yaml }
+    PasskeyBeginRegistrationRequest:           { $ref: ./components/schemas/PasskeyBeginRegistrationRequest.yaml }
+    PasskeyCompleteRegistrationRequest:        { $ref: ./components/schemas/PasskeyCompleteRegistrationRequest.yaml }
+    PasskeyUpdateRequest:                      { $ref: ./components/schemas/PasskeyUpdateRequest.yaml }
     PhoneNumber:                               { $ref: ./components/schemas/PhoneNumber.yaml }
     PhoneNumberCreateRequest:                  { $ref: ./components/schemas/PhoneNumberCreateRequest.yaml }
     PhoneNumberUpdateRequest:                  { $ref: ./components/schemas/PhoneNumberUpdateRequest.yaml }

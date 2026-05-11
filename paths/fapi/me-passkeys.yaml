@@ -4,10 +4,6 @@ get:
   description: |
     Every `Passkey` row registered against the current user. Powers
     the security tab on `<UserProfile />`.
-
-    The full management surface — registration ceremony, rename,
-    deletion — is documented under this same path prefix and the
-    `{passkey_id}` sub-resources.
   tags: [Me]
   security:
     - client_cookie: []
@@ -18,6 +14,14 @@ get:
       content:
         application/json:
           schema:
-            type: array
-            items: { $ref: ../../components/schemas/Passkey.yaml }
+            type: object
+            required: [data, total_count]
+            additionalProperties: false
+            properties:
+              data:
+                type: array
+                items: { $ref: ../../components/schemas/Passkey.yaml }
+              total_count:
+                type: integer
+                minimum: 0
     "401": { $ref: ../../components/responses/Unauthorized.yaml }
