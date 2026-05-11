@@ -1,0 +1,35 @@
+get:
+  operationId: listExternalAccounts
+  summary: List external accounts
+  description: |
+    Every `ExternalAccount` row in the environment. Filterable by
+    `user_id` and `oauth_provider_id` so admins can scope to a single
+    user or audit which users are linked to a specific provider.
+  tags: [External Accounts]
+  parameters:
+    - name: user_id
+      in: query
+      required: false
+      description: Filter to external accounts owned by this user.
+      schema: { $ref: "../../components/schemas/Id.yaml" }
+    - name: oauth_provider_id
+      in: query
+      required: false
+      description: Filter to external accounts created via this provider.
+      schema: { $ref: "../../components/schemas/Id.yaml" }
+    - $ref: "../../components/parameters/LimitParam.yaml"
+    - $ref: "../../components/parameters/OffsetParam.yaml"
+  responses:
+    "200":
+      description: Paginated list of external accounts.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data, total_count]
+            properties:
+              data:
+                type: array
+                items: { $ref: "../../components/schemas/ExternalAccount.yaml" }
+              total_count: { type: integer }
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }

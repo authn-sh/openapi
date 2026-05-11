@@ -1,0 +1,66 @@
+parameters:
+  - name: phone_number_id
+    in: path
+    required: true
+    description: ID of the phone number.
+    schema: { $ref: "../../components/schemas/Id.yaml" }
+
+get:
+  operationId: getPhoneNumber
+  summary: Get a phone number
+  description: Fetch a single `PhoneNumber` by ID.
+  tags: [Phone Numbers]
+  responses:
+    "200":
+      description: The phone number.
+      content:
+        application/json:
+          schema: { $ref: "../../components/schemas/PhoneNumber.yaml" }
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../../components/responses/NotFound.yaml" }
+
+patch:
+  operationId: updatePhoneNumber
+  summary: Update a phone number
+  description: |
+    Mark the phone verified server-side, toggle MFA flags, or promote
+    it to the user's primary phone. Sending an empty body is a no-op.
+  tags: [Phone Numbers]
+  parameters:
+    - $ref: "../../components/parameters/IdempotencyKeyHeader.yaml"
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          allOf:
+            - $ref: "../../components/schemas/PhoneNumberUpdateRequest.yaml"
+            - type: object
+              properties:
+                verified:
+                  type: boolean
+                  description: When `true`, marks the phone verified (BAPI privilege).
+  responses:
+    "200":
+      description: The updated phone number.
+      content:
+        application/json:
+          schema: { $ref: "../../components/schemas/PhoneNumber.yaml" }
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../../components/responses/NotFound.yaml" }
+    "422": { $ref: "../../components/responses/UnprocessableEntity.yaml" }
+
+delete:
+  operationId: deletePhoneNumber
+  summary: Delete a phone number
+  description: |
+    Hard-delete the phone number. Returns `409` with
+    `phone_reserved_for_second_factor` when the row is currently
+    committed to MFA — clear `reserved_for_second_factor` first.
+  tags: [Phone Numbers]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../../components/responses/NotFound.yaml" }
+    "409": { $ref: "../../components/responses/Conflict.yaml" }

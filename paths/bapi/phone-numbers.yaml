@@ -1,0 +1,65 @@
+get:
+  operationId: listPhoneNumbers
+  summary: List phone numbers
+  description: |
+    Every `PhoneNumber` row in the environment. Filterable by `user_id`
+    so admins can scope down to a single user's phones.
+  tags: [Phone Numbers]
+  parameters:
+    - name: user_id
+      in: query
+      required: false
+      description: Filter to phone numbers belonging to this user.
+      schema: { $ref: "../../components/schemas/Id.yaml" }
+    - $ref: "../../components/parameters/LimitParam.yaml"
+    - $ref: "../../components/parameters/OffsetParam.yaml"
+  responses:
+    "200":
+      description: Paginated list of phone numbers.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data, total_count]
+            properties:
+              data:
+                type: array
+                items: { $ref: "../../components/schemas/PhoneNumber.yaml" }
+              total_count: { type: integer }
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+
+post:
+  operationId: createPhoneNumber
+  summary: Create a phone number
+  description: |
+    Attach a new phone to a user. By default the row is unverified and
+    `current_challenge_id` is `null`. Pass `verified: true` to mint it
+    already verified — the BAPI is privileged.
+  tags: [Phone Numbers]
+  parameters:
+    - $ref: "../../components/parameters/IdempotencyKeyHeader.yaml"
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          allOf:
+            - $ref: "../../components/schemas/PhoneNumberCreateRequest.yaml"
+            - type: object
+              required: [user_id]
+              properties:
+                user_id: { $ref: "../../components/schemas/Id.yaml" }
+                verified:
+                  type: boolean
+                  description: When `true`, the BAPI marks the row verified immediately. Default `false`.
+                primary:
+                  type: boolean
+                  description: When `true`, promote the new row to the user's primary phone. Default `false`.
+  responses:
+    "201":
+      description: The new phone number.
+      content:
+        application/json:
+          schema: { $ref: "../../components/schemas/PhoneNumber.yaml" }
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+    "422": { $ref: "../../components/responses/UnprocessableEntity.yaml" }

@@ -37,6 +37,10 @@ tags:
     description: End-user identities.
   - name: Email Addresses
     description: User-owned email identifiers and their verification state.
+  - name: Phone Numbers
+    description: User-owned phone identifiers, their verification state, and MFA-reserve flags.
+  - name: External Accounts
+    description: Per-user links to social-IdP `OauthProvider` connections.
   - name: Sessions
     description: Live authenticated sessions across devices (admin view).
   - name: Organizations
@@ -100,6 +104,14 @@ paths:
     $ref: ./paths/bapi/email-addresses.yaml
   /v1/email-addresses/{email_address_id}:
     $ref: ./paths/bapi/email-address.yaml
+  /v1/phone-numbers:
+    $ref: ./paths/bapi/phone-numbers.yaml
+  /v1/phone-numbers/{phone_number_id}:
+    $ref: ./paths/bapi/phone-number.yaml
+  /v1/external-accounts:
+    $ref: ./paths/bapi/external-accounts.yaml
+  /v1/external-accounts/{external_account_id}:
+    $ref: ./paths/bapi/external-account.yaml
   /v1/sessions:
     $ref: ./paths/bapi/sessions.yaml
   /v1/sessions/{session_id}:

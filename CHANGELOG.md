@@ -39,6 +39,11 @@
   - `OauthProviderTestResult` — return shape of the BAPI dry-run probe.
   - `Challenge.strategy` documents `oauth_<provider_key>` as a first-factor value; the IdP authorize URL is surfaced via `external_verification_redirect_url`.
 
+- **BAPI `/v1/phone-numbers` + `/v1/external-accounts` (v0.4)**.
+  - `/v1/phone-numbers` (list/create/get/update/delete) — admin CRUD for phones, filterable by `user_id`. `created` supports `verified: true` + `primary: true` BAPI-privileged shortcuts. `delete` returns `409 phone_reserved_for_second_factor` when the row is committed to MFA.
+  - `/v1/external-accounts` (list/get/delete) — admin read + unlink. `list` filterable by `user_id` + `oauth_provider_id`. `delete` does best-effort IdP `revocation_endpoint` call, then drops the row.
+  - Resolves the SP-2 scope cut (PhoneNumbersManager + ExternalAccountsManager were deferred in the initial v0.4 cut for lack of these paths).
+
 - **BAPI `/v1/oauth-providers` (v0.4)**.
   - `GET /v1/oauth-providers` (`listOauthProviders`), `POST /v1/oauth-providers` (`createOauthProvider`), `GET /v1/oauth-providers/{id}` (`getOauthProvider`), `PATCH /v1/oauth-providers/{id}` (`updateOauthProvider`), `DELETE /v1/oauth-providers/{id}` (`deleteOauthProvider`), `POST /v1/oauth-providers/{id}/test` (`testOauthProvider`). Soft-delete refuses (`409 oauth_provider_in_use`) when `ExternalAccount` rows still link to the provider. `test` returns `200` with `OauthProviderTestResult { authorize_url, userinfo_status, errors }` even when probes fail.
 
