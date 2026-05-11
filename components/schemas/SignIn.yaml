@@ -144,6 +144,8 @@ required:
   - identifier
   - user_data
   - created_session_id
+  - transferable_to_signup
+  - target_flow
   - abandon_at
 additionalProperties: false
 properties:
@@ -160,6 +162,7 @@ properties:
       - needs_second_factor
       - needs_new_password
       - needs_client_trust
+      - transferable
       - complete
       - abandoned
     description: |
@@ -177,6 +180,20 @@ properties:
         to `complete`.
       - `needs_client_trust` — environment requires the device pass an
         out-of-band trust check (geolocation/WAF/captcha).
+      - `transferable` — the SignIn succeeded the IdP / magic-link
+        side of authentication but the resolved identity has no
+        matching `User`, so the flow must hand off to sign-up. The
+        SDK reads `target_flow: "sign_up"` and posts
+        `POST /v1/client/sign-ups { transfer: true }` to mint a
+        SignUp that completes synchronously off the same upstream
+        identity. Surfaces in three cases:
+          - **OAuth** — IdP returned an unknown identity and the
+            parent `OauthProvider.allow_sign_up` is `true`.
+          - **Magic-link** — `email_link` was answered against an
+            address with no `User`.
+          - **Enterprise SSO** — IdP-asserted identity has no
+            matching `User`; subject to the connection's
+            org-scoped provisioning policy.
       - `complete` — `created_session_id` is set; SDK can stop driving.
       - `abandoned` — `abandon_at` passed; create a new sign-in.
   supported_identifiers:
@@ -240,6 +257,30 @@ properties:
     oneOf:
       - $ref: ./Id.yaml
       - type: "null"
+  transferable_to_signup:
+    type: boolean
+    default: false
+    description: |
+      `true` when `status == "transferable"` and `target_flow ==
+      "sign_up"` — the SDK should bounce to sign-up via
+      `POST /v1/client/sign-ups { transfer: true }`. Convenience
+      flag so consumers don't have to string-compare `target_flow`.
+      `false` otherwise.
+  target_flow:
+    type: [string, "null"]
+    enum: [sign_in, sign_up, null]
+    description: |
+      Populated when `status == "transferable"`. Indicates which
+      flow the SDK should hand the upstream identity off to:
+
+      - `sign_up` — the resolved identity has no matching `User`;
+        SDK posts `POST /v1/client/sign-ups { transfer: true }`.
+      - `sign_in` — reserved for cross-direction handoffs (a SignIn
+        that resolved an identity which should retry a different
+        sign-in path); not used by v0.6's transferable cases but
+        kept in the enum so consumers handle both directions.
+
+      `null` for every other `status` value.
   current_challenge_id:
     description: |
       Pointer to the live `Challenge` if one's in flight. `null` when
@@ -266,3 +307,17 @@ properties:
       visible in the enclosing `Client.sessions[]`.
   abandon_at:
     $ref: ./Timestamp.yaml
+examples:
+  - id: sia_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: sign_in_attempt
+    status: transferable
+    supported_identifiers: [email_address]
+    supported_strategies: []
+    enterprise_connection_id: entcon_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    transferable_to_signup: true
+    target_flow: sign_up
+    current_challenge_id: null
+    identifier: alice@acme.example
+    user_data: {}
+    created_session_id: null
+    abandon_at: 1714724000000
