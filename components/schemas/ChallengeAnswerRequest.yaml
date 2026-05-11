@@ -24,7 +24,14 @@ description: |
     in `xxxx-xxxx` format. The matching row is marked consumed on
     success and can never be reused. Only legal on a `step: "second"`
     Challenge bound to a SignIn.
-  - `signature` is reserved for v0.5 (passkey).
+  - `passkey` — `{ assertion: { id, raw_id, response: { client_data_json,
+    authenticator_data, signature, user_handle }, type } }`. The SDK
+    runs `navigator.credentials.get(challenge.request_options)` and
+    posts the resulting `AuthenticatorAssertionResponse` verbatim,
+    base64url-encoded. The server verifies the signature against
+    the stored public key for the matching `Passkey` row, checks
+    the embedded challenge / origin / RP-ID, and bumps the row's
+    monotonic sign-count.
 
   On a `reset_password_email_code` answer the parent SignIn transitions
   to `needs_new_password`; the caller then creates a fresh `password`
@@ -35,11 +42,22 @@ properties:
   password:  { type: string }
   code:      { type: string }
   ticket:    { type: string }
-  signature:
-    type: string
-    description: Reserved for v0.5 (passkey).
+  assertion:
+    description: |
+      WebAuthn assertion response for `passkey` challenges. Bound
+      to the parent challenge's `request_options.challenge` nonce.
+    $ref: ./PasskeyAssertion.yaml
 examples:
   - { password: "correct horse battery staple" }
   - { code: "542178" }
   - { code: "abcd-efgh" }
   - {}
+  - assertion:
+      id: a2V5LWlk
+      raw_id: a2V5LWlk
+      type: public-key
+      response:
+        client_data_json: eyJ0eXBlIjoid2ViYXV0aG4uZ2V0Iiwi…
+        authenticator_data: SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVz…
+        signature: MEUCIQDH7dy…
+        user_handle: dXNlci1oYW5kbGU

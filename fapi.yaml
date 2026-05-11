@@ -229,6 +229,8 @@ components:
     Passkey:                                   { $ref: ./components/schemas/Passkey.yaml }
     PasskeyCreationOptions:                    { $ref: ./components/schemas/PasskeyCreationOptions.yaml }
     PasskeyAttestation:                        { $ref: ./components/schemas/PasskeyAttestation.yaml }
+    PasskeyRequestOptions:                     { $ref: ./components/schemas/PasskeyRequestOptions.yaml }
+    PasskeyAssertion:                          { $ref: ./components/schemas/PasskeyAssertion.yaml }
     PasskeyBeginRegistrationRequest:           { $ref: ./components/schemas/PasskeyBeginRegistrationRequest.yaml }
     PasskeyCompleteRegistrationRequest:        { $ref: ./components/schemas/PasskeyCompleteRegistrationRequest.yaml }
     PasskeyUpdateRequest:                      { $ref: ./components/schemas/PasskeyUpdateRequest.yaml }

@@ -278,6 +278,16 @@ properties:
     oneOf:
       - $ref: ./PasskeyCreationOptions.yaml
       - type: "null"
+  request_options:
+    description: |
+      Server-built `PublicKeyCredentialRequestOptions` for the
+      passkey *authentication* ceremony. Present on first-factor
+      sign-in / sign-up challenges created with
+      `strategy: "passkey"`; `null` otherwise. Stable for the
+      challenge's lifetime.
+    oneOf:
+      - $ref: ./PasskeyRequestOptions.yaml
+      - type: "null"
   created_at:
     $ref: ./Timestamp.yaml
   updated_at:

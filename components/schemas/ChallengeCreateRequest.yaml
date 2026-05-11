@@ -17,13 +17,18 @@ description: |
   Per-parent legal strategies:
 
   - `SignIn` (first factor) — `password`, `email_code`, `email_link`,
-    `phone_code`, `oauth_<provider_key>`,
+    `phone_code`, `oauth_<provider_key>`, `passkey`,
     `reset_password_email_code`, `ticket`, `transfer`.
     `oauth_<provider_key>` requires `redirect_url` and
     `redirect_url_complete` — the server bakes them into the IdP
     `state` and surfaces the IdP's authorize URL on
     `external_verification_redirect_url`. `step` is server-assigned
-    `first`; OAuth never serves as second factor.
+    `first`; OAuth never serves as second factor. `passkey` needs
+    no extra fields on the body — the server fills
+    `Challenge.request_options` with the WebAuthn ceremony params
+    (allow-credentials derived from the resolved user's verified
+    passkeys); the SDK runs `navigator.credentials.get(...)` and
+    answers with the assertion.
   - `SignIn` (second factor) — `totp`, `backup_code`, `phone_code`.
     Only legal when the parent SignIn is in `needs_second_factor`; the
     server narrows `SignIn.supported_strategies` to the second-factor
@@ -33,10 +38,14 @@ description: |
     `User.primary_phone_number_id`; supply `phone_number_id`
     explicitly to target a different reserved-for-MFA row.
   - `SignUp` — `email_code`, `email_link`, `phone_code`,
-    `oauth_<provider_key>`, `ticket`, `transfer`. Sign-up never gains
-    a second factor — the `phone_code` here is the first-factor
-    phone-attribute path; `oauth_<provider_key>` is the first-factor
-    social-sign-up path (subject to `OauthProvider.allow_sign_up`).
+    `oauth_<provider_key>`, `passkey`, `ticket`, `transfer`. Sign-up
+    never gains a second factor — the `phone_code` here is the
+    first-factor phone-attribute path; `oauth_<provider_key>` is
+    the first-factor social-sign-up path (subject to
+    `OauthProvider.allow_sign_up`). `passkey` on a sign-up parent
+    is used when the identifier already resolves to a user with
+    ≥1 verified passkey — the resulting challenge flips to
+    `transferable` so the SDK bounces to sign-in (PLAN §9.4).
   - `EmailAddress` — `email_code`, `email_link`.
   - `PhoneNumber` — `phone_code`. Used by FAPI
     `/v1/me/phone-numbers/{id}/challenges` to verify additional phone
@@ -50,12 +59,11 @@ properties:
     description: |
       Strategy across all parents:
       `password`, `email_code`, `email_link`, `phone_code`,
-      `oauth_<provider_key>`, `reset_password_email_code`, `ticket`,
-      `transfer`, `domain_dns_txt`, `totp`, `backup_code`.
+      `oauth_<provider_key>`, `passkey`, `reset_password_email_code`,
+      `ticket`, `transfer`, `domain_dns_txt`, `totp`, `backup_code`.
       `oauth_<provider_key>` resolves against the environment's
       `OauthProvider` registry — `<provider_key>` matches
-      `^[a-z][a-z0-9_]*$`. Future strategies (passkey) plug in here
-      without spec changes.
+      `^[a-z][a-z0-9_]*$`.
     examples:
       - password
       - email_code
@@ -69,6 +77,7 @@ properties:
       - domain_dns_txt
       - totp
       - backup_code
+      - passkey
   email_address_id:
     type: string
     description: |
@@ -133,3 +142,4 @@ examples:
   - { strategy: domain_dns_txt }
   - { strategy: totp }
   - { strategy: backup_code }
+  - { strategy: passkey }
