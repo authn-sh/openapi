@@ -1,0 +1,23 @@
+get:
+  operationId: listMyPasskeys
+  summary: List my passkeys
+  description: |
+    Every `Passkey` row registered against the current user. Powers
+    the security tab on `<UserProfile />`.
+
+    The full management surface — registration ceremony, rename,
+    deletion — is documented under this same path prefix and the
+    `{passkey_id}` sub-resources.
+  tags: [Me]
+  security:
+    - client_cookie: []
+    - dev_browser_jwt: []
+  responses:
+    "200":
+      description: My passkeys.
+      content:
+        application/json:
+          schema:
+            type: array
+            items: { $ref: ../../components/schemas/Passkey.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }

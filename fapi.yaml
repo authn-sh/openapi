@@ -136,6 +136,8 @@ paths:
     $ref: ./paths/fapi/me-external-accounts.yaml
   /v1/me/external-accounts/{external_account_id}:
     $ref: ./paths/fapi/me-external-account.yaml
+  /v1/me/passkeys:
+    $ref: ./paths/fapi/me-passkeys.yaml
   /v1/me/sessions:
     $ref: ./paths/fapi/me-sessions.yaml
   /v1/me/change-password:
@@ -216,6 +218,7 @@ components:
     ErrorResponse:                             { $ref: ./components/schemas/ErrorResponse.yaml }
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
     ExternalAccount:                           { $ref: ./components/schemas/ExternalAccount.yaml }
+    Passkey:                                   { $ref: ./components/schemas/Passkey.yaml }
     PhoneNumber:                               { $ref: ./components/schemas/PhoneNumber.yaml }
     PhoneNumberCreateRequest:                  { $ref: ./components/schemas/PhoneNumberCreateRequest.yaml }
     PhoneNumberUpdateRequest:                  { $ref: ./components/schemas/PhoneNumberUpdateRequest.yaml }

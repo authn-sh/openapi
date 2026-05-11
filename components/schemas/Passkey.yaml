@@ -1,0 +1,115 @@
+type: object
+description: |
+  A WebAuthn authenticator credential registered against a `User`. One
+  row per registered authenticator — a user with a hardware key plus a
+  platform authenticator (e.g. Touch ID) has two `Passkey` rows.
+
+  ### Public surface only
+
+  The raw `credential_id` bytes, the COSE-encoded `public_key`, and the
+  authenticator's `sign_count` never appear in any payload. Those are
+  the secret/operational fields the WebAuthn server library reads
+  directly from the database during assertion verification; they're
+  stored encrypted at rest and exposed only inside the server.
+
+  What the SDK sees is the human-facing surface: a `nickname` the user
+  picked, the `transports[]` the authenticator advertised at
+  registration (so the browser can hint the right discovery flow), and
+  an opaque `aaguid` that surfaces the authenticator model when the
+  authenticator chose to attest it.
+
+  ### Identifier
+
+  ID prefix `pkey_` (e.g. `pkey_01HKX9SY9V7H7TF8C8K7J9X4ZA`).
+
+  ### Verification
+
+  A `Passkey` row is created in the unverified state by the registration
+  ceremony's `options` step and flipped to `verified: true` once the
+  matching attestation response is accepted. Unverified rows are
+  garbage-collected if the ceremony is never completed.
+required:
+  - id
+  - object
+  - nickname
+  - transports
+  - aaguid
+  - verified
+  - last_used_at
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: passkey
+  nickname:
+    type: string
+    maxLength: 100
+    description: |
+      User-supplied label so the user can tell their authenticators
+      apart in `<UserProfile />` (`"YubiKey 5C"`, `"MacBook Touch ID"`).
+      Defaults to a server-generated string at registration time if the
+      caller does not supply one.
+  transports:
+    type: array
+    items:
+      type: string
+      enum: [usb, nfc, ble, internal, hybrid]
+    description: |
+      Transports the authenticator advertised at registration. Surfaced
+      verbatim to the browser at assertion time so the WebAuthn UI can
+      hint the right discovery flow (e.g. `internal` for platform
+      authenticators, `usb` for roaming security keys, `hybrid` for
+      cross-device passkey flows). May be empty if the authenticator
+      did not declare any transports.
+  aaguid:
+    type: [string, "null"]
+    format: uuid
+    description: |
+      The Authenticator Attestation GUID — a 128-bit identifier the
+      authenticator chose to disclose, surfacing the authenticator
+      model (e.g. a specific YubiKey SKU, an iCloud Keychain device).
+      `null` when the authenticator returned the zero AAGUID (the
+      common case for platform authenticators that decline to attest a
+      model).
+  verified:
+    type: boolean
+    description: |
+      `true` once the registration ceremony's attestation response was
+      accepted (mirrors `verified_at IS NOT NULL` on the row). `false`
+      while a ceremony is in flight; such rows are garbage-collected if
+      the ceremony is abandoned.
+  last_used_at:
+    description: |
+      Most recent successful assertion (sign-in or step-up) against
+      this credential. `null` until the first successful use after
+      registration.
+    oneOf:
+      - $ref: ./Timestamp.yaml
+      - type: "null"
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - id: pkey_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: passkey
+    nickname: YubiKey 5C
+    transports: [usb, nfc]
+    aaguid: ee882879-721c-4913-9775-3dfcce97072a
+    verified: true
+    last_used_at: 1714896500000
+    created_at: 1714723000000
+    updated_at: 1714896500000
+  - id: pkey_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    object: passkey
+    nickname: MacBook Touch ID
+    transports: [internal, hybrid]
+    aaguid: null
+    verified: true
+    last_used_at: null
+    created_at: 1714724000000
+    updated_at: 1714724000000
