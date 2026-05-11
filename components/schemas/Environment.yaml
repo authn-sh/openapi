@@ -15,6 +15,7 @@ required:
   - localization
   - oauth_providers
   - sms
+  - appearance
   - paths
   - sessions
   - created_at
@@ -210,6 +211,29 @@ properties:
     items:
       type: object
       additionalProperties: true
+  appearance:
+    type: object
+    description: |
+      Operator-configured visual customisation merged with
+      consumer-supplied `appearance` props at render time. Same
+      `Appearance` shape served by BAPI's
+      `GET /v1/instance/appearance`, plus an `etag` so the SDK can
+      cache and short-circuit re-renders.
+    required: [etag]
+    additionalProperties: false
+    properties:
+      etag:
+        type: string
+        description: |
+          `sha256(canonical-JSON(<appearance-without-etag>))`. Stable
+          across reads while the operator's config is unchanged.
+        examples: ["sha256:9c1185a5c5e9fc54612808977ee8f548b2258d31"]
+      variables:
+        $ref: ./Appearance.yaml#/properties/variables
+      elements:
+        $ref: ./Appearance.yaml#/properties/elements
+      layout:
+        $ref: ./Appearance.yaml#/properties/layout
   sms:
     type: object
     description: |

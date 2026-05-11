@@ -178,6 +178,8 @@ paths:
     $ref: ./paths/bapi/instance-restrictions.yaml
   /v1/instance/organization-settings:
     $ref: ./paths/bapi/instance-organization-settings.yaml
+  /v1/instance/appearance:
+    $ref: ./paths/bapi/instance-appearance.yaml
   /v1/oauth-providers:
     $ref: ./paths/bapi/oauth-providers.yaml
   /v1/oauth-providers/{oauth_provider_id}:
@@ -245,6 +247,7 @@ components:
     BlocklistIdentifier:                       { $ref: ./components/schemas/BlocklistIdentifier.yaml }
     RedirectUrl:                               { $ref: ./components/schemas/RedirectUrl.yaml }
     InstanceSettings:                          { $ref: ./components/schemas/InstanceSettings.yaml }
+    Appearance:                                { $ref: ./components/schemas/Appearance.yaml }
     AttributeSetting:                          { $ref: ./components/schemas/AttributeSetting.yaml }
     InstanceUpdateRequest:                     { $ref: ./components/schemas/InstanceUpdateRequest.yaml }
     RestrictionsUpdateRequest:                 { $ref: ./components/schemas/RestrictionsUpdateRequest.yaml }

@@ -226,6 +226,7 @@ components:
     Client:                                    { $ref: ./components/schemas/Client.yaml }
     ClientResponseEnvelope:                    { $ref: ./components/schemas/ClientResponseEnvelope.yaml }
     Environment:                               { $ref: ./components/schemas/Environment.yaml }
+    Appearance:                                { $ref: ./components/schemas/Appearance.yaml }
     Session:                                   { $ref: ./components/schemas/Session.yaml }
     SessionActivity:                           { $ref: ./components/schemas/SessionActivity.yaml }
     SignIn:                                    { $ref: ./components/schemas/SignIn.yaml }

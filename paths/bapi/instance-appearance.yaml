@@ -1,0 +1,110 @@
+get:
+  operationId: getInstanceAppearance
+  summary: Get the appearance configuration
+  description: |
+    Returns the operator-configured `Appearance` for this environment.
+    Missing keys mean "use the SDK default" — an empty `{}` is a
+    completely default-themed install.
+  tags: [Instance]
+  responses:
+    "200":
+      description: Appearance configuration.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Appearance.yaml }
+          examples:
+            default:
+              summary: Defaults — operator has not set anything yet
+              value: {}
+            brand_color_only:
+              summary: Brand-colour override
+              value:
+                variables:
+                  colorPrimary: "#0a84ff"
+                  colorTextOnPrimary: "#ffffff"
+                layout:
+                  socialButtonsPlacement: top
+            full:
+              summary: Full element-class + variables + layout override
+              value:
+                variables:
+                  colorPrimary: "rgb(10 132 255)"
+                  colorBackground: "#0b1220"
+                  colorText: "#e6edf3"
+                  colorTextOnPrimary: "#ffffff"
+                  fontFamily: "Inter, system-ui, sans-serif"
+                  borderRadius: "0.5rem"
+                elements:
+                  card: "shadow-2xl border border-slate-700"
+                  formButtonPrimary: "tracking-wide uppercase"
+                  formFieldInput: "ring-1 ring-slate-700"
+                  headerTitle: "text-2xl"
+                  socialButtonsBlockButton: "border border-slate-700"
+                  footerActionLink: "text-sky-400"
+                layout:
+                  logoImageUrl: "https://cdn.acme.com/logo-dark.svg"
+                  logoLinkUrl: "https://acme.com"
+                  socialButtonsPlacement: bottom
+                  socialButtonsVariant: blockButton
+                  showOptionalFields: false
+                  privacyPageUrl: "https://acme.com/privacy"
+                  termsPageUrl: "https://acme.com/terms"
+                  helpPageUrl: "https://acme.com/help"
+                  animations: true
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+
+put:
+  operationId: replaceInstanceAppearance
+  summary: Replace the appearance configuration
+  description: |
+    Full replacement — any key not present in the request body is
+    cleared back to its default. Emits
+    `instance.config.appearance_updated`.
+  tags: [Instance]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/Appearance.yaml }
+  responses:
+    "200":
+      description: The replaced appearance configuration.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Appearance.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+patch:
+  operationId: updateInstanceAppearance
+  summary: Patch the appearance configuration
+  description: |
+    Deep-merge update — supplied keys overwrite their counterparts in
+    `variables` / `elements` / `layout`; unsupplied keys are left
+    alone. Send a key with an explicit `null` to clear it back to the
+    default. Emits `instance.config.appearance_updated`.
+  tags: [Instance]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/Appearance.yaml }
+        examples:
+          recolor:
+            summary: Update only the primary brand colour
+            value:
+              variables:
+                colorPrimary: "#16a34a"
+                colorTextOnPrimary: "#ffffff"
+  responses:
+    "200":
+      description: The updated appearance configuration.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/Appearance.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
