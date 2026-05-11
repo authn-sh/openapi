@@ -177,11 +177,13 @@ properties:
         sign-up first factor.
       - `oauth_<provider_key>` — first-factor social sign-in / sign-up.
         `<provider_key>` matches a row in the environment's
-        `OauthProvider` registry (`google`, `github`, `apple`,
-        `microsoft`, or any workspace-registered `custom_oidc` /
-        `custom_oauth2` slug). The challenge surfaces the IdP's
-        authorize URL on `external_verification_redirect_url`; the SDK
-        redirects the browser there and resumes via
+        `OauthProvider` registry (presets: `google`, `github`,
+        `apple`, `microsoft`, `discord`, `facebook`, `linkedin`,
+        `x`, `gitlab`, `slack`; or any workspace-registered
+        `custom_oidc` / `custom_oauth2` slug). The challenge
+        surfaces the IdP's authorize URL on
+        `external_verification_redirect_url`; the SDK redirects the
+        browser there and resumes via
         `/v1/oauth-callback/<provider_key>`.
       - `phone_code` — SMS code, served two ways:
           - **First factor on sign-up** (`step: "single"`) when the
@@ -221,6 +223,15 @@ properties:
       - totp
       - backup_code
       - oauth_google
+      - oauth_github
+      - oauth_apple
+      - oauth_microsoft
+      - oauth_discord
+      - oauth_facebook
+      - oauth_linkedin
+      - oauth_x
+      - oauth_gitlab
+      - oauth_slack
       - phone_code
       - passkey
   status:
