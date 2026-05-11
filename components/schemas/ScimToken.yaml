@@ -1,0 +1,94 @@
+type: object
+description: |
+  Bearer token issued to an IdP's SCIM agent. The IdP pastes the
+  plaintext into its provisioning configuration; subsequent IdP-side
+  requests authenticate against `/scim/v2/*` with
+  `Authorization: Bearer <token>`.
+
+  ### Single-shot plaintext
+
+  The full plaintext token is **only** returned by `POST
+  /v1/organizations/{org_id}/scim/tokens` (the issue endpoint), and
+  only on the response body. Every subsequent read exposes the
+  `prefix` only — there is no way to recover the plaintext after the
+  initial response is consumed. Operators must store the value at
+  issue time or rotate.
+
+  ### Identifier prefixes
+
+  - Row id prefix: `scimt_` (e.g.
+    `scimt_01HKX9SY9V7H7TF8C8K7J9X4ZA`).
+  - Plaintext token prefix: `scim_` followed by base32-encoded random
+    bytes (e.g. `scim_ULID0123456789…`).
+required:
+  - id
+  - object
+  - organization_id
+  - name
+  - prefix
+  - created_at
+  - revoked_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: scim_token
+  organization_id:
+    description: |
+      `Organization.id` this token is scoped to. SCIM requests
+      authenticated with this token can only touch users + groups
+      within this org's `EnterpriseConnection`-provisioned
+      population.
+    $ref: ./Id.yaml
+  name:
+    type: string
+    minLength: 1
+    maxLength: 100
+    description: |
+      Operator-chosen label rendered in the dashboard. Useful to
+      tell multiple IdPs apart on the same org.
+  prefix:
+    type: string
+    description: |
+      First 12 characters of the plaintext (`scim_xxxxxxxx`) for
+      operator-visible identification. The remaining bytes are
+      stored as a hash.
+    examples:
+      - "scim_01HKX9SY"
+  token:
+    type: [string, "null"]
+    writeOnly: true
+    description: |
+      Full plaintext token. Populated only on the response to `POST
+      /v1/organizations/{org_id}/scim/tokens`; **never returned by
+      any GET**. `null` on every list / read response.
+    examples:
+      - "scim_01HKX9SYABCDEFGHJKMNPQRSTVWXYZ234567"
+  created_at:
+    $ref: ./Timestamp.yaml
+  revoked_at:
+    description: |
+      Set when `POST /scim/tokens/{id}/revoke` succeeds. Once set,
+      the token is rejected on every `/scim/v2/*` request with
+      `401 invalidVers`. `null` while the token is active.
+    oneOf:
+      - $ref: ./Timestamp.yaml
+      - type: "null"
+examples:
+  - id: scimt_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: scim_token
+    organization_id: org_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    name: Okta — Production
+    prefix: "scim_01HKX9SY"
+    created_at: 1714723000000
+    revoked_at: null
+  - id: scimt_01HKX9SY9V7H7TF8C8K7J9X4ZC
+    object: scim_token
+    organization_id: org_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    name: Okta — Production (rotated)
+    prefix: "scim_01HKX9TT"
+    token: "scim_01HKX9TTABCDEFGHJKMNPQRSTVWXYZ234567"
+    created_at: 1714724000000
+    revoked_at: null

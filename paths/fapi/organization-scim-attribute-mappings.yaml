@@ -1,0 +1,64 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getOrganizationScimAttributeMapping
+  summary: Read the SCIM attribute mapping
+  description: |
+    Returns the per-org `ScimAttributeMapping` (server defaults
+    overridden by the operator).
+
+    **Access**: requires `org:sys_provisioning:read`.
+  tags: [Org SCIM]
+  responses:
+    "200":
+      description: The attribute mapping.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ScimAttributeMapping.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+put:
+  operationId: replaceOrganizationScimAttributeMapping
+  summary: Replace the SCIM attribute mapping
+  description: |
+    Full-resource replace of the override map. Unsupplied keys revert
+    to the server defaults — there is no per-field PATCH.
+
+    **Access**: requires `org:sys_provisioning:manage`.
+  tags: [Org SCIM]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [mapping]
+          additionalProperties: false
+          properties:
+            mapping:
+              type: object
+              additionalProperties: { type: string }
+        examples:
+          okta:
+            value:
+              mapping:
+                userName: email_address
+                name.givenName: first_name
+                name.familyName: last_name
+                externalId: external_id
+  responses:
+    "200":
+      description: The replaced mapping.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ScimAttributeMapping.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

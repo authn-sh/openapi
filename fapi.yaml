@@ -70,6 +70,10 @@ tags:
     description: Pending join requests created by domain auto-suggestion.
   - name: JWKS / OIDC
     description: Public keys and OIDC discovery served per-environment.
+  - name: SCIM
+    description: SCIM 2.0 directory-sync endpoints (RFC 7644). Authenticated via `bearer_scim_token`.
+  - name: Org SCIM
+    description: Per-organization SCIM token + mapping CRUD (admin-facing).
 
 security:
   - client_cookie: []
@@ -194,6 +198,22 @@ paths:
     $ref: ./paths/fapi/organization-enterprise-connection.yaml
   /v1/organizations/{organization_id}/enterprise-connections/{enterprise_connection_id}/test:
     $ref: ./paths/fapi/organization-enterprise-connection-test.yaml
+  /v1/organizations/{organization_id}/scim/tokens:
+    $ref: ./paths/fapi/organization-scim-tokens.yaml
+  /v1/organizations/{organization_id}/scim/tokens/{scim_token_id}/revoke:
+    $ref: ./paths/fapi/organization-scim-token-revoke.yaml
+  /v1/organizations/{organization_id}/scim/attribute-mappings:
+    $ref: ./paths/fapi/organization-scim-attribute-mappings.yaml
+  /v1/organizations/{organization_id}/scim/endpoint:
+    $ref: ./paths/fapi/organization-scim-endpoint.yaml
+  /scim/v2/Users:
+    $ref: ./paths/fapi/scim-users.yaml
+  /scim/v2/Users/{scim_user_id}:
+    $ref: ./paths/fapi/scim-user.yaml
+  /scim/v2/Groups:
+    $ref: ./paths/fapi/scim-groups.yaml
+  /scim/v2/Groups/{scim_group_id}:
+    $ref: ./paths/fapi/scim-group.yaml
   /v1/me/organization-memberships:
     $ref: ./paths/fapi/me-organization-memberships.yaml
   /v1/me/organization-invitations:
@@ -225,6 +245,16 @@ components:
         FAPI host that can't set a SameSite=Lax cookie cross-site (no HTTPS),
         it sends this query-string JWT instead. Production never uses this.
 
+    bearer_scim_token:
+      type: http
+      scheme: bearer
+      bearerFormat: scim_token
+      description: |
+        Per-organization SCIM 2.0 bearer token (`scim_<base32-ULID-bytes>`).
+        Issued by `POST /v1/organizations/{org_id}/scim/tokens`; scope is the
+        organization the token was minted for. Only valid on `/scim/v2/*`
+        endpoints — every other FAPI path rejects this scheme.
+
   schemas:
     Id:                                        { $ref: ./components/schemas/Id.yaml }
     Timestamp:                                 { $ref: ./components/schemas/Timestamp.yaml }
@@ -238,6 +268,13 @@ components:
     EnterpriseConnection:                      { $ref: ./components/schemas/EnterpriseConnection.yaml }
     EnterpriseConnectionRequest:               { $ref: ./components/schemas/EnterpriseConnectionRequest.yaml }
     EnterpriseConnectionTestResult:            { $ref: ./components/schemas/EnterpriseConnectionTestResult.yaml }
+    ScimUser:                                  { $ref: ./components/schemas/ScimUser.yaml }
+    ScimGroup:                                 { $ref: ./components/schemas/ScimGroup.yaml }
+    ScimListResponse:                          { $ref: ./components/schemas/ScimListResponse.yaml }
+    ScimPatchOp:                               { $ref: ./components/schemas/ScimPatchOp.yaml }
+    ScimError:                                 { $ref: ./components/schemas/ScimError.yaml }
+    ScimToken:                                 { $ref: ./components/schemas/ScimToken.yaml }
+    ScimAttributeMapping:                      { $ref: ./components/schemas/ScimAttributeMapping.yaml }
     Passkey:                                   { $ref: ./components/schemas/Passkey.yaml }
     PasskeyCreationOptions:                    { $ref: ./components/schemas/PasskeyCreationOptions.yaml }
     PasskeyAttestation:                        { $ref: ./components/schemas/PasskeyAttestation.yaml }

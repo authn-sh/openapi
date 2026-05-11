@@ -1,0 +1,84 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: listOrganizationScimTokens
+  summary: List SCIM tokens for an organization
+  description: |
+    Returns active and revoked `ScimToken` rows for this org. The
+    full plaintext token is never returned — only `prefix`.
+
+    **Access**: requires `org:sys_provisioning:read`.
+  tags: [Org SCIM]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+  responses:
+    "200":
+      description: A page of SCIM tokens (no plaintext).
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/ScimToken.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+post:
+  operationId: issueOrganizationScimToken
+  summary: Issue a SCIM token
+  description: |
+    Mint a fresh SCIM bearer token scoped to this organization. The
+    response is the **only** time the full plaintext (`token` field)
+    is returned — subsequent reads expose `prefix` only. Operators
+    must capture the value at issue time or rotate.
+
+    **Access**: requires `org:sys_provisioning:manage`.
+  tags: [Org SCIM]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [name]
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 100
+        examples:
+          okta_prod:
+            value: { name: "Okta — Production" }
+  responses:
+    "201":
+      description: The issued SCIM token. `token` plaintext is included **only on this response**.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ScimToken.yaml }
+          examples:
+            issued:
+              value:
+                id: scimt_01HKX9SY9V7H7TF8C8K7J9X4ZA
+                object: scim_token
+                organization_id: org_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                name: "Okta — Production"
+                prefix: "scim_01HKX9SY"
+                token: "scim_01HKX9SYABCDEFGHJKMNPQRSTVWXYZ234567"
+                created_at: 1714723000000
+                revoked_at: null
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

@@ -1,0 +1,109 @@
+type: object
+description: |
+  SCIM 2.0 `User` resource (RFC 7643). Sent to `/scim/v2/Users` by an
+  IdP for directory sync. The server maps incoming SCIM attributes to
+  authn.sh `User` columns per the connection's `ScimAttributeMapping`,
+  then mints / updates / disables the underlying `User` row.
+
+  Only the fields authn.sh consumes or emits are documented here.
+  `additionalProperties: true` because IdPs ship vendor-specific
+  extensions (`urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`,
+  Okta-specific keys, …) and SCIM consumers must tolerate them.
+required: [schemas, userName]
+additionalProperties: true
+properties:
+  schemas:
+    type: array
+    items:
+      type: string
+    description: |
+      Schema URIs the resource conforms to. Always includes
+      `urn:ietf:params:scim:schemas:core:2.0:User`; IdPs add
+      extension URIs after that.
+    examples:
+      - ["urn:ietf:params:scim:schemas:core:2.0:User"]
+      - ["urn:ietf:params:scim:schemas:core:2.0:User", "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"]
+  id:
+    type: string
+    description: |
+      Server-assigned identifier — the underlying `User.id` exposed
+      under its `user_` prefix. Mutable only by the server.
+    examples:
+      - user_01HKX9SY9V7H7TF8C8K7J9X4ZA
+  externalId:
+    type: [string, "null"]
+    description: |
+      IdP-side identifier. Mapped to `User.external_id` so the IdP can
+      look its row up after provisioning.
+  userName:
+    type: string
+    description: |
+      Primary unique handle for the user. Mapped to the resolved
+      primary `email_address` (or `User.username` for IdPs that ship
+      one).
+  name:
+    type: object
+    properties:
+      familyName: { type: string }
+      givenName:  { type: string }
+      formatted:  { type: string }
+  displayName:
+    type: string
+  emails:
+    type: array
+    items:
+      type: object
+      properties:
+        value:   { type: string, format: email }
+        type:    { type: string }
+        primary: { type: boolean }
+  active:
+    type: boolean
+    description: |
+      `true` for active users. Patching to `false` disables the
+      underlying `User` (mirrors `POST /v1/users/{id}/lock` with an
+      indefinite lockout). DELETE on `/scim/v2/Users/{id}` is a hard
+      delete; flipping `active` to `false` is the SCIM-idiomatic
+      deprovision.
+  groups:
+    type: array
+    description: |
+      Group memberships the IdP asserts for this user. Mapped to
+      `OrganizationMembership` rows on the connection's org.
+      Read-only — managed via `/scim/v2/Groups` PATCH operations.
+    items:
+      type: object
+      properties:
+        value:   { type: string }
+        display: { type: string }
+        $ref:    { type: string, format: uri }
+  meta:
+    type: object
+    properties:
+      resourceType: { type: string }
+      created:      { type: string, format: date-time }
+      lastModified: { type: string, format: date-time }
+      location:     { type: string, format: uri }
+examples:
+  - schemas: ["urn:ietf:params:scim:schemas:core:2.0:User"]
+    id: user_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    externalId: "00uabcdEFGHIJKLM2x7"
+    userName: alice@acme.example
+    name:
+      givenName: Alice
+      familyName: Anderson
+      formatted: "Alice Anderson"
+    displayName: "Alice Anderson"
+    emails:
+      - value: alice@acme.example
+        type: work
+        primary: true
+    active: true
+    groups:
+      - value: scimgrp_01HKX9SY9V7H7TF8C8K7J9X4ZB
+        display: Engineering
+    meta:
+      resourceType: User
+      created: "2026-05-11T19:00:00Z"
+      lastModified: "2026-05-11T19:00:00Z"
+      location: https://acme.authn.sh/scim/v2/Users/user_01HKX9SY9V7H7TF8C8K7J9X4ZA

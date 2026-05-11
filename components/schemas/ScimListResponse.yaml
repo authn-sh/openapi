@@ -1,0 +1,40 @@
+type: object
+description: |
+  SCIM 2.0 `ListResponse` envelope (RFC 7644 §3.4.2). Returned by
+  `GET /scim/v2/Users` and `GET /scim/v2/Groups`.
+
+  Distinct from the authn.sh `PaginatedList` envelope — IdPs expect
+  the standard SCIM keys (`totalResults`, `startIndex`,
+  `itemsPerPage`, `Resources`) verbatim.
+required: [schemas, totalResults, Resources]
+additionalProperties: false
+properties:
+  schemas:
+    type: array
+    items: { type: string }
+    description: |
+      Always `["urn:ietf:params:scim:api:messages:2.0:ListResponse"]`.
+    examples:
+      - ["urn:ietf:params:scim:api:messages:2.0:ListResponse"]
+  totalResults:
+    type: integer
+    minimum: 0
+    description: Total number of matching resources across all pages.
+  startIndex:
+    type: integer
+    minimum: 1
+    description: |
+      1-based index of the first row on this page (SCIM uses 1-based
+      pagination, unlike authn.sh's 0-based offsets).
+  itemsPerPage:
+    type: integer
+    minimum: 0
+    description: Count of `Resources` on this page.
+  Resources:
+    type: array
+    description: |
+      The page of resources. Type depends on the listed endpoint
+      (`ScimUser` for `/Users`, `ScimGroup` for `/Groups`).
+    items:
+      type: object
+      additionalProperties: true
