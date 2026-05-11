@@ -17,8 +17,8 @@ description: |
   Per-parent legal strategies:
 
   - `SignIn` (first factor) — `password`, `email_code`, `email_link`,
-    `phone_code`, `oauth_<provider_key>`, `passkey`,
-    `reset_password_email_code`, `ticket`, `transfer`.
+    `phone_code`, `oauth_<provider_key>`, `passkey`, `enterprise_sso`,
+    `saml`, `reset_password_email_code`, `ticket`, `transfer`.
     `oauth_<provider_key>` requires `redirect_url` and
     `redirect_url_complete` — the server bakes them into the IdP
     `state` and surfaces the IdP's authorize URL on
@@ -38,14 +38,17 @@ description: |
     `User.primary_phone_number_id`; supply `phone_number_id`
     explicitly to target a different reserved-for-MFA row.
   - `SignUp` — `email_code`, `email_link`, `phone_code`,
-    `oauth_<provider_key>`, `passkey`, `ticket`, `transfer`. Sign-up
-    never gains a second factor — the `phone_code` here is the
-    first-factor phone-attribute path; `oauth_<provider_key>` is
-    the first-factor social-sign-up path (subject to
-    `OauthProvider.allow_sign_up`). `passkey` on a sign-up parent
-    is used when the identifier already resolves to a user with
-    ≥1 verified passkey — the resulting challenge flips to
-    `transferable` so the SDK bounces to sign-in (PLAN §9.4).
+    `oauth_<provider_key>`, `passkey`, `enterprise_sso`, `saml`,
+    `ticket`, `transfer`. Sign-up never gains a second factor — the
+    `phone_code` here is the first-factor phone-attribute path;
+    `oauth_<provider_key>` is the first-factor social-sign-up path
+    (subject to `OauthProvider.allow_sign_up`). `passkey` on a
+    sign-up parent is used when the identifier already resolves to
+    a user with ≥1 verified passkey — the resulting challenge flips
+    to `transferable` so the SDK bounces to sign-in. `enterprise_sso`
+    / `saml` mint a `User` + `EnterpriseAccount` on a fresh identity
+    or flip to `transferable` when the IdP-asserted identity already
+    has a `User`.
   - `EmailAddress` — `email_code`, `email_link`.
   - `PhoneNumber` — `phone_code`. Used by FAPI
     `/v1/me/phone-numbers/{id}/challenges` to verify additional phone
@@ -59,11 +62,15 @@ properties:
     description: |
       Strategy across all parents:
       `password`, `email_code`, `email_link`, `phone_code`,
-      `oauth_<provider_key>`, `passkey`, `reset_password_email_code`,
-      `ticket`, `transfer`, `domain_dns_txt`, `totp`, `backup_code`.
+      `oauth_<provider_key>`, `passkey`, `enterprise_sso`, `saml`,
+      `reset_password_email_code`, `ticket`, `transfer`,
+      `domain_dns_txt`, `totp`, `backup_code`.
       `oauth_<provider_key>` resolves against the environment's
       `OauthProvider` registry — `<provider_key>` matches
-      `^[a-z][a-z0-9_]*$`.
+      `^[a-z][a-z0-9_]*$`. `enterprise_sso` is identifier-less
+      domain-routed; `saml` requires `enterprise_connection_id` on
+      the body and is only legal for connections with
+      `protocol: "saml"`.
     examples:
       - password
       - email_code
@@ -78,6 +85,8 @@ properties:
       - totp
       - backup_code
       - passkey
+      - enterprise_sso
+      - saml
   email_address_id:
     type: string
     description: |
@@ -116,11 +125,22 @@ properties:
     type: string
     format: uri
     description: |
-      For `oauth_<provider_key>`, the URL the SDK should land the
-      user on after the parent flow finishes successfully (or flips
-      to `transferable`). Must be on the redirect-URL allowlist.
-      Required when `strategy` starts with `oauth_`; ignored
+      For `oauth_<provider_key>` / `enterprise_sso` / `saml`, the
+      URL the SDK should land the user on after the parent flow
+      finishes successfully (or flips to `transferable`). Must be
+      on the redirect-URL allowlist. Required when `strategy` is
+      `oauth_<provider_key>`, `enterprise_sso`, or `saml`; ignored
       otherwise.
+  enterprise_connection_id:
+    type: string
+    description: |
+      Required when `strategy` is `saml` — the
+      `EnterpriseConnection.id` (`entcon_…`) to drive the SAML flow
+      against. Only legal for connections with `protocol: "saml"`.
+      Optional for `enterprise_sso` (omit to let domain routing
+      pick); when supplied for `enterprise_sso` it pins the
+      Challenge to that connection without domain routing.
+      Ignored for every other strategy.
 examples:
   - { strategy: password }
   - { strategy: email_code, email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE }
@@ -143,3 +163,10 @@ examples:
   - { strategy: totp }
   - { strategy: backup_code }
   - { strategy: passkey }
+  - strategy: enterprise_sso
+    redirect_url: https://app.acme.com/sign-in
+    redirect_url_complete: https://app.acme.com/dashboard
+  - strategy: saml
+    enterprise_connection_id: entcon_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    redirect_url: https://app.acme.com/sign-in
+    redirect_url_complete: https://app.acme.com/dashboard

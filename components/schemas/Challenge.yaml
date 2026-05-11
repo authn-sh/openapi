@@ -108,6 +108,7 @@ required:
   - nonce
   - external_verification_redirect_url
   - error
+  - enterprise_connection_id
   - created_at
   - updated_at
 additionalProperties: false
@@ -212,6 +213,20 @@ properties:
         (allowed credentials, RP id, user-verification policy) on
         creation; the SDK runs `navigator.credentials.get(...)` and
         answers with the attestation response.
+      - `enterprise_sso` — generic enterprise-IdP first factor. The
+        server resolves the right `EnterpriseConnection` from the
+        identifier-domain → `EnterpriseConnection.domains[]` lookup,
+        then mints the IdP-side authorize URL (SAML `<AuthnRequest>`
+        on `saml_sso_url` or OIDC `/authorize` on the discovered
+        `authorization_endpoint`) and surfaces it on
+        `external_verification_redirect_url`. The SDK redirects the
+        browser there and resumes at `/v1/saml/{id}/acs` (SAML) or
+        `/v1/enterprise-sso-callback` (OIDC). v0.6+.
+      - `saml` — protocol-specific variant when the SDK already knows
+        the connection (org picker, wizard preview). Caller supplies
+        `enterprise_connection_id` on `ChallengeCreateRequest`; only
+        legal for connections with `protocol: "saml"`. Otherwise
+        identical to `enterprise_sso`. v0.6+.
     examples:
       - password
       - email_code
@@ -234,6 +249,8 @@ properties:
       - oauth_slack
       - phone_code
       - passkey
+      - enterprise_sso
+      - saml
   status:
     type: string
     enum: [pending, verified, transferable, failed, expired]
@@ -288,6 +305,16 @@ properties:
     oneOf:
       - $ref: ./PasskeyRequestOptions.yaml
       - type: "null"
+  enterprise_connection_id:
+    description: |
+      `EnterpriseConnection.id` the challenge resolved against.
+      Populated when `strategy` is `enterprise_sso` (domain-routed
+      resolution) or `saml` (caller-supplied
+      `enterprise_connection_id` on the request body). `null` for
+      every other strategy. v0.6+.
+    oneOf:
+      - $ref: ./Id.yaml
+      - type: "null"
   created_at:
     $ref: ./Timestamp.yaml
   updated_at:
@@ -307,6 +334,7 @@ examples:
     nonce: poll_01HKX9SY9V7H7TF8C8K7J9X4ZF
     external_verification_redirect_url: "https://acme.authn.sh/v1/client/handshake?__authn_ticket=tkt_01HKX9SY9V7H7TF8C8K7J9X4ZG&__authn_status=complete"
     error: null
+    enterprise_connection_id: null
     created_at: 1714723000000
     updated_at: 1714723000000
   - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZE
@@ -323,6 +351,7 @@ examples:
     nonce: null
     external_verification_redirect_url: null
     error: null
+    enterprise_connection_id: null
     created_at: 1714723000000
     updated_at: 1714723500000
   - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZN
@@ -339,6 +368,7 @@ examples:
     nonce: null
     external_verification_redirect_url: null
     error: null
+    enterprise_connection_id: null
     created_at: 1714723000000
     updated_at: 1714723000000
   - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZP
@@ -355,6 +385,7 @@ examples:
     nonce: "authn-domain-verification=01HKX9SY9V7H7TF8C8K7J9X4ZQ"
     external_verification_redirect_url: null
     error: null
+    enterprise_connection_id: null
     created_at: 1714896900000
     updated_at: 1714896900000
   - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZT
@@ -371,6 +402,7 @@ examples:
     nonce: null
     external_verification_redirect_url: null
     error: null
+    enterprise_connection_id: null
     created_at: 1714723000000
     updated_at: 1714723000000
   - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZU
@@ -387,5 +419,40 @@ examples:
     nonce: null
     external_verification_redirect_url: null
     error: null
+    enterprise_connection_id: null
     created_at: 1714723000000
     updated_at: 1714723500000
+  - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZV
+    object: challenge
+    sign_in_id: sia_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    sign_up_id: null
+    email_address_id: null
+    organization_domain_id: null
+    step: first
+    strategy: enterprise_sso
+    status: pending
+    attempts: 0
+    expire_at: 1714724000000
+    nonce: null
+    external_verification_redirect_url: "https://idp.acme.example/saml/sso?SAMLRequest=..."
+    error: null
+    enterprise_connection_id: entcon_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: chal_01HKX9SY9V7H7TF8C8K7J9X4ZW
+    object: challenge
+    sign_in_id: sia_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    sign_up_id: null
+    email_address_id: null
+    organization_domain_id: null
+    step: first
+    strategy: saml
+    status: pending
+    attempts: 0
+    expire_at: 1714724000000
+    nonce: null
+    external_verification_redirect_url: "https://idp.acme.example/saml/sso?SAMLRequest=..."
+    error: null
+    enterprise_connection_id: entcon_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    created_at: 1714723000000
+    updated_at: 1714723000000
