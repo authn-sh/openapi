@@ -7,6 +7,34 @@ post:
     can pick one and create a `Challenge`), or supply an identifier +
     strategy (and password when applicable) to fold the first challenge
     into the create call.
+
+    ### Domain routing to enterprise connections (v0.6)
+
+    When the identifier resolves to an email and the email's domain
+    matches at least one verified `OrganizationDomain` whose org has a
+    reachable `EnterpriseConnection` (the connection's `domains[]`
+    includes the same name), the server applies enterprise-SSO
+    routing:
+
+    - **Exactly one matching connection** —
+      `SignIn.supported_strategies` narrows to `["enterprise_sso"]`
+      and `SignIn.enterprise_connection_id` is populated. The SDK
+      issues a `Challenge` with `strategy: "enterprise_sso"` and
+      follows `external_verification_redirect_url`.
+    - **Multiple matching connections** — all reachable connections
+      surface; `supported_strategies` includes `enterprise_sso` plus
+      one `saml` entry per `protocol: "saml"` connection so the SDK
+      can pick. `SignIn.enterprise_connection_id` stays `null` until
+      the SDK picks one (issuing a `Challenge` with
+      `strategy: "saml"` and an explicit
+      `enterprise_connection_id` body field).
+    - **No matching connection** — domain routing is a no-op;
+      `supported_strategies` reflects the environment's
+      `auth_config` as usual.
+
+    Domain routing is independent of `OrganizationDomain.enrollment_mode`
+    — that field gates the post-sign-up membership side-effect, not
+    sign-in steering.
   tags: [Sign-Ins]
   security:
     - client_cookie: []
