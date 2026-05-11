@@ -6,10 +6,10 @@ description: |
   (banned, locked), the lifecycle timestamps, and the three flavours of
   metadata.
 
-  External accounts, enterprise accounts, and passkeys are present in
-  the shape today (as empty arrays before their respective milestones
-  ship) so SDKs can generate stable types up front; the corresponding
-  endpoints land in later milestones (v0.5 / v0.6).
+  External accounts and passkeys are populated by their respective
+  endpoints (`/v1/me/external-accounts`, `/v1/me/passkeys`). Enterprise
+  accounts is reserved for v0.6 and stays an empty array until that
+  milestone ships.
 required:
   - id
   - object
@@ -18,6 +18,7 @@ required:
   - external_accounts
   - enterprise_accounts
   - passkeys
+  - passkey_count
   - has_image
   - password_enabled
   - two_factor_enabled
@@ -97,10 +98,19 @@ properties:
   passkeys:
     type: array
     description: |
-      Reserved for v0.5 (WebAuthn). Always `[]` in v0.1.
+      WebAuthn credentials registered against this user. One row per
+      authenticator — a user with a hardware key plus a platform
+      authenticator (e.g. Touch ID) has two entries. Empty until the
+      user enrolls their first passkey via `/v1/me/passkeys`.
     items:
-      type: object
-      additionalProperties: true
+      $ref: "./Passkey.yaml"
+  passkey_count:
+    type: integer
+    minimum: 0
+    description: |
+      Count of `passkeys[]`. Surfaced separately so UI badges
+      (`<UserButton />`, `<UserProfile />` security tab) can render
+      without forcing the full list to be loaded on cold paths.
   password_enabled:
     type: boolean
     description: |

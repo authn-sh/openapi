@@ -14,7 +14,8 @@ description: |
   + `ticket`. v0.2 adds `email_link` (magic link). v0.3 layers MFA on
   top via the `needs_second_factor` step. v0.4 adds
   `oauth_<provider_key>` for first-factor social sign-in (see below).
-  SAML / passkey land in later milestones.
+  v0.5 adds `passkey` (WebAuthn) as an identifier-less first-factor
+  strategy alongside OAuth. SAML lands in a later milestone.
 
   ### OAuth first-factor flow (v0.4, PLAN §9.3 + §9.4)
 
@@ -153,7 +154,8 @@ properties:
         `reset_password_email_code`, `ticket`, plus an
         `oauth_<provider_key>` entry for every enabled `OauthProvider`
         row with `allow_sign_in: true` (e.g. `oauth_google`,
-        `oauth_acme_corp_sso`). The OAuth entries surface
+        `oauth_acme_corp_sso`), plus `passkey` when the environment
+        has WebAuthn enabled. The OAuth and `passkey` entries surface
         independently of the supplied `identifier` — they're
         identifier-less.
       - `needs_second_factor` — narrowed to second-factor strategies
@@ -170,7 +172,7 @@ properties:
       currently-listed value on the next `POST .../challenges`.
     examples:
       - [password, email_code, email_link, reset_password_email_code]
-      - [password, email_code, oauth_google, oauth_github]
+      - [password, email_code, oauth_google, oauth_github, passkey]
       - [totp, backup_code]
       - [totp]
       - [backup_code]

@@ -204,8 +204,12 @@ properties:
         signed-in user.
       - `domain_dns_txt`, `email_code` — organization-domain
         verification.
-
-      Future strategies (passkey) plug in here without spec changes.
+      - `passkey` — WebAuthn assertion against an enrolled `Passkey`.
+        First factor on `SignIn` (`step: "first"`). The challenge
+        surfaces the server-issued PublicKeyCredentialRequestOptions
+        (allowed credentials, RP id, user-verification policy) on
+        creation; the SDK runs `navigator.credentials.get(...)` and
+        answers with the attestation response.
     examples:
       - password
       - email_code

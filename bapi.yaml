@@ -230,6 +230,7 @@ components:
     EmailAddress:                              { $ref: ./components/schemas/EmailAddress.yaml }
     ExternalAccount:                           { $ref: ./components/schemas/ExternalAccount.yaml }
     PhoneNumber:                               { $ref: ./components/schemas/PhoneNumber.yaml }
+    Passkey:                                   { $ref: ./components/schemas/Passkey.yaml }
     User:                                      { $ref: ./components/schemas/User.yaml }
     UserCreateRequest:                         { $ref: ./components/schemas/UserCreateRequest.yaml }
     UserUpdateRequest:                         { $ref: ./components/schemas/UserUpdateRequest.yaml }

@@ -43,6 +43,7 @@ get:
                 external_accounts: []
                 enterprise_accounts: []
                 passkeys: []
+                passkey_count: 0
                 password_enabled: true
                 two_factor_enabled: false
                 totp_enabled: false
