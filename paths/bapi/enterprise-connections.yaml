@@ -1,0 +1,102 @@
+get:
+  operationId: listEnterpriseConnections
+  summary: List enterprise connections
+  description: |
+    Paginated list of every `EnterpriseConnection` row configured on
+    the environment, regardless of `enabled` state. Includes both
+    instance-wide (`organization_id: null`) and org-scoped rows by
+    default; filter with `organization_id` to narrow down.
+  tags: [Enterprise Connections]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+    - name: organization_id
+      in: query
+      required: false
+      description: |
+        Filter by scope. Supply an `Organization.id` to return only
+        rows scoped to that org. Supply the literal string `null` to
+        return only instance-wide rows. Omit to return both.
+      schema:
+        type: string
+  responses:
+    "200":
+      description: A page of enterprise connections.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/EnterpriseConnection.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+
+post:
+  operationId: createEnterpriseConnection
+  summary: Create an instance-wide enterprise connection
+  description: |
+    Register an instance-wide `EnterpriseConnection`. Two protocols:
+
+    - `saml` — operator supplies `saml_idp_entity_id`, `saml_sso_url`,
+      and `saml_idp_certificate`. `saml_signing_algorithm` defaults to
+      `RSA_SHA256`. The server computes `saml_acs_url` and
+      `saml_sp_entity_id` from the new row's id and returns them on
+      the response — register both with the IdP.
+    - `oidc` — operator supplies `oidc_issuer` and `oidc_client_id`.
+      The server fetches `<oidc_issuer>/.well-known/openid-configuration`
+      and populates `oidc_discovery_endpoint`. The computed
+      `oidc_redirect_uri` is returned — register it with the IdP.
+      `oidc_client_secret` is required unless the IdP supports
+      PKCE-only public clients.
+
+    This path is **instance-wide only** — `organization_id` is rejected
+    on POST through the BAPI. Per-org connections are created through
+    the FAPI at
+    `POST /v1/organizations/{org_id}/enterprise-connections`, gated
+    by the `org:sys_sso:manage` permission on the calling user's
+    membership.
+
+    All write-only secrets (`oidc_client_secret`, `saml_signing_key`)
+    are encrypted at rest and never returned by any GET.
+  tags: [Enterprise Connections]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/EnterpriseConnectionRequest.yaml }
+        examples:
+          saml_workspace_wide:
+            summary: Instance-wide SAML
+            value:
+              protocol: saml
+              name: Workspace-wide Okta
+              organization_id: null
+              domains: ["staff.example"]
+              saml_idp_entity_id: https://staff-corp.okta.com/saml2/metadata
+              saml_sso_url: https://staff-corp.okta.com/sso/saml
+              saml_idp_certificate: "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----"
+          oidc_workspace_wide:
+            summary: Instance-wide OIDC
+            value:
+              protocol: oidc
+              name: Workspace-wide Okta
+              organization_id: null
+              domains: ["staff.example"]
+              oidc_issuer: https://staff-corp.okta.com
+              oidc_client_id: 0oa1abcdEFGHIJKLM2x7
+              oidc_client_secret: shhhh
+              oidc_scopes: [openid, profile, email, groups]
+  responses:
+    "201":
+      description: The created enterprise connection.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/EnterpriseConnection.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
