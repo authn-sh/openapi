@@ -1,0 +1,164 @@
+type: object
+description: |
+  Request body for `POST /v1/enterprise-connections` and
+  `PATCH /v1/enterprise-connections/{id}`. Mirrors `EnterpriseConnection`
+  minus the server-computed fields (`id`, `object`, `saml_acs_url`,
+  `saml_sp_entity_id`, `oidc_redirect_uri`, `created_at`, `updated_at`)
+  and adds the write-only secrets (`oidc_client_secret`,
+  `saml_signing_key`).
+
+  ### POST vs PATCH
+
+  - On `POST`, `protocol`, `name` are always required.
+    `organization_id` is required (use `null` for instance-wide).
+    For `protocol: "saml"` the operator must supply `saml_idp_entity_id`,
+    `saml_sso_url`, and `saml_idp_certificate`.
+    For `protocol: "oidc"` the operator must supply `oidc_issuer` and
+    `oidc_client_id`. `oidc_client_secret` is required on `POST` unless
+    the IdP supports PKCE-only public clients.
+  - On `PATCH`, every field is optional. `protocol` and
+    `organization_id` are immutable — sending a different value returns
+    `422`.
+
+  ### Write-only secrets
+
+  - `oidc_client_secret` — OIDC client secret. Omit on PATCH to leave
+    the stored value unchanged. Send `null` on PATCH to clear it (when
+    migrating to PKCE).
+  - `saml_signing_key` — PEM-encoded private key the SP uses to sign
+    SAML AuthnRequests / LogoutRequests. Optional on POST (the platform
+    can generate one on demand). Omit on PATCH to keep the stored key;
+    send `null` to clear and regenerate.
+
+  Both fields are encrypted at rest and never returned by any response.
+additionalProperties: false
+properties:
+  protocol:
+    type: string
+    enum: [saml, oidc]
+    description: |
+      Required on `POST`; immutable on `PATCH`.
+  name:
+    type: string
+    minLength: 1
+    maxLength: 100
+  enabled:
+    type: boolean
+    default: true
+  organization_id:
+    type: [string, "null"]
+    description: |
+      Required on `POST` (use `null` for instance-wide). Immutable on
+      `PATCH`.
+  domains:
+    type: array
+    items:
+      type: string
+      format: hostname
+    description: |
+      Verified domains routed to this connection. Each entry must
+      already exist as a verified `OrganizationDomain` (org-scoped
+      connections) or workspace-verified domain (instance-wide). Sending
+      an unverified domain returns `422 enterprise_connection_domain_unverified`.
+  default_role:
+    type: string
+    description: |
+      `Role.key` assigned to JIT-provisioned `OrganizationMembership`
+      rows. Defaults to `org:member`. Ignored for instance-wide
+      connections.
+  attribute_mapping:
+    type: object
+    additionalProperties:
+      type: string
+    description: |
+      Override the server-supplied defaults. Keys: `email_address`,
+      `first_name`, `last_name`, `provider_user_id`, `organization_role`.
+  saml_idp_entity_id:
+    type: [string, "null"]
+    description: |
+      Required on `POST` for `protocol: "saml"`. `null` for OIDC.
+  saml_sso_url:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Required on `POST` for `protocol: "saml"`. `null` for OIDC.
+  saml_idp_certificate:
+    type: [string, "null"]
+    description: |
+      PEM-encoded X.509 certificate. Required on `POST` for
+      `protocol: "saml"`. `null` for OIDC.
+  saml_signing_algorithm:
+    type: [string, "null"]
+    enum: [RSA_SHA256, RSA_SHA384, RSA_SHA512, null]
+    description: |
+      Defaults to `RSA_SHA256` for SAML connections.
+  saml_audience_uri:
+    type: [string, "null"]
+    description: |
+      Defaults to the computed `saml_sp_entity_id`. Override for IdPs
+      that pin audience to a custom URI.
+  saml_signing_key:
+    type: [string, "null"]
+    writeOnly: true
+    description: |
+      Write-only. PEM-encoded private key for signing AuthnRequests /
+      LogoutRequests. Optional on POST (platform generates one when
+      omitted). Send `null` on PATCH to clear and regenerate.
+  oidc_issuer:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Required on `POST` for `protocol: "oidc"`. `null` for SAML.
+  oidc_discovery_endpoint:
+    type: [string, "null"]
+    format: uri
+    description: |
+      Optional override for `<oidc_issuer>/.well-known/openid-configuration`.
+  oidc_client_id:
+    type: [string, "null"]
+    description: |
+      Required on `POST` for `protocol: "oidc"`. `null` for SAML.
+  oidc_client_secret:
+    type: [string, "null"]
+    writeOnly: true
+    maxLength: 1024
+    description: |
+      Write-only OIDC client secret. Required on `POST` for
+      `protocol: "oidc"` unless the IdP supports PKCE-only public
+      clients. Omit on PATCH to keep the stored value; send `null` to
+      clear it. Encrypted at rest; never returned.
+  oidc_scopes:
+    type: array
+    items:
+      type: string
+    description: |
+      Overrides the default `["openid", "profile", "email"]` for OIDC
+      connections.
+examples:
+  - protocol: saml
+    name: Acme Okta
+    organization_id: org_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    domains: ["acme.example"]
+    saml_idp_entity_id: https://idp.acme.example/saml/metadata
+    saml_sso_url: https://idp.acme.example/saml/sso
+    saml_idp_certificate: "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----"
+    attribute_mapping:
+      email_address: "urn:oid:0.9.2342.19200300.100.1.3"
+      provider_user_id: nameid
+  - protocol: oidc
+    name: Acme Azure AD
+    organization_id: org_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    domains: ["acme.example", "acme-corp.example"]
+    oidc_issuer: https://login.microsoftonline.com/acme-tenant/v2.0
+    oidc_client_id: 11111111-2222-3333-4444-555555555555
+    oidc_client_secret: shhhh
+    oidc_scopes: ["openid", "profile", "email"]
+  - protocol: oidc
+    name: Workspace-wide Okta
+    organization_id: null
+    domains: ["staff.example"]
+    oidc_issuer: https://staff-corp.okta.com
+    oidc_client_id: 0oa1abcdEFGHIJKLM2x7
+    oidc_client_secret: shhhh
+    oidc_scopes: ["openid", "profile", "email", "groups"]
+    default_role: org:member

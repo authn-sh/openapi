@@ -283,6 +283,8 @@ components:
     OauthProvider:                             { $ref: ./components/schemas/OauthProvider.yaml }
     OauthProviderRequest:                      { $ref: ./components/schemas/OauthProviderRequest.yaml }
     OauthProviderTestResult:                   { $ref: ./components/schemas/OauthProviderTestResult.yaml }
+    EnterpriseConnection:                      { $ref: ./components/schemas/EnterpriseConnection.yaml }
+    EnterpriseConnectionRequest:               { $ref: ./components/schemas/EnterpriseConnectionRequest.yaml }
     SmsTemplate:                               { $ref: ./components/schemas/SmsTemplate.yaml }
     SmsTemplateRequest:                        { $ref: ./components/schemas/SmsTemplateRequest.yaml }
 
