@@ -1,9 +1,25 @@
 type: object
 description: |
   A domain attached to an `Organization`. Once verified, drives
-  domain-based enrollment — depending on `enrollment_mode`, sign-ups
-  with a matching email get an automatic invitation, an automatic
-  membership-request suggestion, or nothing at all.
+  domain-based enrollment and (v0.6+) enterprise-SSO routing.
+
+  ### Enrollment vs SSO routing
+
+  The two behaviours are independent and can stack:
+
+  - **Enrollment** (`enrollment_mode`) controls what happens to a
+    user whose sign-up email matches the domain. Three modes: no-op,
+    auto-invitation, auto-suggestion.
+  - **SSO routing** (v0.6) — separately, when the org has at least
+    one verified `EnterpriseConnection` whose `domains[]` includes
+    this row's `name`, a sign-in whose identifier domain matches is
+    routed to that connection. The server narrows the resolved
+    `SignIn.supported_strategies` to `["enterprise_sso"]` and
+    populates `SignIn.enterprise_connection_id`. Ambiguous matches
+    (multiple connections claim the same domain) surface all
+    options on the SignIn so the SDK can prompt; see OA-3 errors
+    `enterprise_sso_no_connection` /
+    `enterprise_sso_multiple_connections`.
 
   Verification runs through a `Challenge` against
   `/v1/organizations/{org}/domains/{id}/challenges`. The proof channel
@@ -58,13 +74,28 @@ properties:
       - automatic_invitation
       - automatic_suggestion
     description: |
-      - `manual_invitation` — domain match has no effect on sign-up;
-        members must be invited explicitly.
-      - `automatic_invitation` — sign-ups with a matching email
-        skip the invitation step and join as `default_role`.
+      Gates the post-sign-up enrollment side-effect for matches on
+      this domain. Independent of enterprise-SSO routing — that's
+      driven by `EnterpriseConnection.domains[]` and applies at
+      sign-in time, not sign-up.
+
+      - `manual_invitation` — domain match grants no membership on
+        sign-up. Members must be invited explicitly via
+        `OrganizationInvitation`. For sign-ins routed through an
+        enterprise connection (v0.6), the resulting `User` still
+        lands without an `OrganizationMembership` in this mode —
+        the connection's `default_role` is ignored.
+      - `automatic_invitation` — first sign-up under this domain
+        auto-creates an `OrganizationInvitation` that immediately
+        resolves to an `OrganizationMembership` at the org's
+        default role. For enterprise-SSO sign-ins, the JIT-
+        provisioned membership uses the connection's `default_role`.
       - `automatic_suggestion` — sign-ups with a matching email get
         an `OrganizationMembershipRequest` row that an admin must
-        approve.
+        approve via `POST .../membership-requests/{id}/accept`.
+        For enterprise-SSO sign-ins, the membership request is
+        still minted (admin approval is required even though the
+        IdP asserted the identity).
   affiliation_email_address:
     type: [string, "null"]
     format: email
