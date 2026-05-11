@@ -1,0 +1,215 @@
+type: object
+description: |
+  Operator-configured visual customisation for the bundled
+  components (`<SignIn />`, `<SignUp />`, `<UserProfile />`, …).
+  Configured once per environment via BAPI; the SDK reads the live
+  copy from `GET /v1/environment` and merges with consumer-supplied
+  props at render time.
+
+  ### Three-axis customisation
+
+  - `variables` — CSS design tokens (colours, fonts, sizing). Loose
+    string typing — the server doesn't validate hex vs. `rgb()` vs.
+    named colours, just round-trips whatever the operator wrote.
+    Tokens are applied as CSS custom properties on the component
+    root.
+  - `elements` — className override map keyed by stable element
+    names. Values are space-separated className strings the SDK
+    appends to the default class list, so consumers can layer their
+    Tailwind / utility classes on top without owning the markup.
+  - `layout` — structural toggles (logo URL, social-buttons
+    placement, optional-field visibility, animation opt-out).
+
+  Every block is optional and partially-specified; SDKs treat
+  missing keys as "use the default".
+
+  ### ETag
+
+  The `/v1/environment` response wraps this shape with an `etag` so
+  the SDK can short-circuit re-renders when the config hasn't
+  changed. `etag = sha256(canonical-JSON(appearance))`.
+additionalProperties: false
+properties:
+  variables:
+    type: object
+    description: |
+      CSS design-token map applied as custom properties on the
+      component root. Every value is a free-form CSS string —
+      `"#0a84ff"`, `"rgb(10 132 255)"`, `"royalblue"`, `"1rem"`,
+      `"system-ui, sans-serif"` are all valid.
+    additionalProperties: false
+    properties:
+      colorPrimary:
+        type: string
+        description: Primary brand accent (buttons, focus rings, links).
+      colorBackground:
+        type: string
+        description: Card / surface background.
+      colorText:
+        type: string
+        description: Default body text colour.
+      colorTextOnPrimary:
+        type: string
+        description: Text colour rendered on top of `colorPrimary` (e.g. primary button labels).
+      colorInputBackground:
+        type: string
+        description: Form input background.
+      colorInputText:
+        type: string
+        description: Form input text colour.
+      colorDanger:
+        type: string
+        description: Destructive / error accent (delete buttons, validation errors).
+      colorSuccess:
+        type: string
+        description: Success accent (verified states, success banners).
+      colorWarning:
+        type: string
+        description: Warning accent (pending verification, caution banners).
+      colorNeutral:
+        type: string
+        description: Neutral accent (secondary buttons, muted text).
+      fontFamily:
+        type: string
+        description: Default font family for body copy.
+      fontFamilyButtons:
+        type: string
+        description: Override for button typography. Falls back to `fontFamily`.
+      fontSize:
+        type: string
+        description: Base font size (e.g. `"14px"`, `"1rem"`).
+      borderRadius:
+        type: string
+        description: Component corner radius.
+      spacingUnit:
+        type: string
+        description: Spacing scale unit; multiplied for padding/gap.
+  elements:
+    type: object
+    description: |
+      Per-element className override map. Keys are stable element
+      names exposed by the SDK; values are space-separated className
+      strings appended to the default class list. Unknown keys are
+      ignored.
+    additionalProperties:
+      type: string
+    properties:
+      formButtonPrimary:           { type: string }
+      formButtonReset:             { type: string }
+      formFieldInput:              { type: string }
+      formFieldLabel:              { type: string }
+      formFieldErrorText:          { type: string }
+      card:                        { type: string }
+      headerTitle:                 { type: string }
+      headerSubtitle:              { type: string }
+      dividerLine:                 { type: string }
+      dividerText:                 { type: string }
+      socialButtonsBlockButton:    { type: string }
+      socialButtonsProviderIcon:   { type: string }
+      footerActionLink:            { type: string }
+      userPreviewMainIdentifier:   { type: string }
+      userPreviewSecondaryIdentifier: { type: string }
+      userButtonAvatarBox:         { type: string }
+      userButtonPopoverActionButton: { type: string }
+  layout:
+    type: object
+    description: Structural toggles applied to the component shell.
+    additionalProperties: false
+    properties:
+      logoImageUrl:
+        type: [string, "null"]
+        format: uri
+        description: |
+          Image rendered above the card title. `null` to hide the
+          logo entirely (the operator's brand probably lives outside
+          the component).
+      logoLinkUrl:
+        type: [string, "null"]
+        format: uri
+        description: |
+          Where the logo links to when clicked. Defaults to the
+          environment `home_url`.
+      socialButtonsPlacement:
+        type: string
+        enum: [top, bottom]
+        default: top
+        description: |
+          Render the OAuth provider buttons above (`top`) or below
+          (`bottom`) the identifier form.
+      socialButtonsVariant:
+        type: string
+        enum: [blockButton, iconButton]
+        default: blockButton
+        description: |
+          `blockButton` — labelled "Continue with Google" buttons
+          stacked vertically. `iconButton` — icon-only buttons laid
+          out horizontally.
+      showOptionalFields:
+        type: boolean
+        default: true
+        description: |
+          When `false`, fields the environment marks as `optional`
+          (e.g. `first_name`, `last_name`) are hidden on the sign-up
+          form.
+      privacyPageUrl:
+        type: [string, "null"]
+        format: uri
+        description: Linked from the footer / sign-up legal copy.
+      termsPageUrl:
+        type: [string, "null"]
+        format: uri
+        description: Linked from the footer / sign-up legal copy.
+      helpPageUrl:
+        type: [string, "null"]
+        format: uri
+        description: Linked from the help affordance in `<UserProfile />`.
+      animations:
+        type: boolean
+        default: true
+        description: |
+          When `false`, the SDK uses `prefers-reduced-motion`-style
+          static styling regardless of the user agent's setting.
+          Useful for embedded contexts where animation chrome is
+          distracting.
+examples:
+  - {}
+  - variables:
+      colorPrimary: "#0a84ff"
+      colorTextOnPrimary: "#ffffff"
+      borderRadius: "0.5rem"
+    layout:
+      socialButtonsPlacement: top
+      animations: true
+  - variables:
+      colorPrimary: "rgb(10 132 255)"
+      colorBackground: "#0b1220"
+      colorText: "#e6edf3"
+      colorTextOnPrimary: "#ffffff"
+      colorInputBackground: "#111827"
+      colorInputText: "#e6edf3"
+      colorDanger: "#f87171"
+      colorSuccess: "#34d399"
+      colorWarning: "#fbbf24"
+      colorNeutral: "#9ca3af"
+      fontFamily: "Inter, system-ui, sans-serif"
+      fontFamilyButtons: "Inter, system-ui, sans-serif"
+      fontSize: "14px"
+      borderRadius: "0.5rem"
+      spacingUnit: "0.25rem"
+    elements:
+      card: "shadow-2xl border border-slate-700"
+      formButtonPrimary: "tracking-wide uppercase"
+      formFieldInput: "ring-1 ring-slate-700"
+      headerTitle: "text-2xl"
+      socialButtonsBlockButton: "border border-slate-700"
+      footerActionLink: "text-sky-400"
+    layout:
+      logoImageUrl: "https://cdn.acme.com/logo-dark.svg"
+      logoLinkUrl: "https://acme.com"
+      socialButtonsPlacement: bottom
+      socialButtonsVariant: blockButton
+      showOptionalFields: false
+      privacyPageUrl: "https://acme.com/privacy"
+      termsPageUrl: "https://acme.com/terms"
+      helpPageUrl: "https://acme.com/help"
+      animations: true
