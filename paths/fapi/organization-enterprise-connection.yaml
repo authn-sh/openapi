@@ -1,0 +1,80 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    description: ID of the organization.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+  - name: enterprise_connection_id
+    in: path
+    required: true
+    description: ID of the enterprise connection.
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getOrganizationEnterpriseConnection
+  summary: Get an enterprise connection
+  description: |
+    Fetch a single `EnterpriseConnection` row scoped to this org.
+    Returns `404` when the row exists but is scoped to a different
+    org or is instance-wide. Write-only secrets are never included.
+
+    **Access**: requires `org:sys_sso:read`.
+  tags: [Org Enterprise Connections]
+  responses:
+    "200":
+      description: The enterprise connection.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/EnterpriseConnection.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateOrganizationEnterpriseConnection
+  summary: Update an enterprise connection
+  description: |
+    Partial update — same shape as the BAPI surface. `protocol` and
+    `organization_id` are immutable; every other field is optional.
+
+    **Access**: requires `org:sys_sso:manage`.
+  tags: [Org Enterprise Connections]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/EnterpriseConnectionRequest.yaml }
+        examples:
+          disable:
+            summary: Pause without deleting
+            value: { enabled: false }
+          rotate_oidc_secret:
+            summary: Rotate the OIDC client secret
+            value: { oidc_client_secret: new-shhhh }
+  responses:
+    "200":
+      description: The updated enterprise connection.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/EnterpriseConnection.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteOrganizationEnterpriseConnection
+  summary: Delete an enterprise connection
+  description: |
+    Soft delete. Refuses (`409 enterprise_connection_in_use`) when any
+    `EnterpriseAccount` rows still link.
+
+    **Access**: requires `org:sys_sso:manage`.
+  tags: [Org Enterprise Connections]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "403": { $ref: ../../components/responses/Forbidden.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
