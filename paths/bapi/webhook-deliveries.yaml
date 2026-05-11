@@ -64,4 +64,68 @@ get:
                     succeeded: false
                     created_at: 1714896500000
                 total_count: 1
+            enterprise_connection_created:
+              summary: enterpriseConnection.created delivery
+              value:
+                data:
+                  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZQ
+                    object: webhook_delivery
+                    endpoint_id: whe_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                    event_id: evt_01HKX9SY9V7H7TF8C8K7J9X4ZN
+                    event_type: enterpriseConnection.created
+                    attempt: 1
+                    response_status: 200
+                    response_body: '{"ok":true}'
+                    next_retry_at: null
+                    succeeded: true
+                    created_at: 1714896500000
+                total_count: 1
+            enterprise_account_connected:
+              summary: enterpriseAccount.connected delivery
+              value:
+                data:
+                  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZR
+                    object: webhook_delivery
+                    endpoint_id: whe_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                    event_id: evt_01HKX9SY9V7H7TF8C8K7J9X4ZP
+                    event_type: enterpriseAccount.connected
+                    attempt: 1
+                    response_status: 200
+                    response_body: '{"ok":true}'
+                    next_retry_at: null
+                    succeeded: true
+                    created_at: 1714896600000
+                total_count: 1
+            scim_token_issued:
+              summary: scimToken.issued delivery
+              value:
+                data:
+                  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZS
+                    object: webhook_delivery
+                    endpoint_id: whe_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                    event_id: evt_01HKX9SY9V7H7TF8C8K7J9X4ZQ
+                    event_type: scimToken.issued
+                    attempt: 1
+                    response_status: 200
+                    response_body: '{"ok":true}'
+                    next_retry_at: null
+                    succeeded: true
+                    created_at: 1714896700000
+                total_count: 1
+            scim_user_provisioned:
+              summary: scimUser.provisioned delivery
+              value:
+                data:
+                  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZT
+                    object: webhook_delivery
+                    endpoint_id: whe_01HKX9SY9V7H7TF8C8K7J9X4ZH
+                    event_id: evt_01HKX9SY9V7H7TF8C8K7J9X4ZR
+                    event_type: scimUser.provisioned
+                    attempt: 1
+                    response_status: 200
+                    response_body: '{"ok":true}'
+                    next_retry_at: null
+                    succeeded: true
+                    created_at: 1714896800000
+                total_count: 1
     "401": { $ref: ../../components/responses/Unauthorized.yaml }
