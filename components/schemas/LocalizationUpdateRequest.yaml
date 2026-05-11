@@ -1,0 +1,27 @@
+type: object
+description: |
+  Body for `PATCH /v1/instance/localization`. Every field is optional.
+
+  - `default_locale` / `fallback_locale` — scalar replace when supplied.
+  - `supported_locales[]` — full-array replace when supplied.
+  - `overrides[locale]` — per-key merge. The inner map merges
+    key-by-key into the existing locale's overrides; sending a
+    string overwrites that key, sending `null` removes it (the SDK
+    falls back to the canonical default). Unknown dot-keyed paths
+    are rejected with `unknown_localization_key`.
+additionalProperties: false
+properties:
+  default_locale:
+    type: string
+  fallback_locale:
+    type: string
+  supported_locales:
+    type: array
+    items:
+      type: string
+  overrides:
+    type: object
+    additionalProperties:
+      type: object
+      additionalProperties:
+        type: [string, "null"]

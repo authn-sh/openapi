@@ -1,0 +1,100 @@
+parameters:
+  - name: locale
+    in: path
+    required: true
+    description: BCP-47 locale tag (e.g. `en-US`, `pt-BR`).
+    schema:
+      type: string
+      examples: ["en-US", "pt-BR"]
+
+get:
+  operationId: getLocalizationCatalog
+  summary: Get a merged localization catalog
+  description: |
+    Public, unauthenticated, CORS-enabled. Returns the merged
+    catalog (canonical default ⊕ operator overrides) for the
+    requested locale. Used by the SDK at boot to hydrate the
+    bundled components without bundling the full canonical catalog
+    on the consumer side.
+
+    The response is heavily cacheable —
+    `Cache-Control: public, max-age=300, stale-while-revalidate=3600`
+    — and the matching `ETag` mirrors `Environment.localization.override_etag`,
+    so a client that's already holding the env bootstrap can skip
+    re-fetching the catalog until the etag changes.
+  tags: [Environment]
+  security: []
+  responses:
+    "200":
+      description: Merged localization catalog.
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+            examples: ["public, max-age=300, stale-while-revalidate=3600"]
+          description: Always `public, max-age=300, stale-while-revalidate=3600`.
+        ETag:
+          schema:
+            type: string
+            examples: ["\"sha256:9c1185a5c5e9fc54612808977ee8f548b2258d31\""]
+          description: |
+            Strong validator. Mirrors
+            `Environment.localization.override_etag`. Pair with
+            `If-None-Match` on subsequent fetches.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [locale, catalog]
+            additionalProperties: false
+            properties:
+              locale:
+                type: string
+                description: BCP-47 tag the catalog was rendered for. Echoes the path parameter.
+              catalog:
+                type: object
+                description: |
+                  Dot-keyed map of canonical keys to translated
+                  strings. Keys mirror `sdk-react`'s canonical
+                  schema; missing keys mean "let the SDK fall back
+                  per-key".
+                additionalProperties:
+                  type: string
+          examples:
+            pt_BR:
+              summary: A ~30-key sample of the pt-BR catalog
+              value:
+                locale: pt-BR
+                catalog:
+                  signIn.start.title: "Bem-vindo de volta"
+                  signIn.start.subtitle: "Entre para continuar"
+                  signIn.start.actionText: "Não tem uma conta?"
+                  signIn.start.actionLink: "Criar conta"
+                  signIn.password.label: "Senha"
+                  signIn.password.actionLink: "Esqueci minha senha"
+                  signIn.password.placeholder: "••••••••"
+                  signIn.emailCode.title: "Verifique seu email"
+                  signIn.emailCode.subtitle: "Enviamos um código para {identifier}"
+                  signIn.emailCode.resendButton: "Reenviar código"
+                  signIn.phoneCode.title: "Verifique seu telefone"
+                  signIn.phoneCode.subtitle: "Enviamos um código por SMS"
+                  signIn.totpMfa.title: "Insira o código do autenticador"
+                  signIn.backupCodeMfa.title: "Use um código de recuperação"
+                  signIn.alternativeMethods.title: "Use outro método"
+                  signUp.start.title: "Criar conta"
+                  signUp.start.actionText: "Já tem uma conta?"
+                  signUp.start.actionLink: "Entrar"
+                  signUp.emailLink.title: "Verifique seu email"
+                  signUp.emailLink.subtitle: "Clique no link que enviamos"
+                  userButton.action__manageAccount: "Gerenciar conta"
+                  userButton.action__signOut: "Sair"
+                  userProfile.start.headerTitle__account: "Conta"
+                  userProfile.start.headerTitle__security: "Segurança"
+                  userProfile.emailAddressSection.primaryButton: "Adicionar email"
+                  userProfile.passwordSection.primaryButton__updatePassword: "Atualizar senha"
+                  userProfile.totpSection.primaryButton__enableMfa: "Configurar autenticador"
+                  userProfile.passkeySection.primaryButton: "Adicionar passkey"
+                  formButtonPrimary: "Continuar"
+                  formFieldAction__forgotPassword: "Esqueci minha senha"
+    "404":
+      $ref: ../../components/responses/NotFound.yaml

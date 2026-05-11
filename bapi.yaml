@@ -180,6 +180,8 @@ paths:
     $ref: ./paths/bapi/instance-organization-settings.yaml
   /v1/instance/appearance:
     $ref: ./paths/bapi/instance-appearance.yaml
+  /v1/instance/localization:
+    $ref: ./paths/bapi/instance-localization.yaml
   /v1/oauth-providers:
     $ref: ./paths/bapi/oauth-providers.yaml
   /v1/oauth-providers/{oauth_provider_id}:
@@ -248,6 +250,8 @@ components:
     RedirectUrl:                               { $ref: ./components/schemas/RedirectUrl.yaml }
     InstanceSettings:                          { $ref: ./components/schemas/InstanceSettings.yaml }
     Appearance:                                { $ref: ./components/schemas/Appearance.yaml }
+    Localization:                              { $ref: ./components/schemas/Localization.yaml }
+    LocalizationUpdateRequest:                 { $ref: ./components/schemas/LocalizationUpdateRequest.yaml }
     AttributeSetting:                          { $ref: ./components/schemas/AttributeSetting.yaml }
     InstanceUpdateRequest:                     { $ref: ./components/schemas/InstanceUpdateRequest.yaml }
     RestrictionsUpdateRequest:                 { $ref: ./components/schemas/RestrictionsUpdateRequest.yaml }
