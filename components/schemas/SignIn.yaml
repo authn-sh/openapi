@@ -154,10 +154,12 @@ properties:
         `reset_password_email_code`, `ticket`, plus an
         `oauth_<provider_key>` entry for every enabled `OauthProvider`
         row with `allow_sign_in: true` (e.g. `oauth_google`,
-        `oauth_acme_corp_sso`), plus `passkey` when the environment
-        has WebAuthn enabled. The OAuth and `passkey` entries surface
-        independently of the supplied `identifier` — they're
-        identifier-less.
+        `oauth_acme_corp_sso`), plus `passkey` when the identifier
+        resolves to a user with ≥1 verified `Passkey` (or when
+        the sign-in was started in username-less mode and the
+        environment has WebAuthn enabled). The OAuth entries
+        surface independently of the supplied `identifier` —
+        they're identifier-less.
       - `needs_second_factor` — narrowed to second-factor strategies
         the resolved user has enrolled. v0.3 surface: `totp`,
         `backup_code`. Each entry maps to whichever of

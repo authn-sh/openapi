@@ -1,0 +1,53 @@
+type: object
+description: |
+  WebAuthn `AuthenticatorAssertionResponse` envelope posted back to
+  the server after `navigator.credentials.get(...)` completes.
+  Binary fields are base64url-encoded.
+required:
+  - id
+  - raw_id
+  - response
+  - type
+additionalProperties: false
+properties:
+  id:
+    type: string
+    description: base64url credential id the authenticator selected to answer with.
+  raw_id:
+    type: string
+    description: base64url-encoded credential id. Mirrors `id`.
+  response:
+    type: object
+    required: [client_data_json, authenticator_data, signature]
+    additionalProperties: false
+    properties:
+      client_data_json:
+        type: string
+        description: |
+          base64url of the `clientDataJSON` blob the browser
+          produced. The server decodes it, checks `type ==
+          "webauthn.get"`, the embedded `challenge` matches the
+          ceremony, and the `origin` is on the allowlist.
+      authenticator_data:
+        type: string
+        description: |
+          base64url of the authenticator data. The server parses it
+          to confirm RP-ID hash, user-presence / user-verification
+          flags, and the monotonic `sign_count`.
+      signature:
+        type: string
+        description: |
+          base64url of the assertion signature over
+          `authenticator_data || sha256(clientDataJSON)`, verified
+          against the stored public key for the credential id.
+      user_handle:
+        type: [string, "null"]
+        description: |
+          base64url of the user handle (the per-user opaque id
+          stored at registration). Present when the authenticator
+          supports discoverable credentials; the server uses it to
+          resolve the user when `allow_credentials[]` was empty
+          (username-less sign-in).
+  type:
+    type: string
+    const: public-key

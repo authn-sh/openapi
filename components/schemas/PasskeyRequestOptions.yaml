@@ -1,0 +1,73 @@
+type: object
+description: |
+  Server-built `PublicKeyCredentialRequestOptions` envelope for a
+  WebAuthn authentication ceremony. Mirrors the WebAuthn L3 spec
+  shape, base64url-encoded where the spec uses `BufferSource`.
+
+  Carried on a `Challenge` body when the parent flow's
+  `current_challenge_id` references a passkey first-factor
+  challenge. The SDK passes this verbatim to
+  `navigator.credentials.get({ publicKey })` after base64url
+  decoding `challenge` and every `allow_credentials[].id`.
+required:
+  - rp_id
+  - challenge
+  - timeout
+  - allow_credentials
+  - user_verification
+additionalProperties: false
+properties:
+  rp_id:
+    type: string
+    description: |
+      RP ID the credentials are scoped to. Must match the value the
+      authenticator saw at registration; the assertion will fail
+      otherwise.
+  challenge:
+    type: string
+    description: |
+      base64url-encoded server nonce. The browser includes it in
+      the assertion response's `clientDataJSON`; the server checks
+      it on `answer` to bind the response to this ceremony.
+  timeout:
+    type: integer
+    minimum: 1
+    description: Ceremony timeout in milliseconds. Hint to the browser; not enforced server-side.
+    examples: [60000]
+  allow_credentials:
+    type: array
+    description: |
+      Credentials the server will accept. Filled from the resolved
+      user's verified `Passkey` rows (in `last_used_at desc`
+      order). Empty means "any discoverable credential is
+      acceptable" — used when the SDK opens the ceremony in
+      username-less mode.
+    items:
+      type: object
+      required: [id, type]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          description: base64url credential id of a verified `Passkey` row.
+        type:
+          type: string
+          const: public-key
+        transports:
+          type: array
+          items:
+            type: string
+            enum: [usb, nfc, ble, internal, hybrid]
+  user_verification:
+    type: string
+    enum: [required, preferred, discouraged]
+    default: preferred
+    description: |
+      Whether the authenticator must do user-presence checking
+      (PIN, biometric, …). Mirrors the environment policy; the
+      server rejects the assertion if the returned authenticator
+      data doesn't satisfy this.
+  extensions:
+    type: object
+    description: WebAuthn extension inputs. Free-form pass-through.
+    additionalProperties: true
