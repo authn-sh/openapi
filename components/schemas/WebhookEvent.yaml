@@ -53,7 +53,9 @@ properties:
       Stable event type identifier. v0.1 shipped the `user.*`,
       `session.*`, `email.*`, and `invitation.*` events. v0.2 adds the
       organization, role, and permission events. v0.4 adds the
-      social-IdP, external-account, and phone-number events.
+      social-IdP, external-account, and phone-number events. v0.5
+      adds passkey lifecycle, the appearance-config update event,
+      and the localization-config update event.
 
       Future surfaces (enterprise SSO, SCIM) will be added additively
       under their own milestones.
@@ -102,6 +104,11 @@ properties:
       - phoneNumber.created
       - phoneNumber.verified
       - phoneNumber.removed
+      # v0.5
+      - passkey.added
+      - passkey.removed
+      - instance.config.appearance_updated
+      - localization.updated
   data:
     description: |
       The resource snapshot. Concrete shape depends on `type`:
@@ -126,6 +133,17 @@ properties:
         `access_token` / `refresh_token` / `id_token` are never in the
         payload either)
       - `phoneNumber.*` → `PhoneNumber`
+      - `passkey.*` → `Passkey`
+      - `instance.config.appearance_updated` →
+        `{ previous: Appearance, current: Appearance,
+           diff: Appearance }`. `diff` is the partial-shape blob
+        the operator's `PATCH /v1/instance/appearance` request body
+        carried (or the full new shape on a `PUT`).
+      - `localization.updated` →
+        `{ previous: Localization, current: Localization,
+           diff: LocalizationUpdateRequest }`. `diff` is the partial
+        the operator submitted via `PATCH /v1/instance/localization`
+        (or the full new shape on a `PUT`).
     oneOf:
       - $ref: ./User.yaml
       - $ref: ./Session.yaml
@@ -141,6 +159,25 @@ properties:
       - $ref: ./OauthProvider.yaml
       - $ref: ./ExternalAccount.yaml
       - $ref: ./PhoneNumber.yaml
+      - $ref: ./Passkey.yaml
+      - type: object
+        description: |
+          `instance.config.appearance_updated` payload.
+        required: [previous, current, diff]
+        additionalProperties: false
+        properties:
+          previous: { $ref: ./Appearance.yaml }
+          current:  { $ref: ./Appearance.yaml }
+          diff:     { $ref: ./Appearance.yaml }
+      - type: object
+        description: |
+          `localization.updated` payload.
+        required: [previous, current, diff]
+        additionalProperties: false
+        properties:
+          previous: { $ref: ./Localization.yaml }
+          current:  { $ref: ./Localization.yaml }
+          diff:     { $ref: ./LocalizationUpdateRequest.yaml }
   timestamp:
     $ref: ./Timestamp.yaml
   instance_id:
@@ -358,6 +395,77 @@ examples:
       is_system: false
       created_at: 1714897200000
       updated_at: 1714897200000
+  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: event
+    type: passkey.added
+    timestamp: 1714897400000
+    instance_id: env_acme_test
+    was_test: false
+    data:
+      id: pkey_01HKX9SY9V7H7TF8C8K7J9X4ZA
+      object: passkey
+      nickname: YubiKey 5C
+      transports: [usb, nfc]
+      aaguid: ee882879-721c-4913-9775-3dfcce97072a
+      verified: true
+      last_used_at: null
+      created_at: 1714897400000
+      updated_at: 1714897400000
+  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    object: event
+    type: passkey.removed
+    timestamp: 1714897500000
+    instance_id: env_acme_test
+    was_test: false
+    data:
+      id: pkey_01HKX9SY9V7H7TF8C8K7J9X4ZA
+      object: passkey
+      nickname: YubiKey 5C
+      transports: [usb, nfc]
+      aaguid: ee882879-721c-4913-9775-3dfcce97072a
+      verified: true
+      last_used_at: 1714897450000
+      created_at: 1714897400000
+      updated_at: 1714897500000
+  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZC
+    object: event
+    type: instance.config.appearance_updated
+    timestamp: 1714897600000
+    instance_id: env_acme_test
+    was_test: false
+    data:
+      previous: {}
+      current:
+        variables:
+          colorPrimary: "#0a84ff"
+          colorTextOnPrimary: "#ffffff"
+      diff:
+        variables:
+          colorPrimary: "#0a84ff"
+          colorTextOnPrimary: "#ffffff"
+  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZD
+    object: event
+    type: localization.updated
+    timestamp: 1714897700000
+    instance_id: env_acme_test
+    was_test: false
+    data:
+      previous:
+        default_locale: en-US
+        fallback_locale: en-US
+        supported_locales: [en-US, pt-BR]
+        overrides: {}
+      current:
+        default_locale: en-US
+        fallback_locale: en-US
+        supported_locales: [en-US, pt-BR]
+        overrides:
+          pt-BR:
+            signIn.start.title: "Bem-vindo de volta"
+      diff:
+        overrides:
+          pt-BR:
+            signIn.start.title: "Bem-vindo de volta"
   - id: whd_01HKX9SY9V7H7TF8C8K7J9X4Z9
     object: event
     type: session.created
