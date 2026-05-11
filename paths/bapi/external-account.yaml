@@ -1,0 +1,35 @@
+parameters:
+  - name: external_account_id
+    in: path
+    required: true
+    description: ID of the external account.
+    schema: { $ref: "../../components/schemas/Id.yaml" }
+
+get:
+  operationId: getExternalAccount
+  summary: Get an external account
+  description: Fetch a single `ExternalAccount` by ID.
+  tags: [External Accounts]
+  responses:
+    "200":
+      description: The external account.
+      content:
+        application/json:
+          schema: { $ref: "../../components/schemas/ExternalAccount.yaml" }
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../../components/responses/NotFound.yaml" }
+
+delete:
+  operationId: deleteExternalAccount
+  summary: Delete an external account
+  description: |
+    Admin unlink — best-effort revoke against the IdP's
+    `revocation_endpoint` when one is configured on the
+    corresponding `OauthProvider`, then drop the local row.
+    Revocation failures don't block deletion.
+  tags: [External Accounts]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../../components/responses/NotFound.yaml" }
