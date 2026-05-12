@@ -1,0 +1,41 @@
+parameters:
+  - name: organization_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: adminGetOrganizationScimEndpoint
+  summary: Read the SCIM endpoint URL (BAPI)
+  description: |
+    Operator-scoped read of the SCIM base URL the IdP admin pastes
+    into their provisioning configuration. The shape is:
+
+    ```
+    https://<env_slug>.authn.sh/scim/v2/
+    ```
+
+    Per-org SCIM token authorisation scopes provisioning to this
+    organization — the IdP doesn't see a per-org URL.
+  tags: [Org SCIM Admin]
+  responses:
+    "200":
+      description: The SCIM endpoint URL.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [endpoint_url]
+            additionalProperties: false
+            properties:
+              endpoint_url:
+                type: string
+                format: uri
+                examples:
+                  - https://acme.authn.sh/scim/v2/
+          examples:
+            production:
+              value:
+                endpoint_url: https://acme.authn.sh/scim/v2/
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
