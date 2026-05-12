@@ -117,6 +117,15 @@ properties:
       - scimToken.revoked
       - scimUser.provisioned
       - scimUser.deprovisioned
+      # v0.7
+      - jwtTemplate.created
+      - jwtTemplate.updated
+      - jwtTemplate.deleted
+      - oauthApplication.created
+      - oauthApplication.updated
+      - oauthApplication.deleted
+      - authorizationGrant.granted
+      - authorizationGrant.revoked
   data:
     description: |
       The resource snapshot. Concrete shape depends on `type`:
@@ -164,6 +173,16 @@ properties:
            diff: LocalizationUpdateRequest }`. `diff` is the partial
         the operator submitted via `PATCH /v1/instance/localization`
         (or the full new shape on a `PUT`).
+      - `jwtTemplate.*` → `JwtTemplate` (`custom_signing_key` is
+        never in the payload — `writeOnly: true`, encrypted at rest)
+      - `oauthApplication.*` → `OauthApplication` (`client_secret`
+        is never in the payload — `writeOnly: true`, returned only
+        on the create + rotate-secret responses)
+      - `authorizationGrant.*` →
+        `{ user_id, oauth_application_id, scopes[], granted_at,
+           revoked_at }` (compact projection; consumers reading the
+        full `AuthorizationGrant` row should look it up by
+        `(user_id, oauth_application_id)`)
     oneOf:
       - $ref: ./User.yaml
       - $ref: ./Session.yaml
@@ -183,6 +202,32 @@ properties:
       - $ref: ./EnterpriseConnection.yaml
       - $ref: ./EnterpriseAccount.yaml
       - $ref: ./ScimToken.yaml
+      - $ref: ./JwtTemplate.yaml
+      - $ref: ./OauthApplication.yaml
+      - type: object
+        description: |
+          `authorizationGrant.*` payload — compact projection of
+          the `AuthorizationGrant` row.
+        required: [user_id, oauth_application_id, scopes, granted_at, revoked_at]
+        additionalProperties: false
+        properties:
+          user_id:
+            $ref: ./Id.yaml
+          oauth_application_id:
+            $ref: ./Id.yaml
+          scopes:
+            type: array
+            items:
+              type: string
+          granted_at:
+            $ref: ./Timestamp.yaml
+          revoked_at:
+            oneOf:
+              - $ref: ./Timestamp.yaml
+              - type: "null"
+            description: |
+              `null` on `authorizationGrant.granted`; populated on
+              `authorizationGrant.revoked`.
       - type: object
         description: |
           `scimUser.*` payload.
@@ -661,3 +706,63 @@ examples:
         country: "US"
       created_at: 1714897300000
       updated_at: 1714897300000
+  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZI
+    object: event
+    type: jwtTemplate.created
+    timestamp: 1714898200000
+    instance_id: env_acme_test
+    was_test: false
+    data:
+      id: jtmpl_01HKX9SY9V7H7TF8C8K7J9X4ZA
+      object: jwt_template
+      name: supabase
+      claims:
+        sub: "{{user.id}}"
+        email: "{{user.primary_email_address}}"
+        role: authenticated
+      lifetime: 60
+      allowed_clock_skew: 5
+      signing_algorithm: RS256
+      created_at: 1714898200000
+      updated_at: 1714898200000
+  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZJ
+    object: event
+    type: oauthApplication.created
+    timestamp: 1714898300000
+    instance_id: env_acme_test
+    was_test: false
+    data:
+      id: oac_01HKX9SY9V7H7TF8C8K7J9X4ZA
+      object: oauth_application
+      name: Acme Dashboard
+      client_id: oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZA
+      callback_urls:
+        - https://app.acme.example/oauth/callback
+      scopes: [openid, profile, email]
+      is_public: false
+      created_at: 1714898300000
+      updated_at: 1714898300000
+  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZK
+    object: event
+    type: authorizationGrant.granted
+    timestamp: 1714898400000
+    instance_id: env_acme_test
+    was_test: false
+    data:
+      user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+      oauth_application_id: oac_01HKX9SY9V7H7TF8C8K7J9X4ZA
+      scopes: [openid, profile, email]
+      granted_at: 1714898400000
+      revoked_at: null
+  - id: whd_01HKX9SY9V7H7TF8C8K7J9X4ZL
+    object: event
+    type: authorizationGrant.revoked
+    timestamp: 1714898500000
+    instance_id: env_acme_test
+    was_test: false
+    data:
+      user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+      oauth_application_id: oac_01HKX9SY9V7H7TF8C8K7J9X4ZA
+      scopes: [openid, profile, email]
+      granted_at: 1714898400000
+      revoked_at: 1714898500000
