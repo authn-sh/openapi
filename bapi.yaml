@@ -73,6 +73,8 @@ tags:
     description: Per-environment outbound SMS body customization (`SmsTemplate`).
   - name: Webhooks
     description: Webhook endpoints, deliveries, and the event envelope.
+  - name: JWT Templates
+    description: Named JWT templates rendered by `Session.getToken({template})` (`JwtTemplate`).
 
 security:
   - bearer_secret_key: []
@@ -200,6 +202,10 @@ paths:
     $ref: ./paths/bapi/enterprise-accounts.yaml
   /v1/enterprise-accounts/{enterprise_account_id}:
     $ref: ./paths/bapi/enterprise-account.yaml
+  /v1/jwt-templates:
+    $ref: ./paths/bapi/jwt-templates.yaml
+  /v1/jwt-templates/{jwt_template_id}:
+    $ref: ./paths/bapi/jwt-template.yaml
   /v1/sms-templates:
     $ref: ./paths/bapi/sms-templates.yaml
   /v1/sms-templates/{sms_template_slug}:
@@ -301,6 +307,9 @@ components:
     EnterpriseAccount:                         { $ref: ./components/schemas/EnterpriseAccount.yaml }
     SmsTemplate:                               { $ref: ./components/schemas/SmsTemplate.yaml }
     SmsTemplateRequest:                        { $ref: ./components/schemas/SmsTemplateRequest.yaml }
+    JwtTemplate:                               { $ref: ./components/schemas/JwtTemplate.yaml }
+    JwtTemplateCreateRequest:                  { $ref: ./components/schemas/JwtTemplateCreateRequest.yaml }
+    JwtTemplateUpdateRequest:                  { $ref: ./components/schemas/JwtTemplateUpdateRequest.yaml }
 
   responses:
     BadRequest:           { $ref: ./components/responses/BadRequest.yaml }

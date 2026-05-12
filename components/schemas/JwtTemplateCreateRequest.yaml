@@ -1,0 +1,66 @@
+type: object
+description: |
+  Request body for `POST /v1/jwt-templates`.
+required:
+  - name
+  - claims
+additionalProperties: false
+properties:
+  name:
+    type: string
+    pattern: "^[a-z][a-z0-9_-]{0,63}$"
+    maxLength: 64
+    description: |
+      Slug used by `Session.getToken({template: <name>})`. Must be
+      unique within the environment. Immutable after create.
+  claims:
+    type: object
+    description: |
+      JSON template with Liquid-style placeholders. See
+      `JwtTemplate.claims` for the supported expression set.
+    additionalProperties: true
+  lifetime:
+    type: integer
+    minimum: 1
+    maximum: 86400
+    default: 60
+  allowed_clock_skew:
+    type: integer
+    minimum: 0
+    maximum: 300
+    default: 5
+  signing_algorithm:
+    type: string
+    enum: [RS256, ES256, HS256]
+    default: RS256
+    description: |
+      Immutable after create. Re-create the template under a new
+      `name` to migrate to a different algorithm.
+  custom_signing_key:
+    type: [string, "null"]
+    writeOnly: true
+    description: |
+      PEM-encoded private key (or base64-encoded secret for
+      `HS256`). When `null`, rendered tokens are signed with the
+      environment's session-signing key.
+examples:
+  - name: supabase
+    claims:
+      sub: "{{user.id}}"
+      email: "{{user.primary_email_address}}"
+      role: authenticated
+  - name: acme_rpc
+    claims:
+      sub: "{{user.external_id}}"
+      org_id: "{{organization.id}}"
+      org_role: "{{organization.role}}"
+    lifetime: 300
+    allowed_clock_skew: 10
+    signing_algorithm: ES256
+  - name: legacy_hs256
+    claims:
+      sub: "{{user.id}}"
+      iss: https://acme.example
+      aud: legacy-rpc
+    signing_algorithm: HS256
+    custom_signing_key: c2VjcmV0LWJhc2U2NA==

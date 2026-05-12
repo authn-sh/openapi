@@ -1,0 +1,179 @@
+type: object
+description: |
+  Named JWT template used by `Session.getToken({template})` to mint
+  custom-shaped session tokens. Each environment can define an
+  unbounded number of templates, looked up by `name` at render time.
+
+  Templates exist so consumers can issue tokens whose claim set is
+  tailored to a specific downstream verifier (e.g. a third-party
+  RPC service that expects `sub` to be the user's `external_id`
+  instead of the authn.sh `user.id`, or a backend that wants the
+  active org slug in `org_slug`). The `claims` object is a JSON
+  template with Liquid-style placeholders resolved against a
+  `{user, session, organization}` snapshot at render time. Reserved
+  JWT registered claim names (`iss`, `sub`, `aud`, `exp`, `nbf`,
+  `iat`, `jti`) supplied by the operator are merged on top of the
+  server-generated values, so operators can override `sub` /
+  `aud` / `iss` without losing the time-bound claims.
+
+  ### Lifetime + clock skew
+
+  `lifetime` (seconds) is the `exp - iat` window stamped on each
+  rendered token. `allowed_clock_skew` (seconds) is the leeway
+  verifiers should grant when comparing `exp` / `nbf` / `iat` —
+  the field is surfaced for verifier-side use and is not enforced
+  by the renderer itself.
+
+  ### Signing key
+
+  By default, rendered tokens are signed with the environment's
+  session-signing key (the same key surfaced at
+  `/.well-known/jwks.json`). Operators that need to sign with a
+  different key (e.g. an HS256 shared-secret with a legacy
+  consumer) can supply `custom_signing_key` as a PEM-encoded
+  private key (or a base64 secret for `HS256`). The field is
+  **write-only**, encrypted at rest, and never returned by any
+  read response.
+
+  ### Identifier
+
+  ID prefix `jtmpl_` (e.g. `jtmpl_01HKX9SY9V7H7TF8C8K7J9X4ZA`).
+required:
+  - id
+  - object
+  - name
+  - claims
+  - lifetime
+  - allowed_clock_skew
+  - signing_algorithm
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: jwt_template
+  name:
+    type: string
+    pattern: "^[a-z][a-z0-9_-]{0,63}$"
+    maxLength: 64
+    description: |
+      Slug used to look the template up from
+      `Session.getToken({template: <name>})`. Unique within the
+      environment.
+    examples:
+      - supabase
+      - acme_rpc
+      - billing_backend
+  claims:
+    type: object
+    description: |
+      JSON template rendered against a `{user, session,
+      organization}` snapshot. Values may be plain JSON (string /
+      number / boolean / nested object / array) or strings
+      containing Liquid-style placeholders. Supported expressions:
+
+      - `{{user.id}}`, `{{user.primary_email_address}}`,
+        `{{user.first_name}}`, `{{user.last_name}}`,
+        `{{user.external_id}}`, `{{user.public_metadata.<key>}}`
+      - `{{session.id}}`, `{{session.actor.id}}`
+      - `{{organization.id}}`, `{{organization.slug}}`,
+        `{{organization.role}}`,
+        `{{organization.public_metadata.<key>}}`
+
+      Reserved registered-claim keys (`iss`, `sub`, `aud`, `exp`,
+      `nbf`, `iat`, `jti`) override the server-generated defaults
+      when present. Unresolved placeholders render as the empty
+      string.
+    additionalProperties: true
+    examples:
+      - sub: "{{user.id}}"
+        email: "{{user.primary_email_address}}"
+        org_slug: "{{organization.slug}}"
+        tier: "{{user.public_metadata.tier}}"
+  lifetime:
+    type: integer
+    minimum: 1
+    maximum: 86400
+    default: 60
+    description: |
+      `exp - iat` window in seconds. Defaults to 60s (matches the
+      v0.1 short-lived session token); bump for verifiers that
+      need a longer-lived token, but keep it short to limit blast
+      radius if a rendered token leaks.
+  allowed_clock_skew:
+    type: integer
+    minimum: 0
+    maximum: 300
+    default: 5
+    description: |
+      Leeway, in seconds, that verifiers should grant on `exp` /
+      `nbf` / `iat` comparisons. Surfaced for verifier-side use;
+      authn.sh does not enforce it during rendering.
+  signing_algorithm:
+    type: string
+    enum: [RS256, ES256, HS256]
+    default: RS256
+    description: |
+      JWS algorithm used to sign rendered tokens. Immutable after
+      create — flipping the algorithm would invalidate any cached
+      `kid` on downstream verifiers. Re-create the template with
+      a new name to migrate.
+  custom_signing_key:
+    type: [string, "null"]
+    writeOnly: true
+    description: |
+      PEM-encoded private key (or base64-encoded secret for
+      `HS256`). When `null`, rendered tokens are signed with the
+      environment's session-signing key (surfaced at
+      `/.well-known/jwks.json`). Encrypted at rest, never
+      returned by any read response.
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - id: jtmpl_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: jwt_template
+    name: supabase
+    claims:
+      sub: "{{user.id}}"
+      email: "{{user.primary_email_address}}"
+      role: authenticated
+    lifetime: 60
+    allowed_clock_skew: 5
+    signing_algorithm: RS256
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: jtmpl_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    object: jwt_template
+    name: acme_rpc
+    claims:
+      sub: "{{user.external_id}}"
+      email: "{{user.primary_email_address}}"
+      first_name: "{{user.first_name}}"
+      last_name: "{{user.last_name}}"
+      org_id: "{{organization.id}}"
+      org_slug: "{{organization.slug}}"
+      org_role: "{{organization.role}}"
+      tier: "{{user.public_metadata.tier}}"
+      session_id: "{{session.id}}"
+    lifetime: 300
+    allowed_clock_skew: 10
+    signing_algorithm: ES256
+    created_at: 1714724000000
+    updated_at: 1714724000000
+  - id: jtmpl_01HKX9SY9V7H7TF8C8K7J9X4ZC
+    object: jwt_template
+    name: legacy_hs256
+    claims:
+      sub: "{{user.id}}"
+      iss: https://acme.example
+      aud: legacy-rpc
+    lifetime: 60
+    allowed_clock_skew: 5
+    signing_algorithm: HS256
+    created_at: 1714725000000
+    updated_at: 1714725000000
