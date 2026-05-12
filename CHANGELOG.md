@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0] — 2026-05-12
+
+### Added
+
+- **Enterprise SSO surface (v0.6)** — unified `EnterpriseConnection` model with `protocol: "saml" | "oidc"`, instance-wide or org-scoped. Carries SAML fields (`saml_idp_entity_id`, `saml_sso_url`, `saml_idp_certificate`, computed `saml_acs_url` + `saml_sp_entity_id`) and OIDC fields (`oidc_issuer`, `oidc_discovery_endpoint`, `oidc_client_id`, computed `oidc_redirect_uri`). Write-only encrypted `oidc_client_secret` + `saml_signing_key`.
+- **`EnterpriseAccount`** resource (`entacc_` prefix) — per-user link to a connection. `User.enterprise_accounts[]` snapshot field.
+- **`enterprise_sso` + `saml` first-factor strategies** on `Challenge`. `SignIn.supported_strategies[]` includes `enterprise_sso` when the env has ≥1 enabled connection; `SignIn.enterprise_connection_id` populated when domain routing fired.
+- **BAPI `/v1/enterprise-connections`** — instance-wide CRUD + `POST /{id}/test` dry-run.
+- **FAPI `/v1/organizations/{org_id}/enterprise-connections`** — per-org CRUD + test, gated by `org:sys_sso:manage`.
+- **BAPI `/v1/enterprise-accounts`** — list (with `user_id` / `enterprise_connection_id` filters) / get / delete (admin unlink; preserves underlying `User`).
+- **Verified-domain enrollment modes** — documented `OrganizationDomain.enrollment_mode` semantics (`manual_invitation` / `automatic_invitation` / `automatic_suggestion`). Domain-routed sign-in narrows `SignIn.supported_strategies` to `["enterprise_sso"]` when exactly one connection matches.
+- **SCIM 2.0 surface** — `/scim/v2/Users` + `/scim/v2/Groups` (RFC 7644 — filter, pagination, attribute projection, PATCH ops). Per-org FAPI: `/v1/organizations/{org_id}/scim/tokens` (issue / list / revoke; plaintext shown once on issue), `/v1/organizations/{org_id}/scim/attribute-mappings` (read / replace), `/v1/organizations/{org_id}/scim/endpoint` (read-only URL display). New schemas `ScimToken`, `ScimAttributeMapping`, `ScimUser`, `ScimGroup`, `ScimListResponse`, `ScimPatchOp`, `ScimError`.
+- **Transferable sign-up ↔ sign-in handoff** — `SignIn.status` enum gains `transferable`. Both `SignIn` + `SignUp` carry `target_flow` (`sign_in` / `sign_up` / `null`) + matching `transferable_to_signup` / `transferable_to_signin` booleans.
+- **Webhook events** — `enterpriseConnection.{created,updated,deleted}` (secrets stripped), `enterpriseAccount.{connected,unlinked}`, `scimToken.{issued,revoked}` (prefix-only), `scimUser.{provisioned,deprovisioned}`.
+
 ## [0.5.0] — 2026-05-11
 
 ### Added
