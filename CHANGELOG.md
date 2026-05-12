@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0] — 2026-05-12
+
+### Added
+
+- **JWT templates** — `JwtTemplate` resource (`jtmpl_` prefix) with name, claims (Liquid-style placeholders against User/Session/Organization snapshots), lifetime, allowed_clock_skew, signing_algorithm (RS256/ES256/HS256), optional custom_signing_key. BAPI `/v1/jwt-templates` CRUD.
+- **OAuth provider mode** — authn.sh as an IdP:
+  - `OauthApplication` resource (`oac_` prefix) with `is_public` PKCE-only flag + client_secret rotation.
+  - `AuthorizationGrant` resource (`authgrant_` prefix) tracking per-user consent.
+  - `GET /oauth/authorize` (RFC 6749 §4.1 + OIDC §3.1.2.1) — code grant with PKCE for public clients.
+  - `POST /oauth/token` — authorization_code + refresh_token grants; `POST /oauth/token_info` (RFC 7662 introspection).
+  - `GET /oauth/userinfo` — OIDC userinfo (bearer auth, scope-filtered claims).
+  - `GET /.well-known/openid-configuration` per env — full OIDC discovery (issuer, endpoints, scopes, grants, PKCE).
+- **BAPI SCIM admin** — operator-scoped mirror of v0.6's per-org FAPI SCIM surface. `/v1/organizations/{org_id}/scim/{tokens,attribute-mappings,endpoint}`. Closes v0.6 carryover.
+- **BAPI `/v1/enterprise-accounts`** — list / get / delete (admin unlink). Spec backfill for the v0.6 implementation gap.
+- **Webhook events** — `jwtTemplate.{created,updated,deleted}` (signing_key stripped), `oauthApplication.{created,updated,deleted}` (client_secret stripped), `authorizationGrant.{granted,revoked}`.
+
 ## [0.6.0] — 2026-05-12
 
 ### Added
