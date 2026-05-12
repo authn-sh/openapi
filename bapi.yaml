@@ -77,6 +77,8 @@ tags:
     description: Webhook endpoints, deliveries, and the event envelope.
   - name: JWT Templates
     description: Named JWT templates rendered by `Session.getToken({template})` (`JwtTemplate`).
+  - name: Org SCIM Admin
+    description: Operator-scoped (bearer-secret) SCIM token and attribute-mapping admin for any organization (`ScimToken`, `ScimAttributeMapping`).
 
 security:
   - bearer_secret_key: []
@@ -214,6 +216,14 @@ paths:
     $ref: ./paths/bapi/jwt-templates.yaml
   /v1/jwt-templates/{jwt_template_id}:
     $ref: ./paths/bapi/jwt-template.yaml
+  /v1/organizations/{organization_id}/scim/tokens:
+    $ref: ./paths/bapi/organization-scim-tokens.yaml
+  /v1/organizations/{organization_id}/scim/tokens/{scim_token_id}/revoke:
+    $ref: ./paths/bapi/organization-scim-token-revoke.yaml
+  /v1/organizations/{organization_id}/scim/attribute-mappings:
+    $ref: ./paths/bapi/organization-scim-attribute-mappings.yaml
+  /v1/organizations/{organization_id}/scim/endpoint:
+    $ref: ./paths/bapi/organization-scim-endpoint.yaml
   /v1/sms-templates:
     $ref: ./paths/bapi/sms-templates.yaml
   /v1/sms-templates/{sms_template_slug}:
@@ -322,6 +332,8 @@ components:
     JwtTemplate:                               { $ref: ./components/schemas/JwtTemplate.yaml }
     JwtTemplateCreateRequest:                  { $ref: ./components/schemas/JwtTemplateCreateRequest.yaml }
     JwtTemplateUpdateRequest:                  { $ref: ./components/schemas/JwtTemplateUpdateRequest.yaml }
+    ScimToken:                                 { $ref: ./components/schemas/ScimToken.yaml }
+    ScimAttributeMapping:                      { $ref: ./components/schemas/ScimAttributeMapping.yaml }
 
   responses:
     BadRequest:           { $ref: ./components/responses/BadRequest.yaml }
