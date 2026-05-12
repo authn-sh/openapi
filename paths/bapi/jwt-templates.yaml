@@ -1,0 +1,93 @@
+get:
+  operationId: listJwtTemplates
+  summary: List JWT templates
+  description: |
+    Paginated list of every `JwtTemplate` row configured on the
+    environment. The dashboard renders the rows in this order;
+    reorder by re-creating with a different `created_at` (no
+    separate `position` column).
+  tags: [JWT Templates]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+  responses:
+    "200":
+      description: A page of JWT templates.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/JwtTemplate.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+
+post:
+  operationId: createJwtTemplate
+  summary: Create a JWT template
+  description: |
+    Register a named JWT template. `name` is the slug consumers pass to
+    `Session.getToken({template})`. `claims` is a JSON template with
+    Liquid-style placeholders rendered against the active
+    `{user, session, organization}` snapshot at mint time.
+
+    `custom_signing_key` is optional. When omitted, the environment's
+    default session-signing key is used (the same key surfaced at
+    `/.well-known/jwks.json`). When supplied, it is encrypted at rest
+    and never returned by any GET.
+  tags: [JWT Templates]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/JwtTemplateCreateRequest.yaml }
+        examples:
+          minimal:
+            summary: Minimal template (defaults for lifetime / skew / algorithm)
+            value:
+              name: supabase
+              claims:
+                sub: "{{user.id}}"
+                email: "{{user.primary_email_address}}"
+                role: authenticated
+          full_claims:
+            summary: Larger claim set with organization context
+            value:
+              name: acme_rpc
+              claims:
+                sub: "{{user.external_id}}"
+                email: "{{user.primary_email_address}}"
+                first_name: "{{user.first_name}}"
+                last_name: "{{user.last_name}}"
+                org_id: "{{organization.id}}"
+                org_slug: "{{organization.slug}}"
+                org_role: "{{organization.role}}"
+                tier: "{{user.public_metadata.tier}}"
+                session_id: "{{session.id}}"
+              lifetime: 300
+              allowed_clock_skew: 10
+              signing_algorithm: ES256
+          custom_signing_key:
+            summary: HS256 with a custom shared secret
+            value:
+              name: legacy_hs256
+              claims:
+                sub: "{{user.id}}"
+                iss: https://acme.example
+                aud: legacy-rpc
+              signing_algorithm: HS256
+              custom_signing_key: c2VjcmV0LWJhc2U2NA==
+  responses:
+    "201":
+      description: The created JWT template.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/JwtTemplate.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }

@@ -1,0 +1,81 @@
+parameters:
+  - name: jwt_template_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getJwtTemplate
+  summary: Get a JWT template
+  description: |
+    Fetch a single `JwtTemplate` row. `custom_signing_key` is never
+    included.
+  tags: [JWT Templates]
+  responses:
+    "200":
+      description: The JWT template.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/JwtTemplate.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateJwtTemplate
+  summary: Update a JWT template
+  description: |
+    Partial update. `name` and `signing_algorithm` are immutable —
+    sending a different value returns `422`. Every other field is
+    optional; omitted keys are left untouched. Send
+    `custom_signing_key: null` to revert to the environment's
+    default session-signing key.
+  tags: [JWT Templates]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/JwtTemplateUpdateRequest.yaml }
+        examples:
+          add_claim:
+            summary: Add a tenant claim
+            value:
+              claims:
+                sub: "{{user.id}}"
+                email: "{{user.primary_email_address}}"
+                role: authenticated
+                tenant: "{{user.public_metadata.tenant}}"
+          bump_lifetime:
+            summary: Bump lifetime to 10 minutes
+            value: { lifetime: 600 }
+          rotate_signing_key:
+            summary: Revert to the environment's default signing key
+            value: { custom_signing_key: null }
+  responses:
+    "200":
+      description: The updated JWT template.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/JwtTemplate.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteJwtTemplate
+  summary: Delete a JWT template
+  description: |
+    Soft delete. Refuses (`409 jwt_template_in_use`) when the
+    template was used to mint a token within the last `lifetime +
+    allowed_clock_skew` seconds (40h grace floor) — verifiers may
+    still be carrying tokens with this `name` in their cache. Once
+    deleted, `Session.getToken({template: <name>})` returns
+    `404 jwt_template_not_found`.
+  tags: [JWT Templates]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }

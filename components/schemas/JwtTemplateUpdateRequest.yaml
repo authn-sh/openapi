@@ -1,0 +1,33 @@
+type: object
+description: |
+  Request body for `PATCH /v1/jwt-templates/{jwt_template_id}`.
+  Every field is optional; omitted keys are left untouched.
+  `signing_algorithm` is immutable — sending a different value
+  returns `422`.
+additionalProperties: false
+properties:
+  claims:
+    type: object
+    additionalProperties: true
+  lifetime:
+    type: integer
+    minimum: 1
+    maximum: 86400
+  allowed_clock_skew:
+    type: integer
+    minimum: 0
+    maximum: 300
+  custom_signing_key:
+    type: [string, "null"]
+    writeOnly: true
+    description: |
+      Send `null` to revert to the environment's session-signing
+      key; send a new PEM / base64 secret to rotate.
+examples:
+  - claims:
+      sub: "{{user.id}}"
+      email: "{{user.primary_email_address}}"
+      role: authenticated
+      tenant: "{{user.public_metadata.tenant}}"
+  - lifetime: 600
+  - custom_signing_key: null
