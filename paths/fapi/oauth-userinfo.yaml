@@ -1,0 +1,133 @@
+get:
+  operationId: oauthUserinfo
+  summary: OIDC UserInfo endpoint
+  description: |
+    OpenID Connect Core §5.3 UserInfo endpoint. Bearer-authenticated
+    by an access token issued by `/oauth/token`. Returns the subset
+    of `User` claims authorised by the access token's granted scope
+    set.
+
+    ### Scope → claim mapping
+
+    - `openid` — always returns `sub` (the user's `id`).
+    - `profile` — adds `name` (composed from `first_name` +
+      `last_name` when both are present), `given_name`,
+      `family_name`, `preferred_username`, `picture`, `updated_at`.
+    - `email` — adds `email` (`User.primary_email_address`) and
+      `email_verified` (`true` iff the primary email is verified).
+    - `phone` — adds `phone_number` and `phone_number_verified`.
+    - `address` — adds `address` per OIDC §5.1.1 when the env exposes
+      a user-address attribute (post-v0.7; absent otherwise).
+    - Custom (`<env>.<name>`) scopes — surfaced under
+      `<env>.<name>` keys at the top level. Each custom scope is
+      mapped to a `User` field (or a static value) by the operator
+      via the JWT-template-style configuration.
+
+    Claims for scopes not on the access token's granted set are
+    silently omitted (per OIDC §5.4) rather than rejected with an
+    error.
+
+    ### Caching
+
+    Responses are uncacheable per OIDC §5.3.3 (`Cache-Control:
+    no-store`). The SDK calls this on demand when reading
+    `User`-shaped claims it didn't already get from the ID token.
+  tags: [OAuth]
+  security: []
+  responses:
+    "200":
+      description: |
+        UserInfo response. `sub` is always present; every other claim
+        is conditional on scope.
+      headers:
+        Cache-Control:
+          description: Always `no-store` per OIDC §5.3.3.
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [sub]
+            additionalProperties: true
+            properties:
+              sub:
+                description: User's `id`. Always present.
+                $ref: ../../components/schemas/Id.yaml
+              name:
+                type: string
+                description: |
+                  Composed display name. Surfaced when `profile`
+                  is granted and either `first_name` or `last_name`
+                  is set on the `User`.
+              given_name:
+                type: string
+                description: From `User.first_name`. `profile` scope.
+              family_name:
+                type: string
+                description: From `User.last_name`. `profile` scope.
+              preferred_username:
+                type: string
+                description: From `User.username`. `profile` scope.
+              picture:
+                type: string
+                format: uri
+                description: From `User.image_url`. `profile` scope.
+              updated_at:
+                type: integer
+                description: |
+                  Unix-second `User.updated_at`. OIDC §5.1 specifies
+                  this field as seconds, **not** the millisecond
+                  `Timestamp` used elsewhere in the surface.
+              email:
+                type: string
+                format: email
+                description: From `User.primary_email_address`. `email` scope.
+              email_verified:
+                type: boolean
+                description: |
+                  `true` when the primary email's verification
+                  state is `verified`. `email` scope.
+              phone_number:
+                type: string
+                description: |
+                  From `User.primary_phone_number` (E.164).
+                  `phone` scope.
+              phone_number_verified:
+                type: boolean
+                description: |
+                  `true` when the primary phone is verified.
+                  `phone` scope.
+          examples:
+            full_profile:
+              summary: openid + profile + email granted
+              value:
+                sub: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                name: Alice Anderson
+                given_name: Alice
+                family_name: Anderson
+                preferred_username: alice
+                picture: https://acme.authn.sh/storage/u/user_01HKX9SY9V7H7TF8C8K7J9X4ZB.jpg
+                updated_at: 1714723000
+                email: alice@acme.example
+                email_verified: true
+            sub_only:
+              summary: openid only — nothing leaked beyond `sub`
+              value:
+                sub: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+            custom_scope:
+              summary: Custom scope `acme.read_billing` surfaced at the top level
+              value:
+                sub: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                email: alice@acme.example
+                email_verified: true
+                "acme.read_billing": true
+    "401":
+      description: |
+        Missing / invalid / expired access token. Returns
+        `WWW-Authenticate: Bearer realm="oauth", error="…"` per
+        OIDC §5.3.5.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }

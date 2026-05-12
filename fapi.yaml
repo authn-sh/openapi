@@ -232,6 +232,12 @@ paths:
     $ref: ./paths/fapi/oauth-token.yaml
   /oauth/token_info:
     $ref: ./paths/fapi/oauth-token-info.yaml
+  /oauth/userinfo:
+    $ref: ./paths/fapi/oauth-userinfo.yaml
+  /.well-known/openid-configuration:
+    $ref: ./paths/fapi/well-known-openid-configuration.yaml
+  /.well-known/jwks.json:
+    $ref: ./paths/fapi/well-known-jwks.yaml
 
 components:
   securitySchemes:

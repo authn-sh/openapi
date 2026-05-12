@@ -1,0 +1,168 @@
+get:
+  operationId: getOpenidConfiguration
+  summary: OIDC discovery document
+  description: |
+    OpenID Connect Discovery 1.0 §4 metadata document. Public,
+    unauthenticated. Cached for one hour (`Cache-Control: public,
+    max-age=3600`).
+
+    The document is per-environment — its `issuer` and endpoint
+    URLs all point at the calling env's FAPI host
+    (`https://<env_slug>.authn.sh`). Clients can resolve the full
+    OAuth provider mode surface from this single document.
+  tags: [JWKS / OIDC]
+  security: []
+  responses:
+    "200":
+      description: The discovery document.
+      headers:
+        Cache-Control:
+          description: Always `public, max-age=3600`.
+          schema:
+            type: string
+            const: public, max-age=3600
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - issuer
+              - authorization_endpoint
+              - token_endpoint
+              - userinfo_endpoint
+              - jwks_uri
+              - scopes_supported
+              - response_types_supported
+              - grant_types_supported
+              - subject_types_supported
+              - id_token_signing_alg_values_supported
+              - token_endpoint_auth_methods_supported
+              - code_challenge_methods_supported
+            additionalProperties: true
+            properties:
+              issuer:
+                type: string
+                format: uri
+                description: |
+                  Environment-scoped issuer URL —
+                  `https://<env_slug>.authn.sh`. Matches the `iss`
+                  claim on every ID token.
+              authorization_endpoint:
+                type: string
+                format: uri
+                description: |
+                  Always `<issuer>/oauth/authorize` (OA-3).
+              token_endpoint:
+                type: string
+                format: uri
+                description: |
+                  Always `<issuer>/oauth/token` (OA-4).
+              userinfo_endpoint:
+                type: string
+                format: uri
+                description: |
+                  Always `<issuer>/oauth/userinfo`.
+              jwks_uri:
+                type: string
+                format: uri
+                description: |
+                  Always `<issuer>/.well-known/jwks.json`. The same
+                  JWKS surfaces both the env's session-signing
+                  keys and the IdP-mode signing keys (default:
+                  same key set; operators that want a separate
+                  IdP-mode key configure it per env post-v0.7).
+              introspection_endpoint:
+                type: string
+                format: uri
+                description: |
+                  RFC 7662 token introspection endpoint —
+                  `<issuer>/oauth/token_info` (OA-4). Not part of
+                  OIDC core but advertised for discovery
+                  convenience.
+              scopes_supported:
+                type: array
+                items:
+                  type: string
+                description: |
+                  Standard OIDC scopes plus any env-registered
+                  custom scopes (`<env>.<name>`).
+                examples:
+                  - ["openid", "profile", "email", "phone", "address", "offline_access"]
+              response_types_supported:
+                type: array
+                items:
+                  type: string
+                description: Only `code` is supported in v0.7.
+                examples:
+                  - ["code"]
+              grant_types_supported:
+                type: array
+                items:
+                  type: string
+                description: Authorization-code + refresh-token.
+                examples:
+                  - ["authorization_code", "refresh_token"]
+              subject_types_supported:
+                type: array
+                items:
+                  type: string
+                description: Only `public` (one `sub` per user across all apps).
+                examples:
+                  - ["public"]
+              id_token_signing_alg_values_supported:
+                type: array
+                items:
+                  type: string
+                description: |
+                  Algorithms surfaced on the JWKS. Default
+                  `[RS256]`; envs with custom signing keys may
+                  surface additional algorithms.
+                examples:
+                  - ["RS256"]
+              token_endpoint_auth_methods_supported:
+                type: array
+                items:
+                  type: string
+                examples:
+                  - ["client_secret_basic", "client_secret_post", "none"]
+              code_challenge_methods_supported:
+                type: array
+                items:
+                  type: string
+                description: Only `S256` per RFC 7636 best practice.
+                examples:
+                  - ["S256"]
+              claims_supported:
+                type: array
+                items:
+                  type: string
+                description: |
+                  Claim names that may appear in an ID token or
+                  `/oauth/userinfo` response.
+                examples:
+                  - ["sub", "name", "given_name", "family_name", "preferred_username", "picture", "updated_at", "email", "email_verified", "phone_number", "phone_number_verified", "nonce", "aud", "iss", "iat", "exp"]
+              service_documentation:
+                type: string
+                format: uri
+                description: |
+                  Link to the human-readable docs for authn.sh's
+                  OAuth provider mode.
+          examples:
+            production:
+              summary: Production env discovery document
+              value:
+                issuer: https://acme.authn.sh
+                authorization_endpoint: https://acme.authn.sh/oauth/authorize
+                token_endpoint: https://acme.authn.sh/oauth/token
+                userinfo_endpoint: https://acme.authn.sh/oauth/userinfo
+                jwks_uri: https://acme.authn.sh/.well-known/jwks.json
+                introspection_endpoint: https://acme.authn.sh/oauth/token_info
+                scopes_supported: [openid, profile, email, phone, address, offline_access]
+                response_types_supported: [code]
+                grant_types_supported: [authorization_code, refresh_token]
+                subject_types_supported: [public]
+                id_token_signing_alg_values_supported: [RS256]
+                token_endpoint_auth_methods_supported: [client_secret_basic, client_secret_post, none]
+                code_challenge_methods_supported: [S256]
+                claims_supported: [sub, name, given_name, family_name, preferred_username, picture, updated_at, email, email_verified, phone_number, phone_number_verified, nonce, aud, iss, iat, exp]
+                service_documentation: https://authn.sh/docs/oauth-provider-mode
