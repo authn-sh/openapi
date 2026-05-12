@@ -1,0 +1,207 @@
+get:
+  operationId: oauthAuthorize
+  summary: OAuth 2.0 authorization endpoint
+  description: |
+    RFC 6749 §4.1 authorization endpoint for authn.sh's OAuth provider
+    mode. Third-party `OauthApplication` clients redirect the user's
+    browser here to begin the authorization-code grant.
+
+    ### Flow
+
+    1. Validate `client_id` against the env's `OauthApplication`
+       rows. Reject with `400 oauth_invalid_client` if unknown or
+       soft-deleted.
+    2. Validate `redirect_uri` against the application's
+       `callback_urls[]` — exact match, no path-prefix matching.
+       Reject with `400 oauth_invalid_redirect_uri` on mismatch.
+    3. Validate `scope` (space-separated list) against the
+       application's `scopes[]`. Any scope not in the application's
+       set fails with `400 oauth_invalid_scope`.
+    4. When `OauthApplication.is_public: true`, require
+       `code_challenge` + `code_challenge_method=S256`. Reject with
+       `400 oauth_pkce_required` if absent.
+    5. Resolve the calling user from the `__client` cookie:
+       - **No session** — 302 to
+         `/sign-in?continue_url=<this-request>` so the user signs in
+         and bounces back.
+       - **Session, no `AuthorizationGrant` covering `scope`** — 302
+         to `/oauth/consent/{request_id}` (Account Portal page; user
+         accepts / denies + creates the grant). `request_id`
+         encapsulates the parsed parameters, signed by the env's
+         session key with a 10-minute TTL.
+       - **Session, `AuthorizationGrant` covers `scope`** — silent
+         reuse: mint authorization code + 302 to
+         `<redirect_uri>?code=<code>&state=<state>`.
+
+    ### Error redirect semantics
+
+    Per RFC 6749 §4.1.2.1, validation errors that occur **after**
+    `client_id` + `redirect_uri` validate (e.g. `oauth_invalid_scope`,
+    user-denied consent) are returned by redirecting to `redirect_uri`
+    with `error=<token>&error_description=<text>&state=<state>` query
+    params. Errors **before** that point (`oauth_invalid_client`,
+    `oauth_invalid_redirect_uri`) return a `400` JSON body — never
+    redirect to an unvetted URL.
+  tags: [OAuth]
+  security: []
+  parameters:
+    - name: client_id
+      in: query
+      required: true
+      description: |
+        `OauthApplication.client_id` (`oac_pub_…`) of the calling
+        application.
+      schema:
+        type: string
+        pattern: "^oac_pub_[0-9A-HJKMNP-TV-Z]{26}$"
+    - name: redirect_uri
+      in: query
+      required: true
+      description: |
+        Where to bounce the user after consent. Must exactly match
+        one of `OauthApplication.callback_urls[]`.
+      schema:
+        type: string
+        format: uri
+        maxLength: 2048
+    - name: response_type
+      in: query
+      required: true
+      description: |
+        Only `code` is supported — authn.sh implements the
+        authorization-code grant exclusively. Implicit and password
+        grants are not exposed.
+      schema:
+        type: string
+        const: code
+    - name: scope
+      in: query
+      required: true
+      description: |
+        Space-separated list of requested scopes (e.g. `openid
+        profile email`). Must be a subset of
+        `OauthApplication.scopes[]`. `openid` is required for OIDC
+        flows that need the `id_token` from `/oauth/token`.
+      schema:
+        type: string
+        maxLength: 1024
+    - name: state
+      in: query
+      required: true
+      description: |
+        Opaque value carried back unmodified on the `redirect_uri`.
+        The application uses it for CSRF protection. Required (not
+        optional per the spec — authn.sh refuses requests without
+        `state` to keep callers honest).
+      schema:
+        type: string
+        maxLength: 2048
+    - name: nonce
+      in: query
+      required: false
+      description: |
+        OIDC nonce. When supplied, copied verbatim into the issued
+        `id_token.nonce` claim so the application can detect
+        replays. Required when `scope` includes `openid` and the
+        application is single-page / mobile.
+      schema:
+        type: string
+        maxLength: 2048
+    - name: code_challenge
+      in: query
+      required: false
+      description: |
+        PKCE challenge (RFC 7636 §4.2). Required when
+        `OauthApplication.is_public: true`. Optional but recommended
+        for confidential clients.
+      schema:
+        type: string
+        pattern: "^[A-Za-z0-9._~-]{43,128}$"
+    - name: code_challenge_method
+      in: query
+      required: false
+      description: |
+        Only `S256` is accepted. `plain` is rejected with
+        `oauth_pkce_required` (RFC 7636 §4.3 best practice).
+      schema:
+        type: string
+        const: S256
+    - name: prompt
+      in: query
+      required: false
+      description: |
+        OIDC `prompt` parameter. `none` returns
+        `error=login_required` if the user isn't signed in (no
+        redirect to `/sign-in`). `consent` forces the consent
+        screen even when a covering `AuthorizationGrant` exists.
+        `select_account` is reserved for future multi-account
+        support; currently treated as `consent`.
+      schema:
+        type: string
+        enum: [none, consent, select_account]
+  responses:
+    "200":
+      description: |
+        Fallback rendering when the request `Accept`s
+        `application/json` (e.g. an SSR proxy debugging the flow,
+        or a curl client). The body carries the same outcome the
+        browser case gets via `Location`. Not the typical browser
+        path — see the `302` response.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [object, redirect_url]
+            properties:
+              object:
+                type: string
+                const: oauth_authorize_result
+              redirect_url:
+                type: string
+                format: uri
+                description: |
+                  Where the browser should be bounced next —
+                  `/sign-in?continue_url=…`,
+                  `/oauth/consent/<request_id>`, or
+                  `<redirect_uri>?code=…&state=…` on silent reuse.
+    "302":
+      description: |
+        Outcome redirect — to `/sign-in?continue_url=…`, to
+        `/oauth/consent/{request_id}`, or to
+        `<redirect_uri>?code=…&state=…` on silent reuse.
+      headers:
+        Location:
+          description: |
+            Resolved redirect target. Always an HTTPS URL on the
+            redirect-URL allowlist (when bouncing back to the
+            application) or an authn.sh-hosted page (when bouncing
+            to sign-in / consent).
+          required: true
+          schema:
+            type: string
+            format: uri
+        Cache-Control:
+          description: Always `no-store` per RFC 6749 §5.1.
+          schema:
+            type: string
+            const: no-store
+    "400":
+      description: |
+        `client_id` / `redirect_uri` validation failed — return a
+        plain JSON error rather than redirecting to an unvetted
+        URL. Error codes:
+
+        - `oauth_invalid_client` — `client_id` unknown or
+          soft-deleted.
+        - `oauth_invalid_redirect_uri` — `redirect_uri` is not on
+          `OauthApplication.callback_urls[]`.
+        - `oauth_invalid_request` — required parameter missing or
+          malformed.
+        - `oauth_unsupported_response_type` — `response_type` is
+          something other than `code`.
+        - `oauth_pkce_required` — public client without PKCE, or
+          `code_challenge_method != "S256"`.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }

@@ -1,0 +1,84 @@
+type: object
+description: |
+  Per-(user, app) consent record. Created when the user accepts the
+  consent screen at `/oauth/consent/{request_id}`; carries the
+  `scopes[]` granted at that moment. Subsequent `/oauth/authorize`
+  requests for the same `(user, oauth_application_id)` pair whose
+  requested `scope` is a subset of `scopes[]` reuse this grant
+  silently (no consent prompt).
+
+  Revoked grants linger in the table for audit. Once `revoked_at` is
+  set, every outstanding access / refresh token rooted at the grant
+  is invalidated at the next introspection or refresh attempt, and
+  `/oauth/authorize` re-prompts for consent.
+
+  ### Identifier
+
+  Row id prefix `authgrant_` (e.g.
+  `authgrant_01HKX9SY9V7H7TF8C8K7J9X4ZA`).
+required:
+  - id
+  - object
+  - oauth_application_id
+  - user_id
+  - scopes
+  - granted_at
+  - revoked_at
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: authorization_grant
+  oauth_application_id:
+    $ref: ./Id.yaml
+    description: ID of the `OauthApplication` the grant is rooted at.
+  user_id:
+    $ref: ./Id.yaml
+    description: ID of the consenting `User`.
+  scopes:
+    type: array
+    items:
+      type: string
+    description: |
+      Scope set the user consented to. Subsequent `/oauth/authorize`
+      requests for the same `(user, app)` pair whose requested
+      `scope` is a subset of this set reuse the grant silently.
+    examples:
+      - ["openid", "profile", "email"]
+  granted_at:
+    $ref: ./Timestamp.yaml
+  revoked_at:
+    description: |
+      Set when the user revokes the grant via the `<UserProfile />`
+      authorized-apps section, or when the operator deletes the
+      `OauthApplication`. `null` while the grant is active.
+    oneOf:
+      - $ref: ./Timestamp.yaml
+      - type: "null"
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - id: authgrant_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: authorization_grant
+    oauth_application_id: oac_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    scopes: [openid, profile, email]
+    granted_at: 1714723000000
+    revoked_at: null
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: authgrant_01HKX9SY9V7H7TF8C8K7J9X4ZC
+    object: authorization_grant
+    oauth_application_id: oac_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    user_id: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    scopes: [openid, profile, email, acme.read_billing]
+    granted_at: 1714724000000
+    revoked_at: 1714725000000
+    created_at: 1714724000000
+    updated_at: 1714725000000

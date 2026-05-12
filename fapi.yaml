@@ -74,6 +74,8 @@ tags:
     description: SCIM 2.0 directory-sync endpoints (RFC 7644). Authenticated via `bearer_scim_token`.
   - name: Org SCIM
     description: Per-organization SCIM token + mapping CRUD (admin-facing).
+  - name: OAuth
+    description: OAuth 2.0 / OIDC provider-mode endpoints — `/oauth/authorize`, `/oauth/token`, `/oauth/userinfo`, `/oauth/token_info`. authn.sh acts as the IdP.
 
 security:
   - client_cookie: []
@@ -224,6 +226,8 @@ paths:
     $ref: ./paths/fapi/me-organization-membership-requests.yaml
   /v1/me/active-organization:
     $ref: ./paths/fapi/me-active-organization.yaml
+  /oauth/authorize:
+    $ref: ./paths/fapi/oauth-authorize.yaml
 
 components:
   securitySchemes:
@@ -275,6 +279,8 @@ components:
     ScimError:                                 { $ref: ./components/schemas/ScimError.yaml }
     ScimToken:                                 { $ref: ./components/schemas/ScimToken.yaml }
     ScimAttributeMapping:                      { $ref: ./components/schemas/ScimAttributeMapping.yaml }
+    OauthApplication:                          { $ref: ./components/schemas/OauthApplication.yaml }
+    AuthorizationGrant:                        { $ref: ./components/schemas/AuthorizationGrant.yaml }
     Passkey:                                   { $ref: ./components/schemas/Passkey.yaml }
     PasskeyCreationOptions:                    { $ref: ./components/schemas/PasskeyCreationOptions.yaml }
     PasskeyAttestation:                        { $ref: ./components/schemas/PasskeyAttestation.yaml }
