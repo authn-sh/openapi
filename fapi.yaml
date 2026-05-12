@@ -228,6 +228,10 @@ paths:
     $ref: ./paths/fapi/me-active-organization.yaml
   /oauth/authorize:
     $ref: ./paths/fapi/oauth-authorize.yaml
+  /oauth/token:
+    $ref: ./paths/fapi/oauth-token.yaml
+  /oauth/token_info:
+    $ref: ./paths/fapi/oauth-token-info.yaml
 
 components:
   securitySchemes:

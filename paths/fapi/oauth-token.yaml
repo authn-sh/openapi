@@ -1,0 +1,239 @@
+post:
+  operationId: oauthToken
+  summary: OAuth 2.0 token endpoint
+  description: |
+    RFC 6749 §3.2 / OIDC Core §3.1.3 token endpoint. Exchanges an
+    authorization code minted by `/oauth/authorize` for an
+    `access_token` + `id_token` (+ optional `refresh_token`), or
+    rotates an existing `refresh_token`.
+
+    ### Client authentication
+
+    Confidential clients (`OauthApplication.is_public: false`)
+    authenticate one of two ways (RFC 6749 §2.3.1):
+
+    - `client_secret_basic` — HTTP Basic auth header carrying
+      `<client_id>:<client_secret>`.
+    - `client_secret_post` — `client_id` + `client_secret` in the
+      form body.
+
+    Public clients (`is_public: true`) omit the secret entirely and
+    must supply `code_verifier` matching the `code_challenge` they
+    sent to `/oauth/authorize`. The verifier check replaces the
+    secret check (RFC 7636 §4.6).
+
+    ### Refresh-token rotation
+
+    On `grant_type=refresh_token`, the previous refresh token is
+    invalidated and a fresh one is returned. Clients that mishandle
+    the rotation (e.g. retry with the old token) trip
+    refresh-token-reuse detection — every token rooted at the
+    `AuthorizationGrant` is invalidated and the user must re-consent.
+    This matches OAuth 2.1 §6.1.
+
+    ### ID token
+
+    Issued when the granted scope set includes `openid`. Signed with
+    the env's session-signing key (the same `kid` surfaced at
+    `/.well-known/jwks.json`). Claims:
+
+    - `iss` — `https://<env_slug>.authn.sh`
+    - `sub` — the user's `id` (`user_…`)
+    - `aud` — the requesting `client_id`
+    - `iat` / `exp` / `nbf` — per `lifetime`
+    - `nonce` — verbatim from `/oauth/authorize` when provided
+    - `email` / `email_verified` — when `profile` and `email` scopes
+      are granted
+    - `name` / `given_name` / `family_name` / `picture` — when
+      `profile` scope is granted
+    - Org-aware claims (`org_id`, `org_slug`, `org_role`) when the
+      session has an active organization
+  tags: [OAuth]
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/x-www-form-urlencoded:
+        schema:
+          type: object
+          required: [grant_type]
+          additionalProperties: false
+          properties:
+            grant_type:
+              type: string
+              enum: [authorization_code, refresh_token]
+              description: |
+                Which grant flow to run.
+            code:
+              type: string
+              description: |
+                Authorization code minted by `/oauth/authorize`.
+                Required when `grant_type=authorization_code`. Single
+                use; expires 60 seconds after issue.
+              maxLength: 2048
+            redirect_uri:
+              type: string
+              format: uri
+              description: |
+                Must match the `redirect_uri` originally sent to
+                `/oauth/authorize` (per RFC 6749 §4.1.3 — guards
+                against authorization-code injection).
+              maxLength: 2048
+            refresh_token:
+              type: string
+              description: |
+                Required when `grant_type=refresh_token`. Single use;
+                replaced on every successful exchange.
+              maxLength: 4096
+            client_id:
+              type: string
+              description: |
+                Required for public clients and for confidential
+                clients using `client_secret_post`. Omitted (or
+                ignored) when authentication rides the
+                `Authorization` header (`client_secret_basic`).
+              pattern: "^oac_pub_[0-9A-HJKMNP-TV-Z]{26}$"
+            client_secret:
+              type: string
+              description: |
+                Required for confidential clients using
+                `client_secret_post`. Never sent by public clients.
+              maxLength: 2048
+            code_verifier:
+              type: string
+              description: |
+                PKCE verifier (RFC 7636 §4.1). Required when the
+                application is `is_public: true` or when
+                `code_challenge` was sent to `/oauth/authorize`.
+              pattern: "^[A-Za-z0-9._~-]{43,128}$"
+            scope:
+              type: string
+              description: |
+                Optional on `grant_type=refresh_token` — narrow the
+                granted scope set on rotation (cannot widen). Ignored
+                on `grant_type=authorization_code` (scope comes from
+                the `AuthorizationGrant`).
+              maxLength: 1024
+        examples:
+          authorization_code_confidential:
+            summary: Confidential client redeeming an authorization code
+            value:
+              grant_type: authorization_code
+              code: oacode_01HKX9SY9V7H7TF8C8K7J9X4ZA
+              redirect_uri: https://app.acme.example/oauth/callback
+              client_id: oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZA
+              client_secret: osec_01HKX9SYABCDEFGHJKMNPQRSTVWXYZ234567
+          authorization_code_pkce:
+            summary: Public client redeeming with PKCE verifier
+            value:
+              grant_type: authorization_code
+              code: oacode_01HKX9SY9V7H7TF8C8K7J9X4ZB
+              redirect_uri: com.acme.app://oauth/callback
+              client_id: oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZB
+              code_verifier: dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+          refresh_token:
+            summary: Refresh-token rotation
+            value:
+              grant_type: refresh_token
+              refresh_token: oartt_01HKX9SY9V7H7TF8C8K7J9X4ZC
+              client_id: oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZA
+              client_secret: osec_01HKX9SYABCDEFGHJKMNPQRSTVWXYZ234567
+  responses:
+    "200":
+      description: The minted token bundle.
+      headers:
+        Cache-Control:
+          description: Always `no-store` per RFC 6749 §5.1.
+          schema:
+            type: string
+            const: no-store
+        Pragma:
+          description: Always `no-cache` per RFC 6749 §5.1.
+          schema:
+            type: string
+            const: no-cache
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [access_token, token_type, expires_in, scope]
+            additionalProperties: false
+            properties:
+              access_token:
+                type: string
+                description: |
+                  Bearer access token. Format `oat_<base32-ULID-bytes>`.
+                  Verified at `/oauth/userinfo` and `/oauth/token_info`.
+              token_type:
+                type: string
+                const: Bearer
+              expires_in:
+                type: integer
+                minimum: 1
+                description: |
+                  Access token lifetime in seconds. Default 3600
+                  (1 hour); operator-overridable per
+                  `OauthApplication` post-v0.7.
+              refresh_token:
+                type: string
+                description: |
+                  Refresh token (`oartt_<base32-ULID-bytes>`).
+                  Returned when the granted scope set includes
+                  `offline_access`, and on every
+                  `grant_type=refresh_token` exchange. Single use.
+              id_token:
+                type: string
+                description: |
+                  Signed OIDC ID token (JWT). Returned when the
+                  granted scope set includes `openid`. Claims documented
+                  in the operation description.
+              scope:
+                type: string
+                description: |
+                  Space-separated final scope set granted on this
+                  token (may be a subset of the requested set when
+                  the user denied individual scopes on the consent
+                  screen).
+          examples:
+            full:
+              summary: Full bundle with id_token + refresh_token
+              value:
+                access_token: oat_01HKX9SYABCDEFGHJKMNPQRSTVWXYZ234567
+                token_type: Bearer
+                expires_in: 3600
+                refresh_token: oartt_01HKX9SY9V7H7TF8C8K7J9X4ZC
+                id_token: eyJhbGciOiJSUzI1NiIsImtpZCI6ImVudl9hY21lX3Rlc3RfMSJ9.eyJpc3MiOiJodHRwczovL2FjbWUuYXV0aG4uc2giLCJzdWIiOiJ1c2VyXzAxSEtYOVNZOVY3SDdUR…
+                scope: "openid profile email"
+            minimal:
+              summary: Bearer-only (no OIDC, no refresh)
+              value:
+                access_token: oat_01HKX9SYABCDEFGHJKMNPQRSTVWXYZ234567
+                token_type: Bearer
+                expires_in: 3600
+                scope: "acme.read_billing"
+    "400":
+      description: |
+        Grant validation failed. Error codes (RFC 6749 §5.2 + OIDC):
+
+        - `oauth_invalid_grant` — code expired, already redeemed,
+          or doesn't match the supplied `redirect_uri` /
+          `code_verifier`.
+        - `oauth_invalid_request` — required parameter missing.
+        - `oauth_invalid_client` — bad credentials.
+        - `oauth_unsupported_grant_type` — `grant_type` not in the
+          enum.
+        - `oauth_invalid_pkce` — `code_verifier` doesn't hash to
+          the prior `code_challenge`.
+        - `oauth_invalid_scope` — refresh-rotation requested a
+          scope outside the original grant.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }
+    "401":
+      description: |
+        Client authentication failed (`client_secret_basic` /
+        `client_secret_post` mismatch). Returns
+        `WWW-Authenticate: Basic realm="oauth"` per RFC 6749 §5.2.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }

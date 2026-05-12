@@ -1,0 +1,151 @@
+post:
+  operationId: oauthTokenInfo
+  summary: OAuth 2.0 token introspection
+  description: |
+    RFC 7662 token introspection. Lets a resource server validate a
+    bearer token it received from a client without re-implementing
+    the JWT verification logic (or in cases where the token is opaque
+    rather than a JWT).
+
+    ### Authentication
+
+    Two schemes are accepted:
+
+    - `client_secret_basic` — the `OauthApplication` itself
+      introspects tokens minted against it. Useful for a confidential
+      client's resource server when it shares the same client_id /
+      secret pair.
+    - `bearer_secret_key` — the env's BAPI secret key
+      (`sk_test_…` / `sk_live_…`). Lets server-side admin tooling
+      introspect tokens for any application in the env (e.g. for
+      audit logs or anomaly detection).
+
+    Anonymous calls are refused with `401`.
+
+    ### Response
+
+    Per RFC 7662 §2.2, an inactive / unknown token returns
+    `{ "active": false }` with no further detail. Active tokens
+    return the introspection metadata documented below.
+  tags: [OAuth]
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/x-www-form-urlencoded:
+        schema:
+          type: object
+          required: [token]
+          additionalProperties: false
+          properties:
+            token:
+              type: string
+              description: |
+                The token to introspect. May be an `access_token`
+                (`oat_…`) or a `refresh_token` (`oartt_…`). The
+                introspected token's kind is reflected in the
+                `token_type_hint` field of the response.
+              maxLength: 4096
+            token_type_hint:
+              type: string
+              enum: [access_token, refresh_token]
+              description: |
+                Optimization hint per RFC 7662 §2.1. The server may
+                ignore it. authn.sh uses the prefix on the token
+                itself (`oat_` vs `oartt_`) as authoritative.
+        examples:
+          introspect_access:
+            value:
+              token: oat_01HKX9SYABCDEFGHJKMNPQRSTVWXYZ234567
+              token_type_hint: access_token
+          introspect_refresh:
+            value:
+              token: oartt_01HKX9SY9V7H7TF8C8K7J9X4ZC
+              token_type_hint: refresh_token
+  responses:
+    "200":
+      description: |
+        Introspection result. `active: false` carries no further
+        detail; `active: true` carries the documented metadata.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [active]
+            additionalProperties: false
+            properties:
+              active:
+                type: boolean
+                description: |
+                  `true` iff the token is currently valid (not
+                  expired, not revoked, rooted at a non-revoked
+                  `AuthorizationGrant`).
+              scope:
+                type: string
+                description: Space-separated granted scope set.
+              client_id:
+                type: string
+                description: |
+                  `OauthApplication.client_id` the token was issued
+                  to.
+                pattern: "^oac_pub_[0-9A-HJKMNP-TV-Z]{26}$"
+              username:
+                type: string
+                description: |
+                  Human-readable user identifier — primary email
+                  address or username, whichever the env primarily
+                  identifies users by.
+              token_type:
+                type: string
+                const: Bearer
+              exp:
+                type: integer
+                description: Unix-second expiry timestamp.
+              iat:
+                type: integer
+                description: Unix-second issuance timestamp.
+              nbf:
+                type: integer
+                description: Unix-second "not before" timestamp.
+              sub:
+                description: User the token represents.
+                $ref: ../../components/schemas/Id.yaml
+              aud:
+                type: string
+                description: |
+                  Same as `client_id`. Surfaced for tooling that
+                  expects the JWT-style claim name.
+              iss:
+                type: string
+                format: uri
+                description: |
+                  Environment-scoped issuer URL —
+                  `https://<env_slug>.authn.sh`.
+              jti:
+                type: string
+                description: Token ID — same as the access/refresh token suffix.
+          examples:
+            active_access:
+              summary: Live access token
+              value:
+                active: true
+                scope: "openid profile email"
+                client_id: oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZA
+                username: alice@acme.example
+                token_type: Bearer
+                exp: 1714726600
+                iat: 1714723000
+                nbf: 1714723000
+                sub: user_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                aud: oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZA
+                iss: https://acme.authn.sh
+                jti: oat_01HKX9SYABCDEFGHJKMNPQRSTVWXYZ234567
+            inactive:
+              summary: Expired / revoked / unknown
+              value:
+                active: false
+    "401":
+      description: Anonymous call — neither client credentials nor BAPI secret presented.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/ErrorResponse.yaml }
