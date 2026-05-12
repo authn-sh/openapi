@@ -1,0 +1,40 @@
+get:
+  operationId: listEnterpriseAccounts
+  summary: List enterprise accounts
+  description: |
+    Every `EnterpriseAccount` row in the environment. Filterable by
+    `user_id` and `enterprise_connection_id` so admins can scope to a
+    single user or audit which users have signed in via a specific
+    enterprise connection.
+
+    No `POST` / `PATCH` on this resource — enterprise accounts are
+    provisioned through the SSO callback (`/v1/saml/{id}/acs` or
+    `/v1/enterprise-sso-callback`), not via BAPI.
+  tags: [Enterprise Connections]
+  parameters:
+    - name: user_id
+      in: query
+      required: false
+      description: Filter to enterprise accounts owned by this user.
+      schema: { $ref: "../../components/schemas/Id.yaml" }
+    - name: enterprise_connection_id
+      in: query
+      required: false
+      description: Filter to enterprise accounts created via this connection.
+      schema: { $ref: "../../components/schemas/Id.yaml" }
+    - $ref: "../../components/parameters/LimitParam.yaml"
+    - $ref: "../../components/parameters/OffsetParam.yaml"
+  responses:
+    "200":
+      description: Paginated list of enterprise accounts.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data, total_count]
+            properties:
+              data:
+                type: array
+                items: { $ref: "../../components/schemas/EnterpriseAccount.yaml" }
+              total_count: { type: integer }
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }

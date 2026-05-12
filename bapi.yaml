@@ -196,6 +196,10 @@ paths:
     $ref: ./paths/bapi/enterprise-connection.yaml
   /v1/enterprise-connections/{enterprise_connection_id}/test:
     $ref: ./paths/bapi/enterprise-connection-test.yaml
+  /v1/enterprise-accounts:
+    $ref: ./paths/bapi/enterprise-accounts.yaml
+  /v1/enterprise-accounts/{enterprise_account_id}:
+    $ref: ./paths/bapi/enterprise-account.yaml
   /v1/sms-templates:
     $ref: ./paths/bapi/sms-templates.yaml
   /v1/sms-templates/{sms_template_slug}:
