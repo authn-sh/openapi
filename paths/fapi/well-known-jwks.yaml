@@ -1,0 +1,104 @@
+get:
+  operationId: getJwks
+  summary: JSON Web Key Set
+  description: |
+    RFC 7517 JWKS document for the calling environment. Public,
+    unauthenticated. Cached for one hour.
+
+    Surfaces every public verifying key the environment may have
+    signed a token with — the standard session-signing key, plus
+    any rotated predecessors still inside their grace window. As
+    of v0.7 the same JWKS covers IdP-mode tokens (access /
+    `id_token` from `/oauth/token`) by default. Envs that wire a
+    separate IdP signing key surface it here as an additional
+    entry, distinguished by `use` / `kid`.
+
+    Verifiers should match by `kid`, never assume a single-key
+    JWKS.
+  tags: [JWKS / OIDC]
+  security: []
+  responses:
+    "200":
+      description: The JSON Web Key Set.
+      headers:
+        Cache-Control:
+          description: Always `public, max-age=3600`.
+          schema:
+            type: string
+            const: public, max-age=3600
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [keys]
+            additionalProperties: false
+            properties:
+              keys:
+                type: array
+                items:
+                  type: object
+                  required: [kty, kid, use, alg]
+                  additionalProperties: true
+                  properties:
+                    kty:
+                      type: string
+                      enum: [RSA, EC, oct]
+                      description: Key type per RFC 7518.
+                    kid:
+                      type: string
+                      description: |
+                        Stable key id matching the `kid` header
+                        on tokens signed with this key.
+                    use:
+                      type: string
+                      enum: [sig]
+                      description: |
+                        Always `sig` — JWKS only surfaces signing
+                        keys (no encryption keys in v0.7).
+                    alg:
+                      type: string
+                      enum: [RS256, ES256, HS256]
+                      description: Signing algorithm.
+                    "n":
+                      type: string
+                      description: RSA modulus (base64url). RSA keys only.
+                    "e":
+                      type: string
+                      description: RSA exponent (base64url). RSA keys only.
+                    crv:
+                      type: string
+                      description: EC curve name. EC keys only.
+                    x:
+                      type: string
+                      description: EC public X coord (base64url). EC keys only.
+                    y:
+                      type: string
+                      description: EC public Y coord (base64url). EC keys only.
+          examples:
+            single_rsa_key:
+              summary: One active RSA key (most common shape)
+              value:
+                keys:
+                  - kty: RSA
+                    kid: env_acme_test_1
+                    use: sig
+                    alg: RS256
+                    n: 0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw
+                    e: AQAB
+            ec_plus_rotated_rsa:
+              summary: Active EC key + rotated RSA still in grace
+              value:
+                keys:
+                  - kty: EC
+                    kid: env_acme_test_2
+                    use: sig
+                    alg: ES256
+                    crv: P-256
+                    x: f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU
+                    y: x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0
+                  - kty: RSA
+                    kid: env_acme_test_1
+                    use: sig
+                    alg: RS256
+                    n: 0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw
+                    e: AQAB
