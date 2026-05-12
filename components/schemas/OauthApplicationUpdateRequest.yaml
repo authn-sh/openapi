@@ -1,0 +1,28 @@
+type: object
+description: |
+  Request body for `PATCH /v1/oauth-applications/{oauth_application_id}`.
+  Every field is optional; omitted keys are left untouched.
+  `client_id` and `is_public` are immutable — sending a different
+  value returns `422`.
+additionalProperties: false
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 100
+  callback_urls:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      format: uri
+  scopes:
+    type: array
+    items:
+      type: string
+examples:
+  - name: Acme Dashboard (renamed)
+  - callback_urls:
+      - https://app.acme.example/oauth/callback
+      - https://staging.acme.example/oauth/callback
+  - scopes: [openid, profile, email, acme.read_billing]

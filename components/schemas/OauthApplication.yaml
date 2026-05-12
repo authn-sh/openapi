@@ -1,0 +1,127 @@
+type: object
+description: |
+  Third-party application registered against the environment as an
+  OAuth 2.0 / OIDC client. `OauthApplication` rows drive the OAuth
+  provider mode endpoints (`/oauth/authorize`, `/oauth/token`,
+  `/oauth/userinfo`) — the application redirects the user to
+  `/oauth/authorize`, the user grants consent, and authn.sh hands
+  back tokens that the application can use to identify the user.
+
+  ### Client types
+
+  - **Confidential** (`is_public: false`) — server-side application
+    that holds a `client_secret` securely. The secret is required on
+    `POST /oauth/token`. Returned exactly once on create / rotate;
+    every subsequent read exposes only `client_id`.
+  - **Public** (`is_public: true`) — single-page app / mobile client
+    that cannot keep a secret. PKCE is required on every
+    `/oauth/authorize` request, and `/oauth/token` exchanges check
+    the verifier instead of a secret. No `client_secret` is ever
+    stored.
+
+  ### Identifier
+
+  Row id prefix `oac_` (e.g. `oac_01HKX9SY9V7H7TF8C8K7J9X4ZA`). The
+  public `client_id` is `oac_pub_<26-char-base32>`, deterministically
+  derived from `id` so it is stable across rotations.
+required:
+  - id
+  - object
+  - name
+  - client_id
+  - callback_urls
+  - scopes
+  - is_public
+  - created_at
+  - updated_at
+additionalProperties: false
+properties:
+  id:
+    $ref: ./Id.yaml
+  object:
+    type: string
+    const: oauth_application
+  name:
+    type: string
+    minLength: 1
+    maxLength: 100
+    description: |
+      Human-readable label rendered on the user-facing consent
+      screen and on the `<UserProfile />` authorized-apps list.
+  client_id:
+    type: string
+    pattern: "^oac_pub_[0-9A-HJKMNP-TV-Z]{26}$"
+    description: |
+      Public client identifier the application sends on every
+      `/oauth/authorize` request. Deterministic from `id` (the
+      same ULID body), prefixed `oac_pub_` so it is visually
+      distinguishable from the internal row id.
+    examples:
+      - oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZA
+  callback_urls:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      format: uri
+    description: |
+      Allow-list of redirect URIs. Every `/oauth/authorize` request
+      must supply a `redirect_uri` that exactly matches one entry
+      (no wildcard, no path-prefix matching).
+    examples:
+      - ["https://app.acme.example/oauth/callback"]
+  scopes:
+    type: array
+    items:
+      type: string
+    description: |
+      Scope set the application is allowed to request. Standard
+      OIDC scopes (`openid`, `profile`, `email`) plus optional
+      custom scopes (`<env>.<name>`) registered on the
+      environment. `/oauth/authorize` requests narrowing or
+      matching this set succeed; supersets are rejected.
+    examples:
+      - ["openid", "profile", "email"]
+  is_public:
+    type: boolean
+    description: |
+      `true` means the client is public — PKCE-only, no
+      `client_secret` stored. `false` means confidential — a
+      `client_secret` is held server-side and required on token
+      exchange. Immutable after create.
+  client_secret:
+    type: [string, "null"]
+    writeOnly: true
+    description: |
+      Plaintext client secret. Populated only on the response to
+      `POST /v1/oauth-applications` (when `is_public: false`) and
+      on `POST /v1/oauth-applications/{id}/rotate-secret`. **Never
+      returned by any GET.** `null` on every list / read response.
+    examples:
+      - osec_01HKX9SYABCDEFGHJKMNPQRSTVWXYZ234567
+  created_at:
+    $ref: ./Timestamp.yaml
+  updated_at:
+    $ref: ./Timestamp.yaml
+examples:
+  - id: oac_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    object: oauth_application
+    name: Acme Dashboard
+    client_id: oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZA
+    callback_urls:
+      - https://app.acme.example/oauth/callback
+    scopes: [openid, profile, email]
+    is_public: false
+    created_at: 1714723000000
+    updated_at: 1714723000000
+  - id: oac_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    object: oauth_application
+    name: Acme Mobile
+    client_id: oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZB
+    callback_urls:
+      - com.acme.app://oauth/callback
+      - https://app.acme.example/oauth/mobile-callback
+    scopes: [openid, profile, email, acme.read_billing]
+    is_public: true
+    created_at: 1714724000000
+    updated_at: 1714724000000
