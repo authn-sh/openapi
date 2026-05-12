@@ -1,0 +1,81 @@
+parameters:
+  - name: oauth_application_id
+    in: path
+    required: true
+    schema: { $ref: ../../components/schemas/Id.yaml }
+
+get:
+  operationId: getOauthApplication
+  summary: Get an OAuth application
+  description: |
+    Fetch a single `OauthApplication` row. `client_secret` is never
+    included on a read — it is only ever surfaced on create or
+    `/rotate-secret`.
+  tags: [OAuth Applications]
+  responses:
+    "200":
+      description: The OAuth application.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/OauthApplication.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+
+patch:
+  operationId: updateOauthApplication
+  summary: Update an OAuth application
+  description: |
+    Partial update. `client_id` and `is_public` are immutable —
+    sending a different value returns `422`. Every other field is
+    optional; omitted keys are left untouched.
+
+    Shrinking `callback_urls` or `scopes` does not invalidate already
+    issued tokens; subsequent `/oauth/authorize` requests are evaluated
+    against the new set.
+  tags: [OAuth Applications]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/OauthApplicationUpdateRequest.yaml }
+        examples:
+          rename:
+            summary: Rename the application
+            value: { name: Acme Dashboard (renamed) }
+          add_callback:
+            summary: Add a staging redirect URI
+            value:
+              callback_urls:
+                - https://app.acme.example/oauth/callback
+                - https://staging.acme.example/oauth/callback
+          widen_scopes:
+            summary: Grant a custom scope
+            value:
+              scopes: [openid, profile, email, acme.read_billing]
+  responses:
+    "200":
+      description: The updated OAuth application.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/OauthApplication.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
+
+delete:
+  operationId: deleteOauthApplication
+  summary: Delete an OAuth application
+  description: |
+    Soft delete. Revokes every outstanding `AuthorizationGrant` rooted
+    at this application (no opt-out) and rejects subsequent
+    `/oauth/authorize` requests with `400 invalid_client`. Existing
+    access / refresh tokens are invalidated at the next introspection
+    or refresh attempt.
+  tags: [OAuth Applications]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "404": { $ref: ../../components/responses/NotFound.yaml }

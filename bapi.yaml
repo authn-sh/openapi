@@ -67,6 +67,8 @@ tags:
     description: Per-environment settings (`InstanceSetting`).
   - name: OAuth Providers
     description: Per-environment social-IdP configuration (`OauthProvider`).
+  - name: OAuth Applications
+    description: Third-party applications registered against authn.sh as an OAuth/OIDC IdP (`OauthApplication`).
   - name: Enterprise Connections
     description: Per-environment enterprise-IdP configuration (`EnterpriseConnection`).
   - name: SMS Templates
@@ -192,6 +194,12 @@ paths:
     $ref: ./paths/bapi/oauth-provider.yaml
   /v1/oauth-providers/{oauth_provider_id}/test:
     $ref: ./paths/bapi/oauth-provider-test.yaml
+  /v1/oauth-applications:
+    $ref: ./paths/bapi/oauth-applications.yaml
+  /v1/oauth-applications/{oauth_application_id}:
+    $ref: ./paths/bapi/oauth-application.yaml
+  /v1/oauth-applications/{oauth_application_id}/rotate-secret:
+    $ref: ./paths/bapi/oauth-application-rotate-secret.yaml
   /v1/enterprise-connections:
     $ref: ./paths/bapi/enterprise-connections.yaml
   /v1/enterprise-connections/{enterprise_connection_id}:
@@ -301,6 +309,10 @@ components:
     OauthProvider:                             { $ref: ./components/schemas/OauthProvider.yaml }
     OauthProviderRequest:                      { $ref: ./components/schemas/OauthProviderRequest.yaml }
     OauthProviderTestResult:                   { $ref: ./components/schemas/OauthProviderTestResult.yaml }
+    OauthApplication:                          { $ref: ./components/schemas/OauthApplication.yaml }
+    OauthApplicationWithSecret:                { $ref: ./components/schemas/OauthApplicationWithSecret.yaml }
+    OauthApplicationCreateRequest:             { $ref: ./components/schemas/OauthApplicationCreateRequest.yaml }
+    OauthApplicationUpdateRequest:             { $ref: ./components/schemas/OauthApplicationUpdateRequest.yaml }
     EnterpriseConnection:                      { $ref: ./components/schemas/EnterpriseConnection.yaml }
     EnterpriseConnectionRequest:               { $ref: ./components/schemas/EnterpriseConnectionRequest.yaml }
     EnterpriseConnectionTestResult:            { $ref: ./components/schemas/EnterpriseConnectionTestResult.yaml }

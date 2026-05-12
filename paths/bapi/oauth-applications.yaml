@@ -1,0 +1,109 @@
+get:
+  operationId: listOauthApplications
+  summary: List OAuth applications
+  description: |
+    Paginated list of every `OauthApplication` row registered against
+    the environment. Confidential applications never expose
+    `client_secret` on read.
+  tags: [OAuth Applications]
+  parameters:
+    - $ref: ../../components/parameters/LimitParam.yaml
+    - $ref: ../../components/parameters/OffsetParam.yaml
+  responses:
+    "200":
+      description: A page of OAuth applications.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../../components/schemas/PaginatedList.yaml
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: ../../components/schemas/OauthApplication.yaml }
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+
+post:
+  operationId: createOauthApplication
+  summary: Create an OAuth application
+  description: |
+    Register a third-party application that can authenticate users
+    against this environment's `/oauth/authorize` + `/oauth/token`
+    endpoints.
+
+    When `is_public: false`, the response carries the freshly minted
+    plaintext `client_secret` exactly once (`OauthApplicationWithSecret`).
+    Capture it at this moment or rotate via
+    `POST /v1/oauth-applications/{id}/rotate-secret` — there is no way
+    to recover the plaintext afterwards.
+
+    When `is_public: true`, no secret is stored; the response is the
+    plain `OauthApplication` shape (no `client_secret` field).
+  tags: [OAuth Applications]
+  parameters:
+    - $ref: ../../components/parameters/IdempotencyKeyHeader.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: ../../components/schemas/OauthApplicationCreateRequest.yaml }
+        examples:
+          confidential:
+            summary: Confidential client (server-side app)
+            value:
+              name: Acme Dashboard
+              callback_urls:
+                - https://app.acme.example/oauth/callback
+              scopes: [openid, profile, email]
+          public_pkce:
+            summary: Public client (PKCE-only mobile / SPA)
+            value:
+              name: Acme Mobile
+              callback_urls:
+                - com.acme.app://oauth/callback
+                - https://app.acme.example/oauth/mobile-callback
+              scopes: [openid, profile, email, acme.read_billing]
+              is_public: true
+  responses:
+    "201":
+      description: |
+        The created application. The plaintext `client_secret` is
+        included only when `is_public: false` — this is the **only**
+        response that ever surfaces it. Public clients have no secret
+        and the field is omitted.
+      content:
+        application/json:
+          schema: { $ref: ../../components/schemas/OauthApplication.yaml }
+          examples:
+            confidential:
+              summary: Confidential — plaintext secret returned once
+              value:
+                id: oac_01HKX9SY9V7H7TF8C8K7J9X4ZA
+                object: oauth_application
+                name: Acme Dashboard
+                client_id: oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZA
+                client_secret: osec_01HKX9SYABCDEFGHJKMNPQRSTVWXYZ234567
+                callback_urls:
+                  - https://app.acme.example/oauth/callback
+                scopes: [openid, profile, email]
+                is_public: false
+                created_at: 1714723000000
+                updated_at: 1714723000000
+            public:
+              summary: Public — no secret
+              value:
+                id: oac_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                object: oauth_application
+                name: Acme Mobile
+                client_id: oac_pub_01HKX9SY9V7H7TF8C8K7J9X4ZB
+                callback_urls:
+                  - com.acme.app://oauth/callback
+                  - https://app.acme.example/oauth/mobile-callback
+                scopes: [openid, profile, email, acme.read_billing]
+                is_public: true
+                created_at: 1714724000000
+                updated_at: 1714724000000
+    "401": { $ref: ../../components/responses/Unauthorized.yaml }
+    "409": { $ref: ../../components/responses/Conflict.yaml }
+    "422": { $ref: ../../components/responses/UnprocessableEntity.yaml }
