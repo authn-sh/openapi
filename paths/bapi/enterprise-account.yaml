@@ -1,0 +1,36 @@
+parameters:
+  - name: enterprise_account_id
+    in: path
+    required: true
+    description: ID of the enterprise account.
+    schema: { $ref: "../../components/schemas/Id.yaml" }
+
+get:
+  operationId: getEnterpriseAccount
+  summary: Get an enterprise account
+  description: Fetch a single `EnterpriseAccount` by ID.
+  tags: [Enterprise Connections]
+  responses:
+    "200":
+      description: The enterprise account.
+      content:
+        application/json:
+          schema: { $ref: "../../components/schemas/EnterpriseAccount.yaml" }
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../../components/responses/NotFound.yaml" }
+
+delete:
+  operationId: deleteEnterpriseAccount
+  summary: Delete an enterprise account
+  description: |
+    Admin unlink — drops the local `EnterpriseAccount` row. The
+    underlying `User` row is preserved; the next sign-in via the same
+    `EnterpriseConnection` will mint a fresh `EnterpriseAccount` if
+    the connection's policy allows JIT provisioning, or fail with
+    `enterprise_sso_no_user` if it doesn't.
+  tags: [Enterprise Connections]
+  responses:
+    "204":
+      description: Deleted.
+    "401": { $ref: "../../components/responses/Unauthorized.yaml" }
+    "404": { $ref: "../../components/responses/NotFound.yaml" }
