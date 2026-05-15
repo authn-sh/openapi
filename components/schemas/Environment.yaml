@@ -148,6 +148,30 @@ properties:
         type: object
         description: Hex colors / radii. Free-form in v0.1.
         additionalProperties: true
+      redirects:
+        type: object
+        description: |
+          Per-environment SDK fallback URLs. The SDK uses these when the
+          tenant app doesn't supply an override at runtime (afterSignInUrl,
+          afterSignUpUrl, etc). Each field is nullable; `null` means
+          "no fallback set — fall back to the SDK-level default."
+        additionalProperties: false
+        properties:
+          after_sign_up:
+            type: [string, "null"]
+            format: uri
+          after_sign_in:
+            type: [string, "null"]
+            format: uri
+          home:
+            type: [string, "null"]
+            format: uri
+          after_create_organization:
+            type: [string, "null"]
+            format: uri
+          after_leave_organization:
+            type: [string, "null"]
+            format: uri
   user_settings:
     type: object
     description: |
