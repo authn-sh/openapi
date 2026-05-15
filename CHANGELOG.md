@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.1] — 2026-05-15
+
+Patch release: drop the `Environment.sms` block from the FAPI spec.
+
+### Removed
+
+- **`Environment.sms`** — driver + per-driver credentials block previously exposed at `GET /v1/environment`. SMS provider configuration is system-only (managed via the dashboard's `PATCH /v1/instance` flow, never read by the SDK at boot). The block was contract-only — no SDK consumed it — so removing it is a clean drop rather than a deprecation. Matches the corresponding `authn-sh/authn` change (see authn#290).
+
 ## [0.7.0] — 2026-05-12
 
 ### Added
