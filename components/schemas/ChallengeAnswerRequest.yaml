@@ -8,10 +8,6 @@ description: |
   - `password` — `{ password: "…" }`.
   - `email_code` / `reset_password_email_code` — `{ code: "123456" }`.
   - `ticket` — `{ ticket: "…" }`.
-  - `email_link` — `{ }` (empty body). This commits the SDK to polling
-    `GET .../challenges/{cid}`; the verification happens out-of-band when
-    the user clicks the magic link. The response is the polled state,
-    not a synchronous success.
   - `domain_dns_txt` — `{ }` (empty body). Hints the server to attempt
     the DNS lookup right now. The response reflects the immediate
     result — `verified` if the TXT record was visible, `pending` if

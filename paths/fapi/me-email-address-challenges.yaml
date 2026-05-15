@@ -14,9 +14,8 @@ post:
     `/v1/me/email-addresses/{id}` with the same uniform challenge
     sub-resource shape used on sign-in / sign-up.
 
-    Legal strategies are `email_code` (server emails a numeric code,
-    answer with `{ code }`) and `email_link` (server emails a magic
-    link, answer with `{}` and poll). On success the address flips to
+    The only legal strategy is `email_code` (server emails a numeric
+    code, answer with `{ code }`). On success the address flips to
     `verified: true` and `current_challenge_id` clears.
 
     Issuing a new challenge supersedes any previous live challenge on
@@ -33,10 +32,6 @@ post:
         examples:
           email_code:
             value: { strategy: email_code }
-          email_link:
-            value:
-              strategy: email_link
-              redirect_url: https://app.acme.com/account
   responses:
     "200":
       description: The freshly-created `Challenge`, wrapped.

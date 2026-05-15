@@ -11,9 +11,9 @@ description: |
   exposing it changed.
 
   v0.1 ships `password` + `email_code` + `reset_password_email_code`
-  + `ticket`. v0.2 adds `email_link` (magic link). v0.3 layers MFA on
-  top via the `needs_second_factor` step. v0.4 adds
-  `oauth_<provider_key>` for first-factor social sign-in (see below).
+  + `ticket`. v0.3 layers MFA on top via the `needs_second_factor`
+  step. v0.4 adds `oauth_<provider_key>` for first-factor social
+  sign-in (see below).
   v0.5 adds `passkey` (WebAuthn) as an identifier-less first-factor
   strategy alongside OAuth. v0.6 adds enterprise SSO via
   `enterprise_sso` (generic, domain-routed) and `saml` (caller picks
@@ -90,17 +90,6 @@ description: |
     that completes synchronously off the same external account. With
     `allow_sign_up: false`, the Challenge instead lands `failed` with
     `oauth_account_does_not_exist`.
-  - **Magic-link sign-in for an unknown identifier** (v0.2) — same
-    `transferable` cross-flow as before.
-
-  ### Magic-link cross-device polling (PLAN §9.10)
-
-  `email_link` is the only first-factor strategy that completes
-  out-of-band — the user clicks the link in their inbox, possibly on a
-  different device, while the originating device polls for the result.
-  The originating device polls the focused
-  `GET /v1/client/sign-ins/{sid}/challenges/{cid}` resource (not the
-  whole sign-in) — see the cross-device polling note on `Challenge`.
 
   ### Second-factor flow (`needs_second_factor`) — v0.3
 
@@ -180,17 +169,15 @@ properties:
         to `complete`.
       - `needs_client_trust` — environment requires the device pass an
         out-of-band trust check (geolocation/WAF/captcha).
-      - `transferable` — the SignIn succeeded the IdP / magic-link
-        side of authentication but the resolved identity has no
-        matching `User`, so the flow must hand off to sign-up. The
-        SDK reads `target_flow: "sign_up"` and posts
+      - `transferable` — the SignIn succeeded the IdP side of
+        authentication but the resolved identity has no matching
+        `User`, so the flow must hand off to sign-up. The SDK reads
+        `target_flow: "sign_up"` and posts
         `POST /v1/client/sign-ups { transfer: true }` to mint a
         SignUp that completes synchronously off the same upstream
-        identity. Surfaces in three cases:
+        identity. Surfaces in two cases:
           - **OAuth** — IdP returned an unknown identity and the
             parent `OauthProvider.allow_sign_up` is `true`.
-          - **Magic-link** — `email_link` was answered against an
-            address with no `User`.
           - **Enterprise SSO** — IdP-asserted identity has no
             matching `User`; subject to the connection's
             org-scoped provisioning policy.
@@ -210,7 +197,7 @@ properties:
       state. The server narrows this list as the flow progresses:
 
       - `needs_first_factor` — first-factor strategies the environment
-        + identifier support: `password`, `email_code`, `email_link`,
+        + identifier support: `password`, `email_code`,
         `reset_password_email_code`, `ticket`, plus an
         `oauth_<provider_key>` entry for every enabled `OauthProvider`
         row with `allow_sign_in: true` (e.g. `oauth_google`,
@@ -239,7 +226,7 @@ properties:
       Switching strategy mid-step is allowed — the server accepts any
       currently-listed value on the next `POST .../challenges`.
     examples:
-      - [password, email_code, email_link, reset_password_email_code]
+      - [password, email_code, reset_password_email_code]
       - [password, email_code, oauth_google, oauth_github, passkey]
       - [enterprise_sso]
       - [enterprise_sso, saml]

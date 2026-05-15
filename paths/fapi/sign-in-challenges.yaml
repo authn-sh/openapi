@@ -25,11 +25,6 @@ post:
     status it had (`pending` rolls to `expired` on supersede), and
     `SignIn.current_challenge_id` advances to the new one.
 
-    For `email_link`, follow up with `answerSignInChallenge` (empty
-    body) and then poll `getSignInChallenge` until `status` flips to
-    `verified` or `transferable`. See the cross-device polling note on
-    `Challenge`.
-
     For `totp` and `backup_code` (v0.3+), the parent must already be in
     `needs_second_factor` and `supported_strategies` must list the
     chosen strategy. The server stamps `step: "second"` on the

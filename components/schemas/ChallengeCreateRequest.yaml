@@ -16,7 +16,7 @@ description: |
 
   Per-parent legal strategies:
 
-  - `SignIn` (first factor) — `password`, `email_code`, `email_link`,
+  - `SignIn` (first factor) — `password`, `email_code`,
     `phone_code`, `oauth_<provider_key>`, `passkey`, `enterprise_sso`,
     `saml`, `reset_password_email_code`, `ticket`, `transfer`.
     `oauth_<provider_key>` requires `redirect_url` and
@@ -37,7 +37,7 @@ description: |
     user's `default_second_factor` phone, falling back to
     `User.primary_phone_number_id`; supply `phone_number_id`
     explicitly to target a different reserved-for-MFA row.
-  - `SignUp` — `email_code`, `email_link`, `phone_code`,
+  - `SignUp` — `email_code`, `phone_code`,
     `oauth_<provider_key>`, `passkey`, `enterprise_sso`, `saml`,
     `ticket`, `transfer`. Sign-up never gains a second factor — the
     `phone_code` here is the first-factor phone-attribute path;
@@ -49,7 +49,7 @@ description: |
     / `saml` mint a `User` + `EnterpriseAccount` on a fresh identity
     or flip to `transferable` when the IdP-asserted identity already
     has a `User`.
-  - `EmailAddress` — `email_code`, `email_link`.
+  - `EmailAddress` — `email_code`.
   - `PhoneNumber` — `phone_code`. Used by FAPI
     `/v1/me/phone-numbers/{id}/challenges` to verify additional phone
     numbers on an already-signed-in user.
@@ -61,7 +61,7 @@ properties:
     type: string
     description: |
       Strategy across all parents:
-      `password`, `email_code`, `email_link`, `phone_code`,
+      `password`, `email_code`, `phone_code`,
       `oauth_<provider_key>`, `passkey`, `enterprise_sso`, `saml`,
       `reset_password_email_code`, `ticket`, `transfer`,
       `domain_dns_txt`, `totp`, `backup_code`.
@@ -74,7 +74,6 @@ properties:
     examples:
       - password
       - email_code
-      - email_link
       - phone_code
       - oauth_google
       - oauth_acme_corp_sso
@@ -90,7 +89,7 @@ properties:
   email_address_id:
     type: string
     description: |
-      For `email_code` / `email_link` first-factor sign-in, the address to
+      For `email_code` first-factor sign-in, the address to
       challenge. Must be one of `SignIn.supported_strategies`'s implied
       identifiers. Ignored for sign-up (the address comes from the
       attempt itself) and for the `EmailAddress` parent (the address is
@@ -115,12 +114,10 @@ properties:
     type: string
     format: uri
     description: |
-      For `email_link`, the URL the magic link bounces back to after
-      `clientHandshake` consumes the ticket. For
-      `oauth_<provider_key>`, the URL the SDK should land the user on
-      if the IdP redirect comes back with `error` (cancellation,
+      For `oauth_<provider_key>`, the URL the SDK should land the user
+      on if the IdP redirect comes back with `error` (cancellation,
       consent denied, scope refused). Must be on the redirect-URL
-      allowlist on both surfaces.
+      allowlist.
   redirect_url_complete:
     type: string
     format: uri
@@ -144,9 +141,6 @@ properties:
 examples:
   - { strategy: password }
   - { strategy: email_code, email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE }
-  - strategy: email_link
-    email_address_id: idn_01HKX9SY9V7H7TF8C8K7J9X4ZE
-    redirect_url: https://app.acme.com/dashboard
   - strategy: oauth_google
     redirect_url: https://app.acme.com/sign-in
     redirect_url_complete: https://app.acme.com/dashboard

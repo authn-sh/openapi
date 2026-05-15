@@ -17,11 +17,6 @@ post:
     The response is wrapped in the standard envelope so the SDK can
     refresh its local Client cache atomically; the wrapped `response` is
     the freshly-created `Challenge`.
-
-    For `email_link`, follow up with `answerSignUpChallenge` (empty
-    body) and then poll `getSignUpChallenge` until `status` flips to
-    `verified` or `transferable`. See the cross-device polling note on
-    `Challenge`.
   tags: [Sign-Ups]
   security:
     - client_cookie: []

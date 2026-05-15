@@ -12,12 +12,9 @@ post:
   operationId: answerEmailAddressChallenge
   summary: Answer an email-address challenge
   description: |
-    Submit the user's answer to a live email-address challenge. The
-    body shape is strategy-specific — see `ChallengeAnswerRequest`.
-
-    For `email_code` send `{ code: "…" }`. For `email_link` send `{ }`
-    and poll `getEmailAddressChallenge`; the actual verification
-    happens out-of-band when the user clicks the magic link.
+    Submit the user's answer to a live email-address challenge.
+    Send `{ code: "…" }` for `email_code` — see
+    `ChallengeAnswerRequest`.
 
     On success the challenge `status` flips to `verified` and the
     parent address flips to `verified: true` with

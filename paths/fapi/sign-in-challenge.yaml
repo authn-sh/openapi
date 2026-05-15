@@ -12,15 +12,10 @@ get:
   operationId: getSignInChallenge
   summary: Get a challenge on a sign-in
   description: |
-    Fetch the focused `Challenge` resource. Used primarily by the SDK
-    to poll an `email_link` challenge from the originating device while
-    the user clicks the magic link (possibly on a different device).
-    Recommended cadence: every 2s for 60s, then 5s for 5min, then stop.
-    Servers may rate-limit polling above this cadence (`429`).
+    Fetch the focused `Challenge` resource.
 
     Unlike `getSignIn`, this endpoint returns the unwrapped `Challenge`
-    — no envelope, no Client refresh. Polling is read-only and the SDK
-    only needs the focused resource.
+    — no envelope, no Client refresh.
   tags: [Sign-Ins]
   security:
     - client_cookie: []

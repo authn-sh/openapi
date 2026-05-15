@@ -16,11 +16,6 @@ post:
     `attempt-verification`. The body shape is strategy-specific — see
     `ChallengeAnswerRequest`.
 
-    For `email_link` the body is `{ }` and the call is non-synchronous:
-    it commits the SDK to polling `getSignUpChallenge`. The actual
-    verification happens out-of-band when the user clicks the magic
-    link.
-
     On success the challenge `status` flips to `verified` (or
     `transferable` for an existing identifier — bounce to sign-in via
     `POST /v1/client/sign-ins { transfer: true }`). With the verified
