@@ -13,7 +13,7 @@ properties:
     description: |
       Custom keys must not collide with the reserved
       `org:admin` / `org:member` defaults or anything under the
-      `org:sys_*` permission prefix.
+      `org:*` permission prefix.
   name:
     type: string
     minLength: 1

@@ -6,7 +6,7 @@ description: |
   `OrganizationDomain` whose `enrollment_mode` is
   `automatic_suggestion`.
 
-  An admin with `org:sys_memberships:manage` accepts the request
+  An admin with `org:memberships:manage` accepts the request
   to convert it into an `OrganizationMembership`.
 required:
   - id

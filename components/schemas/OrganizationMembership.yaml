@@ -31,7 +31,7 @@ properties:
     description: |
       The role's stable `key` (e.g. `org:admin`, `org:member`, or
       a custom `org:billing`). Mutating this field requires the
-      caller to hold `org:sys_memberships:manage` in the same
+      caller to hold `org:memberships:manage` in the same
       organization.
     examples:
       - org:admin
@@ -47,7 +47,7 @@ properties:
       (alphabetical) so SDK comparisons are deterministic.
     items:
       type: string
-      description: Permission `key` (e.g. `org:sys_memberships:manage`).
+      description: Permission `key` (e.g. `org:memberships:manage`).
   public_metadata:
     $ref: ./Metadata.yaml
   private_metadata:
